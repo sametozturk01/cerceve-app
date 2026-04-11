@@ -1,0 +1,470 @@
+:root {
+  /* Fotoğraf yükle butonundaki o meşhur gradient */
+  --electric-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  --glass-bg: rgba(255, 255, 255, 0.94);
+  --sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+
+
+/* ── Reset ─────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── TEK VE MODERN BODY (Premium Glassmorphism) ── */
+body {
+  margin: 0;
+  font-family: var(--sans);
+  /* ARKA PLAN BURADA DEĞİŞİYOR */
+  background: #6a11cb !important; 
+  background: var(--electric-gradient) !important;
+  background-attachment: fixed;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center; /* Yatayda ortalar */
+  align-items: center;     /* Dikeyde ortalar */
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* DİKEY ÇİZGİLERİ BURASI YOK EDER */
+  border: none !important; 
+  border-inline: none !important;
+  background: transparent !important;
+  padding: 20px;
+}
+
+
+/* ── Sayfa sarmalayıcı ─────────────────────────── */
+.app-wrapper {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── FramePicker kapsayıcı (TEK SEFER) ─────────── */
+.fp-container {
+  width: 100%;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 32px !important;
+  padding: 40px !important;
+  display: flex;
+  gap: 30px;
+  /* Premium gölge */
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ── Sol kolon (önizleme) ──────────────────────── */
+.fp-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fp-preview-box {
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Kutu kenarlarındaki parazitleri siler */
+  border: none !important;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+}
+
+.fp-preview-box canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.fp-upload-btn {
+  /* Modern Mavi Gradient Arka Plan */
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%) !important;
+  color: white !important;
+  width: 100%; /* Alanın tamamını doldursun */
+  margin-bottom: 15px; /* Altındaki butonla boşluk */
+  margin-top: 30px !important; /* Çerçeve ile arasına 30px boşluk açar */
+  width: 100%; /* Geniş durması için */
+}
+
+.fp-upload-btn:hover {
+  background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%) !important;
+  box-shadow: 0 6px 12px rgba(37, 117, 252, 0.3); /* Mavi gölge */
+  transform: translateY(-2px); /* Hafifçe yukarı kalk */
+}
+
+.fp-view-toggle {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.fp-view-btn {
+  flex: 1; /* Butonlar eşit genişlikte olsun */
+  /* Modern Mor Gradient Arka Plan */
+  background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%) !important;
+  color: white !important;
+  opacity: 0.7; /* Seçili olmayanlar soluk olsun */
+}
+
+.fp-view-btn:hover {
+  opacity: 1; /* Solukluğu kaldır */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(142, 45, 226, 0.3); /* Mor gölge */
+}
+
+.fp-view-btn.active {
+  opacity: 1; /* Tam parlak */
+  background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%) !important;
+  box-shadow: 0 6px 12px rgba(74, 0, 224, 0.4); /* Daha güçlü gölge */
+}
+
+/* ── Sağ kolon (seçenekler) ────────────────────── */
+.fp-right {
+  flex: 1.2; /* Sol taraf 2 iken burayı biraz daha artırdık, denge sağlandı */
+  padding: 25px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* Çok hafif bir derinlik */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Bölüm başlıkları ──────────────────────────── */
+.fp-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+/* ── Çerçeve tipi grid ─────────────────────────── */
+.fp-frame-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.fp-frame-grid, .fp-size-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.fp-frame-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  background: #fff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.fp-frame-btn, .fp-size-btn {
+  background: #f8f9fa !important;
+  border: 2px solid transparent !important;
+  border-radius: 12px !important;
+  padding: 15px 10px !important;
+  transition: all 0.2s ease-in-out !important;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.fp-frame-btn:hover {
+  border-color: #bbb;
+  background: #fafafa;
+}
+
+.fp-frame-btn:hover, .fp-size-btn:hover {
+  background: #ffffff !important;
+  border-color: #dee2e6 !important;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.fp-frame-btn.active {
+  border-color: #534ab7;
+  border-width: 2px;
+  background: #f5f4ff;
+}
+
+.fp-frame-btn.active, .fp-size-btn.active {
+  background: #ffffff !important;
+  border-color: #4a00e0 !important; /* Senin mor/mavi temanla uyumlu */
+  box-shadow: 0 5px 15px rgba(74, 0, 224, 0.1);
+}
+
+.fp-frame-btn-label {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Çerçeve swatch (küçük önizleme) ───────────── */
+.fp-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fp-swatch-inner {
+  width: 100%;
+  height: 100%;
+  background: #87ceeb;
+  border-radius: 2px;
+}
+
+.fp-swatch-none {
+  width: 100%;
+  height: 100%;
+  background-image: repeating-conic-gradient(
+    #ccc 0% 25%,
+    #fff 0% 50%
+  );
+  background-size: 10px 10px;
+  opacity: 0.6;
+}
+
+/* ── Renk seçimi ───────────────────────────────── */
+.fp-color-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fp-color-dot {
+  width: 35px !important;
+  height: 35px !important;
+  border-radius: 50% !important;
+  margin-right: 10px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: 3px solid white !important; /* İç içe halka görünümü için */
+  box-shadow: 0 0 0 1px #ddd; /* Dış ince halka */
+}
+
+.fp-color-dot:hover {
+  transform: scale(1.12);
+}
+
+.fp-color-dot.active {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px #4a00e0; /* Seçili rengin etrafına temanın rengini ver */
+}
+
+/* ── Boyut grid ────────────────────────────────── */
+.fp-size-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.fp-size-btn {
+  padding: 8px 4px;
+  font-size: 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #444;
+  transition: all 0.12s;
+}
+
+.fp-size-btn:hover {
+  border-color: #bbb;
+  background: #fafafa;
+}
+
+.fp-size-btn.active {
+  border-color: #534ab7;
+  border-width: 1.5px;
+  color: #534ab7;
+  font-weight: 600;
+  background: #f5f4ff;
+}
+
+/* ── Fiyat satırı ──────────────────────────────── */
+.fp-price-row {
+  margin-top: auto; /* En alta it */
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.fp-price {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.fp-price-sub {
+  font-size: 14px;
+  color: #28a745; /* Çerçeve farkını yeşil yapalım, avantaj gibi görünsün */
+  font-weight: 600;
+}
+
+/* ── Sepete ekle butonu ────────────────────────── */
+.fp-add-btn {
+  width: 100%;
+  padding: 13px 0;
+  background: #534ab7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  letter-spacing: 0.02em;
+}
+
+.fp-add-btn:hover {
+  background: #3c3489;
+}
+
+.fp-add-btn:active {
+  transform: scale(0.98);
+}
+
+.fp-add-btn.done {
+  background: #1d9e75;
+}
+
+/* ── Altbilgi rozetleri ────────────────────────── */
+.fp-badges {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.fp-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+
+.fp-badge-icon {
+  font-size: 14px;
+}
+
+.fp-badge-text {
+  font-size: 11px;
+  color: #666;
+}
+
+/* ── Responsive ────────────────────────────────── */
+@media (max-width: 900px) {
+  body {
+    padding: 10px;
+  }
+  
+  #root {
+    padding: 10px;
+  }
+
+  .fp-container {
+    flex-direction: column;
+    padding: 25px !important;
+    border-radius: 28px !important;
+    gap: 25px;
+  }
+
+  .fp-left, .fp-right {
+    width: 100%;
+  }
+}
+
+/* TÜM BUTONLAR İÇİN ORTAK MODERN STİLLER */
+.fp-upload-btn, .fp-view-btn {
+  /* Yuvarlak Köşeler */
+  border-radius: 50px !important; /* Tam yuvarlak köşeler */
+  
+  /* Modern Font ve Yazı Tipi */
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase; /* Yazıları büyük yap */
+  
+  /* Boşluklar ve Kenarlık */
+  padding: 12px 24px !important;
+  border: none !important; /* Kenarlığı kaldır */
+  
+  /* Gölge ve Geçiş Efekti */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease; /* Her türlü değişimi yumuşat */
+  
+  cursor: pointer;
+  outline: none;
+}
+
+/* ── GERÇEK 4K KESKİNLİK PAKETİ ────────────────── */
+.fp-preview-box img {
+  /* 1. Tarayıcı Yumuşatmasını Kapat (En Önemli Ayar) */
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+  image-rendering: pixelated !important; /* Düşük çözünürlüklü PNG'leri bile keskinleştirir */
+
+  /* 2. Standart Sharp Filtresi Yerine Contrast/Brightness Dengesi */
+  /* Sharp(1px) çalışmaz, onun yerine bu kombinasyonu kullan: */
+  filter: contrast(1.1) brightness(1.02) saturate(1.05) drop-shadow(0 5px 15px rgba(0,0,0,0.2)) !important;
+  
+  /* 3. Piksel Hizalama (Blur'u önler) */
+  transform: translateZ(0) scale(1.001); /* Resmi çok hafif büyüterek GPU'nun yeniden çizmesini zorlar */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+
+  /* 4. Boyutlandırma (Piksel kaymasını önlemek için cover yerine contain) */
+  object-fit: contain !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── ÇERÇEVE ALANINI PARLAT ───────────────────── */
+.fp-preview-box {
+  background: #ffffff;
+  /* Resmin kenarlardaki parazitleri yutması için */
+  outline: 1px solid rgba(0,0,0,0.05); 
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
