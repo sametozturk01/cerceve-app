@@ -11,34 +11,38 @@ function App() {
 
       {/* FOOTER - marginTop: 'auto' sayesinde en alta yapışır */}
       <footer style={{
-        position: 'absolute',
-        bottom: '5px', // Tam sıfıra yasladık (harfler kesilmesin diye 5px)
-        left: '0',
-        right: '0',
-        textAlign: 'center',
-        background: 'transparent',
-        border: 'none',
-        outline: 'none'
-      }}>
-        <p style={{ 
-          fontSize: '16px', 
-          color: '#ffffff',
-          margin: 0,
-          fontWeight: 'bold',
-          textShadow: '0px 0px 8px rgba(0,0,0,0.6)' 
-        }}>
-          Bu uygulama {" "}
-          <a 
-            href="https://ozturksoft.net" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ color: '#ffffff', textDecoration: 'underline' }}
-          >
-            Ozturksoft
-          </a>
-          {" "} tarafından yapılmıştır.
-        </p>
-      </footer>
+  width: '100%',
+  textAlign: 'center',
+  padding: '10px 0',
+  marginTop: 'auto',
+  background: 'transparent', // Bant görüntüsünü tamamen yok eder
+  border: 'none',
+  outline: 'none'
+}}>
+  <p style={{ 
+    fontSize: '15px', 
+    color: '#ffffff',
+    margin: 0,
+    fontWeight: '600',
+    /* Yazı etrafındaki gölgeyi yumuşattık */
+    textShadow: '0 2px 4px rgba(0,0,0,0.3)' 
+  }}>
+    Bu uygulama {" "}
+    <a 
+      href="https://ozturksoft.net" 
+      target="_blank" 
+      rel="noopener noreferrer"
+      style={{
+        color: '#ffffff',
+        textDecoration: 'underline',
+        fontWeight: '800'
+      }}
+    >
+      Ozturksoft
+    </a>
+    {" "} tarafından yapılmıştır.
+  </p>
+</footer>
     </div>
   );
 }

@@ -46,9 +46,19 @@ body {
 
 /* ── Sayfa sarmalayıcı ─────────────────────────── */
 .app-wrapper {
-  width: 100%;
-  max-width: 1100px;
   display: flex;
+  flex-direction: column;
+  min-height: 100dvh; /* Mobil uyumlu tam boy */
+  width: 100%;
+  background: transparent !important; /* Arka planı body'den alsın */
+  margin: 0;
+  padding: 0;
+}
+
+.main-content {
+  flex: 1; /* Beyaz paneli ortada tutar ve footer'ı aşağı iter */
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
@@ -468,3 +478,4 @@ body {
   justify-content: center;
   overflow: hidden;
 }
+
