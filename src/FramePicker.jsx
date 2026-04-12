@@ -62,7 +62,7 @@ const DECOR_SAMPLES = [
   { 
     id: 'benimSalon',         // Benzersiz bir ID ver
     label: 'Benim Salonum',   // Ekranda görünecek isim
-    url: '/public/koltuk.png' // public klasöründeki dosya yolu (başında / olmalı)
+    url: '/koltuk.png' // public klasöründeki dosya yolu (başında / olmalı)
   },
 ];
 
@@ -314,6 +314,7 @@ export default function FramePicker() {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           style={{ display: "none" }}
           onChange={handleImageUpload}
         />
