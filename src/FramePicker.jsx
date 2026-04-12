@@ -314,7 +314,6 @@ export default function FramePicker() {
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           style={{ display: "none" }}
           onChange={handleImageUpload}
         />
