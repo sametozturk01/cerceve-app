@@ -87,14 +87,15 @@ body {
 
 .fp-preview-box {
   background: #ffffff;
-  border-radius: 20px;
-  overflow: hidden;
+  /* Müşterinin isteği üzerine köşeleri tam 90 derece sivri (köşeli) yaptık */
+  border-radius: 0 !important; 
+  /* Resmin kenarlardaki parazitleri yutması için */
+  outline: 1px solid rgba(0,0,0,0.05); 
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Kutu kenarlarındaki parazitleri siler */
-  border: none !important;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+  overflow: hidden;
 }
 
 .fp-preview-box canvas {

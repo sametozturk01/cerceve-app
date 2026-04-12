@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 
-// ─── Veri ────────────────────────────────────────────────────────────────────
+// ─── Veri (MM DESTEKLİ) ────────────────────────────────────────────────────────
 
-// thickness: çerçeve PNG'nin iç kenarı kaç piksel uzakta (640px canvas üzerinden)
-// Kendi PNG'ne göre bu değeri ayarla:
-//   - Çerçeve ince görünüyorsa artır (ör: 80 → 100)
-//   - Çerçeve kalın görünüyorsa azalt (ör: 80 → 60)
+// YENİ EKLENEN: "defaultMm" özelliği.
+// thickness: PNG dosyasının kesim payı (Bunu elleme, resmin bozulmamasını sağlar)
+// defaultMm: Bu çerçeve seçildiğinde kaydırıcının geleceği varsayılan kalınlık (Örn: 40mm = 4cm)
 const FRAME_TYPES = [
   {
     id: "none",
     label: "Yok",
     thickness: 0,
+    defaultMm: 0,
     radius: 0,
     image: null,
     colors: [],
@@ -18,7 +18,9 @@ const FRAME_TYPES = [
   {
     id: "ANTRASİT GRİ",
     label: "ANTRASİT GRİ",
-    thickness: 90,          // ← PNG'nin iç boşluğuna göre ayarla
+    // İŞTE HATA BURADAYDI: 90 çok fazla. Resmindeki ahşabın gerçek pikselini girmelisin.
+    thickness: 45, // <--- BURAYI 90 YERİNE 45 YAP
+    defaultMm: 40, 
     radius: 0,
     image: "/frames/koseli.png",
     colors: [
@@ -32,7 +34,9 @@ const FRAME_TYPES = [
   {
     id: "SARI",
     label: "SARI",
-    thickness: 70,
+    // BUNU DA DÜŞÜR
+    thickness: 35, // <--- BURAYI 70 YERİNE 40 YAP
+    defaultMm: 30, 
     radius: 0,
     image: "/frames/sari.png",
     colors: [
@@ -45,7 +49,9 @@ const FRAME_TYPES = [
   {
     id: "KOYU MÜRDÜM",
     label: "KOYU MÜRDÜM",
-    thickness: 90,
+    // BUNU DA DÜŞÜR
+    thickness: 45, // <--- BURAYI 90 YERİNE 45 YAP
+    defaultMm: 45, 
     radius: 0,
     image: "/frames/mürdüm.png",
     colors: [
@@ -57,15 +63,13 @@ const FRAME_TYPES = [
   },
 ];
 
-
 const DECOR_SAMPLES = [
   { 
-    id: 'benimSalon',         // Benzersiz bir ID ver
-    label: 'Benim Salonum',   // Ekranda görünecek isim
-    url: '/koltuk.png' // public klasöründeki dosya yolu (başında / olmalı)
+    id: 'benimSalon',
+    label: 'Benim Salonum',
+    url: '/koltuk.png'
   },
 ];
-
 
 const SIZES = [
   { id: "20x20", label: "20×20 cm", price: 149 },
@@ -128,67 +132,126 @@ function loadImage(src) {
   });
 }
 
-// ─── Canvas Önizleme ──────────────────────────────────────────────────────────
+// ─── Canvas Önizleme (MM HESAPLAMALI GERÇEK DÜNYA MOTORU) ─────────────────────
 
-// CANVAS_SIZE: yüksek çözünürlük için 640, CSS'de %100 gösterilir
 const CANVAS_SIZE = 640;
 
-function PreviewCanvas({ imageUrl, frameType, frameColor, activeView }) {
+
+function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSize, customThickness }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const dpr = window.devicePixelRatio || 1;
     const W = CANVAS_SIZE;
     const H = CANVAS_SIZE;
 
-    async function draw() {
-      ctx.clearRect(0, 0, W, H);
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    //canvas.style.width = `${W}px`;
+    //canvas.style.height = `${H}px`;
+    ctx.scale(dpr, dpr);
+    
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-      // 1. DEKOR MODU KONTROLÜ
+    async function draw() {
+      ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#ffffff";
+      ctx.fillRect(0, 0, W, H);
+
       if (activeView === "dekor") {
         const decorImg = await loadImage(DECOR_SAMPLES[0].url).catch(() => null);
-        if (decorImg) {
-          ctx.drawImage(decorImg, 0, 0, W, H);
-        }
+        if (decorImg) ctx.drawImage(decorImg, 0, 0, W, H);
       }
 
       const photo = await loadImage(imageUrl).catch(() => null);
       if (!photo) return;
 
-      // 2. TABLO BOYUTU (Dekor modunda tabloyu %30 küçültüp yukarı taşıyoruz)
-      let tW = W, tH = H, tX = 0, tY = 0;
-      if (activeView === "dekor") {
-        tW = W * 0.35; // Tablo genişliği dekorun %35'i kadar olsun
-        tH = H * 0.35;
-        tX = (W - tW) / 2; // Ortala
-        tY = H * 0.0;      // Biraz yukarı as
+      const [sizeW, sizeH] = selectedSize.id.split('x').map(Number);
+      const frameRatio = sizeW / sizeH;
+
+      const maxDimCm = Math.max(sizeW, sizeH); 
+      const sizeMultiplier = 0.6 + ((maxDimCm / 80) * 0.4);
+
+      const baseDrawSize = W * (activeView === "dekor" ? 0.35 : 0.85);
+      const maxDrawSize = baseDrawSize * sizeMultiplier;
+
+      let tW = maxDrawSize;
+      let tH = maxDrawSize;
+
+      if (frameRatio > 1) { 
+        tH = tW / frameRatio; 
+      } else if (frameRatio < 1) { 
+        tW = tH * frameRatio; 
       }
 
-      // 3. FOTOĞRAF VE ÇERÇEVE ÇİZİMİ (Senin mevcut mantığın, tX, tY eklenmiş hali)
-      const t = (frameType.thickness * (tW / W)); // Thickness'ı ölçeklendir
+      const tX = (W - tW) / 2;
+      const tY = activeView === "dekor" ? H * 0.15 : (H - tH) / 2;
 
-      // Fotoğraf
-      const ix = tX + t, iy = tY + t, iw = tW - 2 * t, ih = tH - 2 * t;
+      // MİLİMETRE (MM) - PİKSEL (PX) DÖNÜŞÜM MOTORU
+      const pxPerMm = tW / (sizeW * 10);
+      const rawThickPx = customThickness * pxPerMm;
+      
+      const targetThickPx = Math.min(rawThickPx, (tW / 2) - 2, (tH / 2) - 2);
+
+      // --- İŞTE ÇÖZÜM BURADA: TAŞMA PAYI (BLEED) ---
+      // Fotoğrafı her yönden 3 piksel dışa taşırıp çerçevenin ahşabının altına saklıyoruz.
+      // Böylece aradan asla beyaz tuval sızamaz!
+      const ix = tX + targetThickPx - 3;
+      const iy = tY + targetThickPx - 3;
+      const iw = tW - (2 * targetThickPx) + 6;
+      const ih = tH - (2 * targetThickPx) + 6;
+
+      const imgRatio = photo.width / photo.height;
+      const targetRatio = iw / ih;
+      
+      let sx = 0, sy = 0, sWidth = photo.width, sHeight = photo.height;
+
+      if (imgRatio > targetRatio) {
+        sWidth = photo.height * targetRatio;
+        sx = (photo.width - sWidth) / 2;
+      } else {
+        sHeight = photo.width / targetRatio;
+        sy = (photo.height - sHeight) / 2;
+      }
+
       ctx.save();
       ctx.beginPath();
       ctx.rect(ix, iy, iw, ih);
       ctx.clip();
-      ctx.drawImage(photo, ix, iy, iw, ih);
+      ctx.drawImage(photo, sx, sy, sWidth, sHeight, ix, iy, iw, ih);
       ctx.restore();
 
-      // Çerçeve (Eğer varsa)
+      // 9-SLICE (9-DİLİM) GERÇEK ÇERÇEVE ÇİZİM MANTIĞI
       if (frameType.image) {
         const frameImg = await loadImage(frameType.image).catch(() => null);
         if (frameImg) {
-          // Renk tint mantığını buraya aynen ekle (offscreen canvas ile)
-          ctx.drawImage(frameImg, tX, tY, tW, tH);
+          const sw = frameImg.width;
+          const sh = frameImg.height;
+          // PNG dosyasındaki kesim noktası (Veriden gelen thickness)
+          const s = frameType.thickness; 
+          const t = targetThickPx;       
+
+          if (s > 0) {
+            ctx.drawImage(frameImg, 0, 0, s, s, tX, tY, t, t);
+            ctx.drawImage(frameImg, sw-s, 0, s, s, tX+tW-t, tY, t, t);
+            ctx.drawImage(frameImg, 0, sh-s, s, s, tX, tY+tH-t, t, t);
+            ctx.drawImage(frameImg, sw-s, sh-s, s, s, tX+tW-t, tY+tH-t, t, t);
+
+            ctx.drawImage(frameImg, s, 0, sw-2*s, s, tX+t, tY, tW-2*t, t);
+            ctx.drawImage(frameImg, s, sh-s, sw-2*s, s, tX+t, tY+tH-t, tW-2*t, t);
+            ctx.drawImage(frameImg, 0, s, s, sh-2*s, tX, tY+t, t, tH-2*t);
+            ctx.drawImage(frameImg, sw-s, s, s, sh-2*s, tX+tW-t, tY+t, t, tH-2*t);
+          } else {
+            ctx.drawImage(frameImg, tX, tY, tW, tH);
+          }
         }
       }
       
-      // Gölge ekleyelim (Duvara asılmış gibi dursun)
-      if (activeView === "dekor") {
+      if (activeView === "dekor" || activeView === "tablo") {
         ctx.shadowColor = "rgba(0,0,0,0.5)";
         ctx.shadowBlur = 15;
         ctx.shadowOffsetX = 5;
@@ -198,9 +261,9 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView }) {
     }
 
     draw();
-  }, [imageUrl, frameType, frameColor, activeView]);
+  }, [imageUrl, frameType, frameColor, activeView, selectedSize, customThickness]);
 
-  return <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ width: "100%", height: "100%" }} />;
+  return <canvas ref={canvasRef} style={{ width: "100%", height: "auto", display: "block" }} />;
 }
 
 // ─── Çerçeve Swatch ───────────────────────────────────────────────────────────
@@ -246,30 +309,25 @@ function FrameSwatch({ frame }) {
   );
 }
 
-// ─── Rozet ────────────────────────────────────────────────────────────────────
-
-function Badge({ icon, text }) {
-  return (
-    <div className="fp-badge">
-      <span className="fp-badge-icon">{icon}</span>
-      <span className="fp-badge-text">{text}</span>
-    </div>
-  );
-}
-
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
 
 export default function FramePicker() {
   const [uploadedImage, setUploadedImage] = useState(PLACEHOLDER_SRC);
-  const [selectedFrame, setSelectedFrame] = useState(FRAME_TYPES[0]);
-  const [selectedColor, setSelectedColor] = useState(null);
+  
+  const [selectedFrame, setSelectedFrame] = useState(FRAME_TYPES[1]);
+  const [selectedColor, setSelectedColor] = useState(FRAME_TYPES[1].colors[0]);
   const [selectedSize,  setSelectedSize]  = useState(SIZES[0]);
   const [activeView,    setActiveView]    = useState("tablo");
   const [added,         setAdded]         = useState(false);
 
-  const fileInputRef = useRef(null);
+  const [isCustomThickness, setIsCustomThickness] = useState(false);
+  const [customThicknessVal, setCustomThicknessVal] = useState("");
+  
+  const [isCustomSize, setIsCustomSize] = useState(false);
+  const [customW, setCustomW] = useState(""); 
+  const [customH, setCustomH] = useState(""); 
 
-  const totalPrice = selectedSize.price + (FRAME_PRICE[selectedFrame.id] ?? 0);
+  const fileInputRef = useRef(null);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -282,12 +340,31 @@ export default function FramePicker() {
   const handleFrameSelect = (frame) => {
     setSelectedFrame(frame);
     setSelectedColor(frame.colors?.[0] ?? null);
+    
+    // Çerçeve değiştiğinde kalınlık ayarını sıfırlayıp kapatırız ki eski ölçüler bozulmasın
+    setIsCustomThickness(false);
+    setCustomThicknessVal("");
   };
 
-  const handleAddToCart = () => {
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2200);
-  };
+  const safeW = Number(customW) || 0;
+  const safeH = Number(customH) || 0;
+
+  const customBasePrice = Math.round(safeW * safeH * 0.15); 
+  const currentBasePrice = isCustomSize ? customBasePrice : selectedSize.price;
+  const totalPrice = currentBasePrice + (FRAME_PRICE[selectedFrame.id] ?? 0);
+
+  const displayW = safeW > 0 ? safeW : 50;
+  const displayH = safeH > 0 ? safeH : 50;
+
+  const activeSizeForCanvas = isCustomSize 
+    ? { id: `${displayW}x${displayH}` } 
+    : selectedSize;
+
+  // --- YENİ: GÜVENLİ KALINLIK KÖPRÜSÜ ---
+  // Eğer özel kalınlık açıksa ve kutu boş değilse o sayıyı kullan, yoksa çerçevenin orijinal defaultMm değerini kullan.
+  const activeThickness = isCustomThickness && customThicknessVal !== ""
+    ? Number(customThicknessVal) 
+    : selectedFrame.defaultMm;
 
   return (
     <div className="fp-container">
@@ -300,6 +377,8 @@ export default function FramePicker() {
             frameType={selectedFrame}
             frameColor={selectedColor}
             activeView={activeView}
+            selectedSize={activeSizeForCanvas} 
+            customThickness={activeThickness} /* GÜVENLİ KALINLIK BURADAN GİDER */
           />
         </div>
 
@@ -314,23 +393,35 @@ export default function FramePicker() {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           style={{ display: "none" }}
           onChange={handleImageUpload}
         />
 
-        <div className="fp-view-toggle">
-          {[
-            { id: "tablo", label: "Tablo" },
-            { id: "dekor", label: "Dekorda Gör" },
-          ].map((v) => (
+        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '24px', border: '1px solid #e2e8f0', marginTop: '5px' }}>
+          <p style={{ textAlign: 'center', fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
+            👁️ Önizleme Modu
+          </p>
+          
+          <div className="fp-view-toggle">
             <button
-              key={v.id}
-              className={`fp-view-btn${activeView === v.id ? " active" : ""}`}
-              onClick={() => setActiveView(v.id)}
+              className={`fp-view-btn${activeView === "tablo" ? " active" : ""}`}
+              onClick={() => setActiveView("tablo")}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '12px 0 !important' }}
             >
-              {v.label}
+              <span style={{ fontSize: '14px' }}>Tablo</span>
+              <span style={{ fontSize: '9px', opacity: 0.75, letterSpacing: '0.5px' }}>YAKINDAN İNCELE</span>
             </button>
-          ))}
+            
+            <button
+              className={`fp-view-btn${activeView === "dekor" ? " active" : ""}`}
+              onClick={() => setActiveView("dekor")}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '12px 0 !important' }}
+            >
+              <span style={{ fontSize: '14px' }}>Dekor</span>
+              <span style={{ fontSize: '9px', opacity: 0.75, letterSpacing: '0.5px' }}>DUVARDA GÖR</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -378,13 +469,162 @@ export default function FramePicker() {
           {SIZES.map((s) => (
             <button
               key={s.id}
-              className={`fp-size-btn${selectedSize.id === s.id ? " active" : ""}`}
-              onClick={() => setSelectedSize(s)}
+              className={`fp-size-btn${!isCustomSize && selectedSize.id === s.id ? " active" : ""}`}
+              onClick={() => {
+                setSelectedSize(s);
+                setIsCustomSize(false);
+              }}
             >
               {s.label}
             </button>
           ))}
         </div>
+
+        <p className="fp-section-label" style={{ marginTop: '20px' }}>Seçenekler</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}></div>
+
+        <div style={{ marginTop: '15px' }}>
+          {/* BUTON 1: ÖZEL ÖLÇÜ */}
+          <button 
+            className="fp-upload-btn" 
+            style={{ 
+              marginTop: 0, 
+              minHeight: '45px',       // Sabit height yerine minHeight yapıyoruz
+              height: 'auto',           // Yazı sığmazsa buton otomatik uzasın
+              padding: '10px 15px',     // İçeriden nefes payı veriyoruz
+              lineHeight: '1.2',        // Satırlar birbirine girmesin
+              fontSize: '13px', 
+              background: isCustomSize ? '#4f46e5' : '#6366f1' 
+            }}
+            onClick={() => { 
+              setIsCustomSize(!isCustomSize); 
+              if(!isCustomSize){setCustomW(""); setCustomH("");} 
+            }}
+          >
+            {isCustomSize ? " ÖZEL ÖLÇÜYÜ KAPAT" : " İSTEĞE BAĞLI ÖZEL ÖLÇÜ"}
+          </button>
+          
+          {isCustomSize && (
+            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+               
+               {/* TEMİZLE BUTONU VE BAŞLIK YAN YANA */}
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+                 <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>
+                   Özel Tablo Ölçüsü
+                 </label>
+                 <button 
+                   onClick={() => { setCustomW(""); setCustomH(""); }}
+                   style={{ background: 'transparent', border: 'none', color: '#e11d48', fontSize: '10px', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                 >
+                   ↺ TEMİZLE
+                 </button>
+               </div>
+
+               <div style={{ display: 'flex', gap: '15px' }}>
+                 <div style={{ flex: 1 }}>
+                   <label style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>
+                     En (Genişlik)
+                   </label>
+                   <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px' }}>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={customW} 
+                        onChange={e => setCustomW(e.target.value.replace(/[^0-9]/g, ''))} 
+                        placeholder="Örn: 50"
+                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 600, color: '#0f172a' }} 
+                      />
+                      <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600, marginLeft: '5px' }}>cm</span>
+                   </div>
+                 </div>
+
+                 <div style={{ flex: 1 }}>
+                   <label style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>
+                     Boy (Yükseklik)
+                   </label>
+                   <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px' }}>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={customH} 
+                        onChange={e => setCustomH(e.target.value.replace(/[^0-9]/g, ''))} 
+                        placeholder="Örn: 70"
+                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 600, color: '#0f172a' }} 
+                      />
+                      <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600, marginLeft: '5px' }}>cm</span>
+                   </div>
+                 </div>
+               </div>
+
+            </div>
+          )}
+        </div>
+
+        {/* --- YENİ: ÇERÇEVE KALINLIĞI KONTROLÜ --- */}
+        {selectedFrame.id !== "none" && (
+          <div style={{ marginTop: '15px' }}>
+         <button 
+              className="fp-upload-btn" 
+              style={{ 
+                marginTop: 0, 
+                minHeight: '45px',       // Sabit height yerine minHeight
+                height: 'auto',           // Otomatik yükseklik
+                padding: '10px 15px',     // İç boşluk
+                lineHeight: '1.2',        // Satır aralığı
+                fontSize: '13px', 
+                background: isCustomThickness ? '#4f46e5' : '#6366f1' 
+              }}
+              onClick={() => { 
+                setIsCustomThickness(!isCustomThickness); 
+                if(!isCustomThickness) setCustomThicknessVal(selectedFrame.defaultMm.toString()); 
+              }}
+            >
+              {isCustomThickness ? "KALINLIĞI KAPAT" : "İSTEĞE BAĞLI ÇERÇEVE KALINLIĞI"}
+            </button>
+
+            {isCustomThickness && (
+              <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                 
+                 {/* SIFIRLA BUTONU VE BAŞLIK YAN YANA */}
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '6px' }}>
+                   <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>
+                     Çerçeve Kalınlığı (MM)
+                   </label>
+                   <button 
+                     onClick={() => setCustomThicknessVal(selectedFrame.defaultMm.toString())}
+                     style={{ background: 'transparent', border: 'none', color: '#e11d48', fontSize: '10px', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                   >
+                     ↺ SIFIRLA
+                   </button>
+                 </div>
+
+                 <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px' }}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={customThicknessVal}
+                      onChange={e => {
+                        // Sadece rakamlara izin ver
+                        let val = e.target.value.replace(/[^0-9]/g, '');
+                        // MAKSİMUM 50 SINIRI BURADA EKLENDİ
+                        if (Number(val) > 50) val = '50';
+                        setCustomThicknessVal(val);
+                      }}
+                      placeholder={`Örn: ${selectedFrame.defaultMm}`}
+                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 600, color: '#0f172a' }}
+                    />
+                    <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600, marginLeft: '5px' }}>mm</span>
+                 </div>
+                 <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '8px', textAlign: 'center' }}>
+                   *Zarif bir görünüm için 20mm - 50mm arası önerilir.
+                 </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="fp-price-row">
           <span className="fp-price">
@@ -397,10 +637,7 @@ export default function FramePicker() {
           )}
         </div>
 
-
-
       </div>
     </div>
   );
 }
-
