@@ -1,11 +1,15 @@
-export default function Toast({ toast, onDismiss, onConfirm }) {
+import { createPortal } from "react-dom";
+
+export default function Toast({ toast, onDismiss, onConfirm, onUndo }) {
   if (!toast) return null;
 
-  const isConfirm = toast.type === "confirm";
+  const isConfirm = toast.type === "confirm" || toast.type === "confirm-restore";
+  const isUndo = toast.type === "undo";
+  const needsInteraction = isConfirm || isUndo;
 
-  return (
+  return createPortal(
     <div
-      className={`fp-toast-wrap${isConfirm ? " fp-toast-wrap-confirm" : ""}`}
+      className={`fp-toast-wrap${needsInteraction ? " fp-toast-wrap-confirm" : ""}`}
       role="status"
       aria-live="polite"
     >
@@ -17,9 +21,9 @@ export default function Toast({ toast, onDismiss, onConfirm }) {
           onClick={onDismiss}
         />
       ) : null}
-      <div className={`fp-toast${isConfirm ? " fp-toast-confirm" : ""}`}>
+      <div className={`fp-toast${isConfirm || isUndo ? " fp-toast-confirm" : ""}`}>
         <p className="fp-toast-message">{toast.message}</p>
-        {isConfirm ? (
+        {toast.type === "confirm" ? (
           <div className="fp-toast-actions">
             <button type="button" className="fp-toast-btn fp-toast-btn-muted" onClick={onDismiss}>
               İptal
@@ -29,7 +33,28 @@ export default function Toast({ toast, onDismiss, onConfirm }) {
             </button>
           </div>
         ) : null}
+        {toast.type === "confirm-restore" ? (
+          <div className="fp-toast-actions">
+            <button type="button" className="fp-toast-btn fp-toast-btn-muted" onClick={onDismiss}>
+              Hayır
+            </button>
+            <button type="button" className="fp-toast-btn fp-toast-btn-primary" onClick={onUndo}>
+              Geri Getir
+            </button>
+          </div>
+        ) : null}
+        {isUndo ? (
+          <div className="fp-toast-actions">
+            <button type="button" className="fp-toast-btn fp-toast-btn-muted" onClick={onDismiss}>
+              Tamam
+            </button>
+            <button type="button" className="fp-toast-btn fp-toast-btn-primary" onClick={onUndo}>
+              Geri Al
+            </button>
+          </div>
+        ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

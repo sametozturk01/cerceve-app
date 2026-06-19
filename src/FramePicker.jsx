@@ -6,7 +6,12 @@ import PreviewFullscreen from "./components/PreviewFullscreen";
 import PhotoSourcePicker from "./components/PhotoSourcePicker";
 import Toast from "./components/Toast";
 import { loadCustomFrames, revokeFrameUrls, deleteCustomFrame, mergeFrameMeta } from "./utils/customFramesStorage";
-import { loadHiddenFrameIds, hideFrameId } from "./utils/hiddenFramesStorage";
+import {
+  loadHiddenFrameIds,
+  hideFrameId,
+  unhideFrameId,
+  peekLastHiddenFrameId,
+} from "./utils/hiddenFramesStorage";
 import { loadFrameOverrides } from "./utils/frameOverridesStorage";
 
 // ─── Veri (frames.json) ───────────────────────────────────────────────────────
@@ -537,6 +542,20 @@ export default function FramePicker() {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
   }, []);
 
+  useEffect(() => {
+    const lastHiddenId = peekLastHiddenFrameId();
+    if (!lastHiddenId) return;
+
+    const catalogFrame = FRAME_TYPES.find((f) => f.id === lastHiddenId);
+    const name = catalogFrame?.label || catalogFrame?.colorName || lastHiddenId;
+
+    showToast({
+      type: "confirm-restore",
+      frameId: lastHiddenId,
+      message: `"${name}" geri getirilsin mi?`,
+    });
+  }, []);
+
   const requestRemoveFrame = (frame) => {
     const name = frame.label || frame.colorName || frame.code || "Bu çerçeve";
     showToast({
@@ -564,11 +583,29 @@ export default function FramePicker() {
         setSelectedFrame(fallback);
         setSelectedColor(fallback.colors?.[0] ?? null);
       }
-      showToast({ type: "success", message: "Çerçeve kaldırıldı." }, 2800);
+
+      if (frame.custom) {
+        showToast({ type: "success", message: "Çerçeve kaldırıldı." }, 2800);
+      } else {
+        showToast({
+          type: "undo",
+          frameId: frame.id,
+          message: `"${frame.label || frame.colorName || frame.code || "Çerçeve"}" kaldırıldı.`,
+        }, 6000);
+      }
     } catch (err) {
       console.error(err);
       showToast({ type: "error", message: "Çerçeve kaldırılamadı." }, 3200);
     }
+  };
+
+  const handleToastUndo = () => {
+    const id = toast?.frameId;
+    if (!id) return;
+
+    setHiddenFrameIds(unhideFrameId(id));
+    setToast(null);
+    showToast({ type: "success", message: "Çerçeve geri getirildi." }, 2500);
   };
 
   const safeW = Number(customW) || 0;
@@ -602,12 +639,16 @@ export default function FramePicker() {
       {/* ══ Sol: Önizleme ══ */}
       <div className="fp-left">
         <div className="fp-preview-box">
+          <PreviewCanvas key={previewProps.frameType.id} {...previewProps} />
           <button
             type="button"
             className="fp-preview-fullscreen-btn"
             title="Tam ekran gör"
             aria-label="Tam ekran gör"
-            onClick={() => setShowFullscreenPreview(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowFullscreenPreview(true);
+            }}
           >
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path
@@ -620,7 +661,6 @@ export default function FramePicker() {
               <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
             </svg>
           </button>
-          <PreviewCanvas key={previewProps.frameType.id} {...previewProps} />
         </div>
 
         <button
@@ -923,6 +963,7 @@ export default function FramePicker() {
         toast={toast}
         onDismiss={() => setToast(null)}
         onConfirm={confirmRemoveFrame}
+        onUndo={handleToastUndo}
       />
     </div>
   );

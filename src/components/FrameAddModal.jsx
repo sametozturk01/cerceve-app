@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { processFrameImage } from "../utils/frameProcessor";
 import { EDITABLE_CATEGORY_OPTIONS, SERIES_OPTIONS } from "../data/frameFormOptions";
 import { buildFrameEntry, saveCustomFrame } from "../utils/customFramesStorage";
@@ -116,7 +117,7 @@ export default function FrameAddModal({ open, onClose, onSaved }) {
 
   const busy = [STEPS.processing, STEPS.saving].includes(step);
 
-  return (
+  return createPortal(
     <div className="fp-modal-backdrop" onClick={handleClose}>
       <div className="fp-modal" onClick={(e) => e.stopPropagation()}>
         <div className="fp-modal-header">
@@ -267,6 +268,7 @@ export default function FrameAddModal({ open, onClose, onSaved }) {
           onChange={handleFileChange}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

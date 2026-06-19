@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { EDITABLE_CATEGORY_OPTIONS, SERIES_OPTIONS } from "../data/frameFormOptions";
 import { mergeFrameMeta, updateCustomFrame } from "../utils/customFramesStorage";
 import { saveFrameOverride } from "../utils/frameOverridesStorage";
@@ -86,7 +87,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fp-modal-backdrop" onClick={onClose}>
       <div className="fp-modal" onClick={(e) => e.stopPropagation()}>
         <div className="fp-modal-header">
@@ -187,6 +188,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

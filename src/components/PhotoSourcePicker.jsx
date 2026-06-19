@@ -1,7 +1,9 @@
+import { createPortal } from "react-dom";
+
 export default function PhotoSourcePicker({ open, onClose, onPickGallery, onPickCamera }) {
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fp-photo-picker-backdrop" onClick={onClose}>
       <div className="fp-photo-picker" onClick={(e) => e.stopPropagation()}>
         <h3 className="fp-photo-picker-title">Fotoğraf Ekle</h3>
@@ -16,6 +18,7 @@ export default function PhotoSourcePicker({ open, onClose, onPickGallery, onPick
           İptal
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

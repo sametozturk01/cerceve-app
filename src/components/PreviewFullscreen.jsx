@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function PreviewFullscreen({ open, onClose, children }) {
   useEffect(() => {
@@ -20,7 +21,7 @@ export default function PreviewFullscreen({ open, onClose, children }) {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fp-fullscreen-backdrop" onClick={onClose}>
       <div className="fp-fullscreen-panel" onClick={(e) => e.stopPropagation()}>
         <button
@@ -32,8 +33,9 @@ export default function PreviewFullscreen({ open, onClose, children }) {
           ×
         </button>
         <div className="fp-fullscreen-canvas-wrap">{children}</div>
-        <p className="fp-fullscreen-hint">Tam ekran · Kapatmak için Esc veya dışarı tıklayın</p>
+        <p className="fp-fullscreen-hint">Tam ekran · Kapatmak için dışarı tıklayın</p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
