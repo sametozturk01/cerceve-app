@@ -647,28 +647,26 @@ export default function FramePicker() {
           onChange={handleImageUpload}
         />
 
-        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '24px', border: '1px solid #e2e8f0', marginTop: '5px' }}>
-          <p style={{ textAlign: 'center', fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
-            👁️ Önizleme Modu
-          </p>
-          
+        <div className="fp-view-panel">
+          <p className="fp-view-panel-label">👁️ Önizleme Modu</p>
+
           <div className="fp-view-toggle">
             <button
+              type="button"
               className={`fp-view-btn${activeView === "tablo" ? " active" : ""}`}
               onClick={() => setActiveView("tablo")}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '12px 0 !important' }}
             >
-              <span style={{ fontSize: '14px' }}>Tablo</span>
-              <span style={{ fontSize: '9px', opacity: 0.75, letterSpacing: '0.5px' }}>YAKINDAN İNCELE</span>
+              <span className="fp-view-btn-title">Tablo</span>
+              <span className="fp-view-btn-sub">Yakından İncele</span>
             </button>
-            
+
             <button
+              type="button"
               className={`fp-view-btn${activeView === "dekor" ? " active" : ""}`}
               onClick={() => setActiveView("dekor")}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '12px 0 !important' }}
             >
-              <span style={{ fontSize: '14px' }}>Dekor</span>
-              <span style={{ fontSize: '9px', opacity: 0.75, letterSpacing: '0.5px' }}>DUVARDA GÖR</span>
+              <span className="fp-view-btn-title">Dekor</span>
+              <span className="fp-view-btn-sub">Duvarda Gör</span>
             </button>
           </div>
         </div>
