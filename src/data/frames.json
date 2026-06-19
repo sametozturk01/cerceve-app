@@ -1,0 +1,446 @@
+{
+  "categories": [
+    {
+      "id": "all",
+      "label": "Tümü"
+    },
+    {
+      "id": "fa20",
+      "label": "FA 20"
+    },
+    {
+      "id": "fa30",
+      "label": "FA 30"
+    },
+    {
+      "id": "fa22",
+      "label": "FA 22"
+    },
+    {
+      "id": "klasik",
+      "label": "Klasik"
+    },
+    {
+      "id": "metal",
+      "label": "Metal"
+    },
+    {
+      "id": "ahsap",
+      "label": "Ahşap"
+    },
+    {
+      "id": "custom",
+      "label": "Özel"
+    }
+  ],
+  "frames": [
+    {
+      "id": "none",
+      "label": "Yok",
+      "categories": [],
+      "thickness": 0,
+      "defaultMm": 0,
+      "radius": 0,
+      "image": null,
+      "colors": []
+    },
+    {
+      "id": "ANTRASİT GRİ",
+      "label": "ANTRASİT GRİ",
+      "categories": [
+        "klasik"
+      ],
+      "thickness": 45,
+      "defaultMm": 40,
+      "radius": 0,
+      "image": "/frames/koseli.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        },
+        {
+          "id": "kahve",
+          "label": "Kahve",
+          "hex": "#5C3D1E"
+        },
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        },
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        },
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#9E9E9E"
+        }
+      ]
+    },
+    {
+      "id": "SARI",
+      "label": "SARI",
+      "categories": [
+        "klasik"
+      ],
+      "thickness": 35,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/sari.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        },
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        },
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        },
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#9E9E9E"
+        }
+      ]
+    },
+    {
+      "id": "KOYU MÜRDÜM",
+      "label": "KOYU MÜRDÜM",
+      "categories": [
+        "klasik"
+      ],
+      "thickness": 45,
+      "defaultMm": 45,
+      "radius": 0,
+      "image": "/frames/mürdüm.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        },
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        },
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#9E9E9E"
+        },
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "FA 20 gümüş",
+      "code": "FA 20",
+      "colorName": "gümüş",
+      "label": "FA 20 gümüş",
+      "categories": [
+        "fa20",
+        "metal"
+      ],
+      "thickness": 46,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/fa-20-gumus.png",
+      "colors": [
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#D8DCDC"
+        }
+      ]
+    },
+    {
+      "id": "FA 20 ceviz",
+      "code": "FA 20",
+      "colorName": "ceviz",
+      "label": "FA 20 ceviz",
+      "categories": [
+        "fa20",
+        "ahsap"
+      ],
+      "thickness": 59,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/fa-20-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "FA 20 siyah",
+      "code": "FA 20",
+      "colorName": "siyah",
+      "label": "FA 20 siyah",
+      "categories": [
+        "fa20"
+      ],
+      "thickness": 47,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/fa-20-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "FA 20 altın",
+      "code": "FA 20",
+      "colorName": "altın",
+      "label": "FA 20 altın",
+      "categories": [
+        "fa20",
+        "metal"
+      ],
+      "thickness": 50,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/fa-20-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "FA 20 beyaz",
+      "code": "FA 20",
+      "colorName": "beyaz",
+      "label": "FA 20 beyaz",
+      "categories": [
+        "fa20"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/fa-20-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 KİNDER MAVİ",
+      "code": "FA 22",
+      "colorName": "KİNDER MAVİ",
+      "label": "FA 22 KİNDER MAVİ",
+      "categories": [
+        "fa22",
+        "metal"
+      ],
+      "thickness": 50,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-kinder-mavi.png",
+      "colors": [
+        {
+          "id": "kinder-mavi",
+          "label": "Kinder Mavi",
+          "hex": "#8BAEC8"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 ALTIN",
+      "code": "FA 22",
+      "colorName": "altın",
+      "label": "FA 22 ALTIN",
+      "categories": [
+        "fa22",
+        "metal"
+      ],
+      "thickness": 57,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 YEŞİL",
+      "code": "FA 22",
+      "colorName": "yeşil",
+      "label": "FA 22 YEŞİL",
+      "categories": [
+        "fa22",
+        "ahsap"
+      ],
+      "thickness": 58,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-yesil.png",
+      "colors": [
+        {
+          "id": "yesil",
+          "label": "Yeşil",
+          "hex": "#2F5A3A"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 BEYAZ",
+      "code": "FA 22",
+      "colorName": "beyaz",
+      "label": "FA 22 BEYAZ",
+      "categories": [
+        "fa22"
+      ],
+      "thickness": 41,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 SİYAH",
+      "code": "FA 22",
+      "colorName": "siyah",
+      "label": "FA 22 SİYAH",
+      "categories": [
+        "fa22"
+      ],
+      "thickness": 54,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 ÇİZGİLİ GÜMÜŞ",
+      "code": "FA 22",
+      "colorName": "çizgili gümüş",
+      "label": "FA 22 ÇİZGİLİ GÜMÜŞ",
+      "categories": [
+        "fa22",
+        "metal"
+      ],
+      "thickness": 65,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-cizgili-gumus.png",
+      "colors": [
+        {
+          "id": "cizgili-gumus",
+          "label": "Çizgili Gümüş",
+          "hex": "#C5C9CC"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 LACİVERT",
+      "code": "FA 22",
+      "colorName": "lacivert",
+      "label": "FA 22 LACİVERT",
+      "categories": [
+        "fa22"
+      ],
+      "thickness": 53,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-lacivert.png",
+      "colors": [
+        {
+          "id": "lacivert",
+          "label": "Lacivert",
+          "hex": "#1E3A5F"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 GÜMÜŞ",
+      "code": "FA 22",
+      "colorName": "gümüş",
+      "label": "FA 22 GÜMÜŞ",
+      "categories": [
+        "fa22",
+        "metal"
+      ],
+      "thickness": 38,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-gumus.png",
+      "colors": [
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#D8DCDC"
+        }
+      ]
+    },
+    {
+      "id": "FA 22 CEVİZ",
+      "code": "FA 22",
+      "colorName": "ceviz",
+      "label": "FA 22 CEVİZ",
+      "categories": [
+        "fa22",
+        "ahsap"
+      ],
+      "thickness": 37,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/fa-22-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    }
+  ]
+}

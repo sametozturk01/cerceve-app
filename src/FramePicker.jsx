@@ -1,67 +1,18 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import framesCatalog from "./data/frames.json";
+import FrameAddModal from "./components/FrameAddModal";
+import FrameEditModal from "./components/FrameEditModal";
+import PreviewFullscreen from "./components/PreviewFullscreen";
+import PhotoSourcePicker from "./components/PhotoSourcePicker";
+import Toast from "./components/Toast";
+import { loadCustomFrames, revokeFrameUrls, deleteCustomFrame, mergeFrameMeta } from "./utils/customFramesStorage";
+import { loadHiddenFrameIds, hideFrameId } from "./utils/hiddenFramesStorage";
+import { loadFrameOverrides } from "./utils/frameOverridesStorage";
 
-// ─── Veri (MM DESTEKLİ) ────────────────────────────────────────────────────────
+// ─── Veri (frames.json) ───────────────────────────────────────────────────────
 
-// YENİ EKLENEN: "defaultMm" özelliği.
-// thickness: PNG dosyasının kesim payı (Bunu elleme, resmin bozulmamasını sağlar)
-// defaultMm: Bu çerçeve seçildiğinde kaydırıcının geleceği varsayılan kalınlık (Örn: 40mm = 4cm)
-const FRAME_TYPES = [
-  {
-    id: "none",
-    label: "Yok",
-    thickness: 0,
-    defaultMm: 0,
-    radius: 0,
-    image: null,
-    colors: [],
-  },
-  {
-    id: "ANTRASİT GRİ",
-    label: "ANTRASİT GRİ",
-    // İŞTE HATA BURADAYDI: 90 çok fazla. Resmindeki ahşabın gerçek pikselini girmelisin.
-    thickness: 45, // <--- BURAYI 90 YERİNE 45 YAP
-    defaultMm: 40, 
-    radius: 0,
-    image: "/frames/koseli.png",
-    colors: [
-      { id: "siyah", label: "Siyah", hex: "#1a1a1a" },
-      { id: "kahve", label: "Kahve", hex: "#5C3D1E" },
-      { id: "beyaz", label: "Beyaz", hex: "#f0f0f0", stroke: "#ccc" },
-      { id: "altin", label: "Altın", hex: "#C8A84B" },
-      { id: "gumus", label: "Gümüş", hex: "#9E9E9E" },
-    ],
-  },
-  {
-    id: "SARI",
-    label: "SARI",
-    // BUNU DA DÜŞÜR
-    thickness: 35, // <--- BURAYI 70 YERİNE 40 YAP
-    defaultMm: 30, 
-    radius: 0,
-    image: "/frames/sari.png",
-    colors: [
-      { id: "siyah", label: "Siyah", hex: "#1a1a1a" },
-      { id: "beyaz", label: "Beyaz", hex: "#f0f0f0", stroke: "#ccc" },
-      { id: "altin", label: "Altın", hex: "#C8A84B" },
-      { id: "gumus", label: "Gümüş", hex: "#9E9E9E" },
-    ],
-  },
-  {
-    id: "KOYU MÜRDÜM",
-    label: "KOYU MÜRDÜM",
-    // BUNU DA DÜŞÜR
-    thickness: 45, // <--- BURAYI 90 YERİNE 45 YAP
-    defaultMm: 45, 
-    radius: 0,
-    image: "/frames/mürdüm.png",
-    colors: [
-      { id: "siyah", label: "Siyah", hex: "#1a1a1a" },
-      { id: "altin", label: "Altın", hex: "#C8A84B" },
-      { id: "gumus", label: "Gümüş", hex: "#9E9E9E" },
-      { id: "beyaz", label: "Beyaz", hex: "#f0f0f0", stroke: "#ccc" },
-    ],
-  },
-];
+const FRAME_CATEGORIES = framesCatalog.categories;
+const FRAME_TYPES = framesCatalog.frames;
 
 const DECOR_SAMPLES = [
   { 
@@ -132,6 +83,87 @@ function loadImage(src) {
   });
 }
 
+// ─── Gümüş 20: canvas üzerinde fırçalı metal (fotoğraf tonları) ───────────────
+
+const METAL = {
+  outer: "#EDECEA",
+  face:  "#D8DCDC",
+  mid:   "#C8CCCC",
+  inner: "#A8ACAC",
+  deep:  "#8E9292",
+};
+
+const metalPatternCache = new Map();
+
+function metalNoise(i) {
+  const v = Math.sin(i * 12.9898) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+function getBrushedMetalPattern(ctx, thickPx) {
+  const key = Math.max(4, Math.round(thickPx));
+  if (metalPatternCache.has(key)) return metalPatternCache.get(key);
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const tileW = 512;
+  const tileH = key;
+  const off = document.createElement("canvas");
+  off.width = tileW * dpr;
+  off.height = tileH * dpr;
+  const cx = off.getContext("2d");
+  cx.scale(dpr, dpr);
+
+  const g = cx.createLinearGradient(0, 0, 0, tileH);
+  g.addColorStop(0, METAL.outer);
+  g.addColorStop(0.1, METAL.face);
+  g.addColorStop(0.72, METAL.mid);
+  g.addColorStop(0.9, METAL.inner);
+  g.addColorStop(1, METAL.deep);
+  cx.fillStyle = g;
+  cx.fillRect(0, 0, tileW, tileH);
+
+  for (let x = 0; x < tileW; x++) {
+    const n = metalNoise(x);
+    const highlight = x % 4 < 2;
+    cx.fillStyle = highlight
+      ? `rgba(255,255,255,${0.018 + n * 0.04})`
+      : `rgba(120,125,125,${0.01 + n * 0.025})`;
+    cx.fillRect(x, 0, 1, tileH);
+  }
+
+  cx.fillStyle = "rgba(255,255,255,0.28)";
+  cx.fillRect(0, tileH - 1, tileW, 1);
+
+  const pattern = ctx.createPattern(off, "repeat");
+  metalPatternCache.set(key, pattern);
+  return pattern;
+}
+
+function drawFlatMetalFrame(ctx, x, y, w, h, t) {
+  const pat = getBrushedMetalPattern(ctx, t);
+
+  ctx.fillStyle = pat;
+  ctx.fillRect(x, y, w, t);
+
+  ctx.save();
+  ctx.translate(x, y + h);
+  ctx.scale(1, -1);
+  ctx.fillRect(0, 0, w, t);
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillRect(0, 0, h, t);
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(x + w, y + h);
+  ctx.rotate(Math.PI);
+  ctx.fillRect(0, 0, h, t);
+  ctx.restore();
+}
+
 // ─── Canvas Önizleme (MM HESAPLAMALI GERÇEK DÜNYA MOTORU) ─────────────────────
 
 const CANVAS_SIZE = 640;
@@ -139,11 +171,16 @@ const CANVAS_SIZE = 640;
 
 function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSize, customThickness }) {
   const canvasRef = useRef(null);
+  const frameId = frameType?.id ?? "none";
+  const frameImage = frameType?.image ?? null;
+  const frameRender = frameType?.render ?? null;
+  const sliceSize = frameType?.thickness ?? 0;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
+    let cancelled = false;
     const ctx = canvas.getContext("2d", { alpha: false });
     const dpr = window.devicePixelRatio || 1;
     const W = CANVAS_SIZE;
@@ -151,12 +188,11 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
 
     canvas.width = W * dpr;
     canvas.height = H * dpr;
-    //canvas.style.width = `${W}px`;
-    //canvas.style.height = `${H}px`;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
-    
+
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = "high";
 
     async function draw() {
       ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#ffffff";
@@ -164,17 +200,18 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
 
       if (activeView === "dekor") {
         const decorImg = await loadImage(DECOR_SAMPLES[0].url).catch(() => null);
+        if (cancelled) return;
         if (decorImg) ctx.drawImage(decorImg, 0, 0, W, H);
       }
 
       const photo = await loadImage(imageUrl).catch(() => null);
-      if (!photo) return;
+      if (cancelled || !photo) return;
 
-      const [sizeW, sizeH] = selectedSize.id.split('x').map(Number);
+      const [sizeW, sizeH] = selectedSize.id.split("x").map(Number);
       const frameRatio = sizeW / sizeH;
 
-      const maxDimCm = Math.max(sizeW, sizeH); 
-      const sizeMultiplier = 0.6 + ((maxDimCm / 80) * 0.4);
+      const maxDimCm = Math.max(sizeW, sizeH);
+      const sizeMultiplier = 0.6 + (maxDimCm / 80) * 0.4;
 
       const baseDrawSize = W * (activeView === "dekor" ? 0.35 : 0.85);
       const maxDrawSize = baseDrawSize * sizeMultiplier;
@@ -182,33 +219,32 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
       let tW = maxDrawSize;
       let tH = maxDrawSize;
 
-      if (frameRatio > 1) { 
-        tH = tW / frameRatio; 
-      } else if (frameRatio < 1) { 
-        tW = tH * frameRatio; 
+      if (frameRatio > 1) {
+        tH = tW / frameRatio;
+      } else if (frameRatio < 1) {
+        tW = tH * frameRatio;
       }
 
       const tX = (W - tW) / 2;
       const tY = activeView === "dekor" ? H * 0.15 : (H - tH) / 2;
 
-      // MİLİMETRE (MM) - PİKSEL (PX) DÖNÜŞÜM MOTORU
       const pxPerMm = tW / (sizeW * 10);
       const rawThickPx = customThickness * pxPerMm;
-      
-      const targetThickPx = Math.min(rawThickPx, (tW / 2) - 2, (tH / 2) - 2);
 
-      // --- İŞTE ÇÖZÜM BURADA: TAŞMA PAYI (BLEED) ---
-      // Fotoğrafı her yönden 3 piksel dışa taşırıp çerçevenin ahşabının altına saklıyoruz.
-      // Böylece aradan asla beyaz tuval sızamaz!
+      const targetThickPx = Math.min(rawThickPx, tW / 2 - 2, tH / 2 - 2);
+
       const ix = tX + targetThickPx - 3;
       const iy = tY + targetThickPx - 3;
-      const iw = tW - (2 * targetThickPx) + 6;
-      const ih = tH - (2 * targetThickPx) + 6;
+      const iw = tW - 2 * targetThickPx + 6;
+      const ih = tH - 2 * targetThickPx + 6;
 
       const imgRatio = photo.width / photo.height;
       const targetRatio = iw / ih;
-      
-      let sx = 0, sy = 0, sWidth = photo.width, sHeight = photo.height;
+
+      let sx = 0;
+      let sy = 0;
+      let sWidth = photo.width;
+      let sHeight = photo.height;
 
       if (imgRatio > targetRatio) {
         sWidth = photo.height * targetRatio;
@@ -225,32 +261,34 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
       ctx.drawImage(photo, sx, sy, sWidth, sHeight, ix, iy, iw, ih);
       ctx.restore();
 
-      // 9-SLICE (9-DİLİM) GERÇEK ÇERÇEVE ÇİZİM MANTIĞI
-      if (frameType.image) {
-        const frameImg = await loadImage(frameType.image).catch(() => null);
-        if (frameImg) {
-          const sw = frameImg.width;
-          const sh = frameImg.height;
-          // PNG dosyasındaki kesim noktası (Veriden gelen thickness)
-          const s = frameType.thickness; 
-          const t = targetThickPx;       
+      if (frameRender === "flatMetal") {
+        drawFlatMetalFrame(ctx, tX, tY, tW, tH, targetThickPx);
+      } else if (frameImage) {
+        const frameImg = await loadImage(frameImage).catch(() => null);
+        if (cancelled || !frameImg) return;
 
-          if (s > 0) {
-            ctx.drawImage(frameImg, 0, 0, s, s, tX, tY, t, t);
-            ctx.drawImage(frameImg, sw-s, 0, s, s, tX+tW-t, tY, t, t);
-            ctx.drawImage(frameImg, 0, sh-s, s, s, tX, tY+tH-t, t, t);
-            ctx.drawImage(frameImg, sw-s, sh-s, s, s, tX+tW-t, tY+tH-t, t, t);
+        const sw = frameImg.width;
+        const sh = frameImg.height;
+        const s = sliceSize;
+        const t = targetThickPx;
 
-            ctx.drawImage(frameImg, s, 0, sw-2*s, s, tX+t, tY, tW-2*t, t);
-            ctx.drawImage(frameImg, s, sh-s, sw-2*s, s, tX+t, tY+tH-t, tW-2*t, t);
-            ctx.drawImage(frameImg, 0, s, s, sh-2*s, tX, tY+t, t, tH-2*t);
-            ctx.drawImage(frameImg, sw-s, s, s, sh-2*s, tX+tW-t, tY+t, t, tH-2*t);
-          } else {
-            ctx.drawImage(frameImg, tX, tY, tW, tH);
-          }
+        if (s > 0) {
+          ctx.drawImage(frameImg, 0, 0, s, s, tX, tY, t, t);
+          ctx.drawImage(frameImg, sw - s, 0, s, s, tX + tW - t, tY, t, t);
+          ctx.drawImage(frameImg, 0, sh - s, s, s, tX, tY + tH - t, t, t);
+          ctx.drawImage(frameImg, sw - s, sh - s, s, s, tX + tW - t, tY + tH - t, t, t);
+
+          ctx.drawImage(frameImg, s, 0, sw - 2 * s, s, tX + t, tY, tW - 2 * t, t);
+          ctx.drawImage(frameImg, s, sh - s, sw - 2 * s, s, tX + t, tY + tH - t, tW - 2 * t, t);
+          ctx.drawImage(frameImg, 0, s, s, sh - 2 * s, tX, tY + t, t, tH - 2 * t);
+          ctx.drawImage(frameImg, sw - s, s, s, sh - 2 * s, tX + tW - t, tY + t, t, tH - 2 * t);
+        } else {
+          ctx.drawImage(frameImg, tX, tY, tW, tH);
         }
       }
-      
+
+      if (cancelled) return;
+
       if (activeView === "dekor" || activeView === "tablo") {
         ctx.shadowColor = "rgba(0,0,0,0.5)";
         ctx.shadowBlur = 15;
@@ -261,7 +299,21 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
     }
 
     draw();
-  }, [imageUrl, frameType, frameColor, activeView, selectedSize, customThickness]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    imageUrl,
+    frameId,
+    frameImage,
+    frameRender,
+    sliceSize,
+    frameColor?.id,
+    activeView,
+    selectedSize.id,
+    customThickness,
+  ]);
 
   return <canvas ref={canvasRef} style={{ width: "100%", height: "auto", display: "block" }} />;
 }
@@ -277,10 +329,27 @@ function FrameSwatch({ frame }) {
     );
   }
 
+  if (frame.render === "flatMetal") {
+    return (
+      <div
+        className="fp-swatch"
+        style={{
+          background: `linear-gradient(180deg, ${METAL.outer} 0%, ${METAL.face} 35%, ${METAL.inner} 100%)`,
+          padding: 3,
+          borderRadius: 2,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+        }}
+      >
+        <div className="fp-swatch-inner" style={{ background: "#1a1a1a", borderRadius: 1 }} />
+      </div>
+    );
+  }
+
   if (frame.image) {
     return (
       <div className="fp-swatch">
         <img
+          key={`${frame.id}:${frame.image}`}
           src={frame.image}
           alt={frame.label}
           style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 2 }}
@@ -309,6 +378,21 @@ function FrameSwatch({ frame }) {
   );
 }
 
+function frameSearchText(frame) {
+  const catLabels = (frame.categories ?? [])
+    .map((id) => FRAME_CATEGORIES.find((c) => c.id === id)?.label)
+    .filter(Boolean);
+  return [frame.label, frame.code, frame.colorName, frame.id, ...catLabels]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase("tr-TR");
+}
+
+function frameMatchesCategory(frame, categoryId) {
+  if (categoryId === "all") return true;
+  return (frame.categories ?? []).includes(categoryId);
+}
+
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
 
 export default function FramePicker() {
@@ -319,31 +403,172 @@ export default function FramePicker() {
   const [selectedSize,  setSelectedSize]  = useState(SIZES[0]);
   const [activeView,    setActiveView]    = useState("tablo");
   const [added,         setAdded]         = useState(false);
+  const [frameSearch,   setFrameSearch]   = useState("");
+  const [frameCategory, setFrameCategory] = useState("all");
+  const [customFrames,  setCustomFrames]  = useState([]);
+  const [hiddenFrameIds, setHiddenFrameIds] = useState(() => loadHiddenFrameIds());
+  const [frameOverrides, setFrameOverrides] = useState(() => loadFrameOverrides());
+  const [showAddModal,  setShowAddModal]  = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingFrame, setEditingFrame] = useState(null);
+  const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
+  const [showPhotoPicker, setShowPhotoPicker] = useState(false);
+  const [toast,         setToast]         = useState(null);
+  const toastTimerRef = useRef(null);
 
-  const [isCustomThickness, setIsCustomThickness] = useState(false);
-  const [customThicknessVal, setCustomThicknessVal] = useState("");
-  
+  useEffect(() => {
+    let active = true;
+    loadCustomFrames().then((frames) => {
+      if (active) setCustomFrames(frames);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => () => revokeFrameUrls(customFrames), [customFrames]);
+
+  const allFrames = useMemo(
+    () => {
+      const catalog = FRAME_TYPES
+        .filter((f) => !hiddenFrameIds.has(f.id))
+        .map((f) => {
+          const patch = frameOverrides[f.id];
+          return patch ? mergeFrameMeta(f, patch) : f;
+        });
+      return [...catalog, ...customFrames];
+    },
+    [customFrames, hiddenFrameIds, frameOverrides]
+  );
+
+  useEffect(() => {
+    const latest = allFrames.find((f) => f.id === selectedFrame.id);
+    if (!latest) return;
+    if (
+      latest.image !== selectedFrame.image
+      || latest.thickness !== selectedFrame.thickness
+      || latest.label !== selectedFrame.label
+      || latest.defaultMm !== selectedFrame.defaultMm
+    ) {
+      setSelectedFrame(latest);
+      setSelectedColor(latest.colors?.[0] ?? null);
+    }
+  }, [allFrames, selectedFrame.id, selectedFrame.image, selectedFrame.thickness, selectedFrame.label, selectedFrame.defaultMm]);
+
+  const pickFallbackFrame = (excludeId) =>
+    allFrames.find((f) => f.id !== excludeId) ?? FRAME_TYPES[0];
+
   const [isCustomSize, setIsCustomSize] = useState(false);
   const [customW, setCustomW] = useState(""); 
   const [customH, setCustomH] = useState(""); 
 
-  const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => setUploadedImage(ev.target.result);
     reader.readAsDataURL(file);
   };
 
+  const openGalleryPicker = () => {
+    setShowPhotoPicker(false);
+    galleryInputRef.current?.click();
+  };
+
+  const openCameraPicker = () => {
+    setShowPhotoPicker(false);
+    cameraInputRef.current?.click();
+  };
+
   const handleFrameSelect = (frame) => {
     setSelectedFrame(frame);
     setSelectedColor(frame.colors?.[0] ?? null);
-    
-    // Çerçeve değiştiğinde kalınlık ayarını sıfırlayıp kapatırız ki eski ölçüler bozulmasın
-    setIsCustomThickness(false);
-    setCustomThicknessVal("");
+  };
+
+  const searchQuery = frameSearch.trim().toLocaleLowerCase("tr-TR");
+  const filteredFrames = allFrames.filter((f) => {
+    if (!frameMatchesCategory(f, frameCategory)) return false;
+    if (!searchQuery) return true;
+    return frameSearchText(f).includes(searchQuery);
+  });
+
+  const handleFrameAdded = (entry) => {
+    setCustomFrames((prev) => [...prev, entry]);
+    setSelectedFrame(entry);
+    setSelectedColor(entry.colors?.[0] ?? null);
+    setFrameCategory("custom");
+  };
+
+  const handleFrameEdited = (updated) => {
+    if (updated.custom) {
+      setCustomFrames((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+    } else {
+      setFrameOverrides(loadFrameOverrides());
+    }
+    if (selectedFrame.id === updated.id) {
+      setSelectedFrame(updated);
+      setSelectedColor(updated.colors?.[0] ?? null);
+    }
+    setEditingFrame(null);
+    showToast({ type: "success", message: "Çerçeve güncellendi." }, 2500);
+  };
+
+  const openEditFrame = (frame) => {
+    setEditingFrame(frame);
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingFrame(null);
+  };
+
+  const showToast = (nextToast, autoDismissMs = 0) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(nextToast);
+    if (autoDismissMs > 0) {
+      toastTimerRef.current = setTimeout(() => setToast(null), autoDismissMs);
+    }
+  };
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  }, []);
+
+  const requestRemoveFrame = (frame) => {
+    const name = frame.label || frame.colorName || frame.code || "Bu çerçeve";
+    showToast({
+      type: "confirm",
+      frame,
+      message: `"${name}" kaldırılsın mı?`,
+    });
+  };
+
+  const confirmRemoveFrame = async () => {
+    const frame = toast?.frame;
+    if (!frame) return;
+
+    try {
+      if (frame.custom) {
+        await deleteCustomFrame(frame.id);
+        if (frame.image?.startsWith("blob:")) URL.revokeObjectURL(frame.image);
+        setCustomFrames((prev) => prev.filter((f) => f.id !== frame.id));
+      } else {
+        setHiddenFrameIds(hideFrameId(frame.id));
+      }
+
+      if (selectedFrame.id === frame.id) {
+        const fallback = pickFallbackFrame(frame.id);
+        setSelectedFrame(fallback);
+        setSelectedColor(fallback.colors?.[0] ?? null);
+      }
+      showToast({ type: "success", message: "Çerçeve kaldırıldı." }, 2800);
+    } catch (err) {
+      console.error(err);
+      showToast({ type: "error", message: "Çerçeve kaldırılamadı." }, 3200);
+    }
   };
 
   const safeW = Number(customW) || 0;
@@ -360,11 +585,16 @@ export default function FramePicker() {
     ? { id: `${displayW}x${displayH}` } 
     : selectedSize;
 
-  // --- YENİ: GÜVENLİ KALINLIK KÖPRÜSÜ ---
-  // Eğer özel kalınlık açıksa ve kutu boş değilse o sayıyı kullan, yoksa çerçevenin orijinal defaultMm değerini kullan.
-  const activeThickness = isCustomThickness && customThicknessVal !== ""
-    ? Number(customThicknessVal) 
-    : selectedFrame.defaultMm;
+  const activeThickness = selectedFrame.defaultMm;
+
+  const previewProps = {
+    imageUrl: uploadedImage,
+    frameType: selectedFrame,
+    frameColor: selectedColor,
+    activeView,
+    selectedSize: activeSizeForCanvas,
+    customThickness: activeThickness,
+  };
 
   return (
     <div className="fp-container">
@@ -372,25 +602,44 @@ export default function FramePicker() {
       {/* ══ Sol: Önizleme ══ */}
       <div className="fp-left">
         <div className="fp-preview-box">
-          <PreviewCanvas
-            imageUrl={uploadedImage}
-            frameType={selectedFrame}
-            frameColor={selectedColor}
-            activeView={activeView}
-            selectedSize={activeSizeForCanvas} 
-            customThickness={activeThickness} /* GÜVENLİ KALINLIK BURADAN GİDER */
-          />
+          <button
+            type="button"
+            className="fp-preview-fullscreen-btn"
+            title="Tam ekran gör"
+            aria-label="Tam ekran gör"
+            onClick={() => setShowFullscreenPreview(true)}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path
+                d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+              <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </button>
+          <PreviewCanvas key={previewProps.frameType.id} {...previewProps} />
         </div>
 
         <button
           className="fp-upload-btn"
-          onClick={() => fileInputRef.current.click()}
+          type="button"
+          onClick={() => setShowPhotoPicker(true)}
         >
           Fotoğraf Yükle
         </button>
 
         <input
-          ref={fileInputRef}
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleImageUpload}
+        />
+        <input
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
@@ -428,18 +677,88 @@ export default function FramePicker() {
       {/* ══ Sağ: Seçenekler ══ */}
       <div className="fp-right">
 
-        <p className="fp-section-label">Çerçeve Tipi</p>
-        <div className="fp-frame-grid">
-          {FRAME_TYPES.map((f) => (
+        <div className="fp-search-wrap">
+          <input
+            type="search"
+            className="fp-search-input"
+            placeholder="Çerçeve ara… (ör. FA 20, gümüş, sarı)"
+            value={frameSearch}
+            onChange={(e) => setFrameSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="fp-category-row">
+          {FRAME_CATEGORIES.map((cat) => (
             <button
-              key={f.id}
-              className={`fp-frame-btn${selectedFrame.id === f.id ? " active" : ""}`}
-              onClick={() => handleFrameSelect(f)}
+              key={cat.id}
+              type="button"
+              className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}`}
+              onClick={() => setFrameCategory(cat.id)}
             >
-              <FrameSwatch frame={f} />
-              <span className="fp-frame-btn-label">{f.label}</span>
+              {cat.label}
             </button>
           ))}
+          <button
+            type="button"
+            className="fp-category-chip fp-add-frame-chip"
+            onClick={() => setShowAddModal(true)}
+          >
+            + Çerçeve Ekle
+          </button>
+        </div>
+
+        <p className="fp-section-label">Çerçeve Tipi</p>
+        <div className="fp-frame-grid">
+          {filteredFrames.length > 0 ? (
+            filteredFrames.map((f) => (
+              <div
+                key={f.id}
+                className={`fp-frame-card${selectedFrame.id === f.id ? " active" : ""}`}
+              >
+                {f.id !== "none" && (
+                  <div className="fp-frame-card-tools">
+                    <button
+                      type="button"
+                      className="fp-frame-tool fp-frame-tool-edit"
+                      title="Çerçeve Düzenle"
+                      aria-label="Çerçeve Düzenle"
+                      onClick={() => openEditFrame(f)}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      className="fp-frame-tool fp-frame-tool-remove"
+                      title="Çerçeve Kaldır"
+                      aria-label="Çerçeve Kaldır"
+                      onClick={() => requestRemoveFrame(f)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className={`fp-frame-btn${selectedFrame.id === f.id ? " active" : ""}`}
+                  onClick={() => handleFrameSelect(f)}
+                >
+                  <FrameSwatch frame={f} />
+                  <span className="fp-frame-btn-label">
+                    {f.code ? (
+                      <>
+                        {f.code}{" "}
+                        <span className="fp-frame-color-name">{f.colorName}</span>
+                      </>
+                    ) : (
+                      f.label
+                    )}
+                  </span>
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="fp-search-empty">Sonuç bulunamadı.</p>
+          )}
         </div>
 
         {selectedFrame.colors?.length > 0 && (
@@ -562,70 +881,6 @@ export default function FramePicker() {
           )}
         </div>
 
-        {/* --- YENİ: ÇERÇEVE KALINLIĞI KONTROLÜ --- */}
-        {selectedFrame.id !== "none" && (
-          <div style={{ marginTop: '15px' }}>
-         <button 
-              className="fp-upload-btn" 
-              style={{ 
-                marginTop: 0, 
-                minHeight: '45px',       // Sabit height yerine minHeight
-                height: 'auto',           // Otomatik yükseklik
-                padding: '10px 15px',     // İç boşluk
-                lineHeight: '1.2',        // Satır aralığı
-                fontSize: '13px', 
-                background: isCustomThickness ? '#4f46e5' : '#6366f1' 
-              }}
-              onClick={() => { 
-                setIsCustomThickness(!isCustomThickness); 
-                if(!isCustomThickness) setCustomThicknessVal(selectedFrame.defaultMm.toString()); 
-              }}
-            >
-              {isCustomThickness ? "KALINLIĞI KAPAT" : "İSTEĞE BAĞLI ÇERÇEVE KALINLIĞI"}
-            </button>
-
-            {isCustomThickness && (
-              <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                 
-                 {/* SIFIRLA BUTONU VE BAŞLIK YAN YANA */}
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '6px' }}>
-                   <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>
-                     Çerçeve Kalınlığı (MM)
-                   </label>
-                   <button 
-                     onClick={() => setCustomThicknessVal(selectedFrame.defaultMm.toString())}
-                     style={{ background: 'transparent', border: 'none', color: '#e11d48', fontSize: '10px', fontWeight: 800, cursor: 'pointer', padding: 0 }}
-                   >
-                     ↺ SIFIRLA
-                   </button>
-                 </div>
-
-                 <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px' }}>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={customThicknessVal}
-                      onChange={e => {
-                        // Sadece rakamlara izin ver
-                        let val = e.target.value.replace(/[^0-9]/g, '');
-                        // MAKSİMUM 50 SINIRI BURADA EKLENDİ
-                        if (Number(val) > 50) val = '50';
-                        setCustomThicknessVal(val);
-                      }}
-                      placeholder={`Örn: ${selectedFrame.defaultMm}`}
-                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 600, color: '#0f172a' }}
-                    />
-                    <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600, marginLeft: '5px' }}>mm</span>
-                 </div>
-                 <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '8px', textAlign: 'center' }}>
-                   *Zarif bir görünüm için 20mm - 50mm arası önerilir.
-                 </p>
-              </div>
-            )}
-          </div>
-        )}
-
         <div className="fp-price-row">
           <span className="fp-price">
             {totalPrice.toLocaleString("tr-TR")} ₺
@@ -638,6 +893,39 @@ export default function FramePicker() {
         </div>
 
       </div>
+
+      <PhotoSourcePicker
+        open={showPhotoPicker}
+        onClose={() => setShowPhotoPicker(false)}
+        onPickGallery={openGalleryPicker}
+        onPickCamera={openCameraPicker}
+      />
+
+      <PreviewFullscreen
+        open={showFullscreenPreview}
+        onClose={() => setShowFullscreenPreview(false)}
+      >
+        <PreviewCanvas key={`fs-${previewProps.frameType.id}`} {...previewProps} />
+      </PreviewFullscreen>
+
+      <FrameAddModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSaved={handleFrameAdded}
+      />
+
+      <FrameEditModal
+        open={showEditModal}
+        frame={editingFrame}
+        onClose={closeEditModal}
+        onSaved={handleFrameEdited}
+      />
+
+      <Toast
+        toast={toast}
+        onDismiss={() => setToast(null)}
+        onConfirm={confirmRemoveFrame}
+      />
     </div>
   );
 }
