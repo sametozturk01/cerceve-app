@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 export default function Toast({ toast, onDismiss, onConfirm, onUndo }) {
   if (!toast) return null;
 
-  const isConfirm = toast.type === "confirm" || toast.type === "confirm-restore";
+  const isConfirm = toast.type === "confirm";
   const isUndo = toast.type === "undo";
   const needsInteraction = isConfirm || isUndo;
 
@@ -30,16 +30,6 @@ export default function Toast({ toast, onDismiss, onConfirm, onUndo }) {
             </button>
             <button type="button" className="fp-toast-btn fp-toast-btn-danger" onClick={onConfirm}>
               Kaldır
-            </button>
-          </div>
-        ) : null}
-        {toast.type === "confirm-restore" ? (
-          <div className="fp-toast-actions">
-            <button type="button" className="fp-toast-btn fp-toast-btn-muted" onClick={onDismiss}>
-              Hayır
-            </button>
-            <button type="button" className="fp-toast-btn fp-toast-btn-primary" onClick={onUndo}>
-              Geri Getir
             </button>
           </div>
         ) : null}

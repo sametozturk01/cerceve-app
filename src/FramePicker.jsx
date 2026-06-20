@@ -10,9 +10,9 @@ import {
   loadHiddenFrameIds,
   hideFrameId,
   unhideFrameId,
-  peekLastHiddenFrameId,
 } from "./utils/hiddenFramesStorage";
 import { loadFrameOverrides } from "./utils/frameOverridesStorage";
+import { getFrameDisplayLabel } from "./utils/frameDisplay";
 
 // ─── Veri (frames.json) ───────────────────────────────────────────────────────
 
@@ -356,7 +356,7 @@ function FrameSwatch({ frame }) {
         <img
           key={`${frame.id}:${frame.image}`}
           src={frame.image}
-          alt={frame.label}
+          alt={getFrameDisplayLabel(frame)}
           style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 2 }}
         />
       </div>
@@ -387,7 +387,7 @@ function frameSearchText(frame) {
   const catLabels = (frame.categories ?? [])
     .map((id) => FRAME_CATEGORIES.find((c) => c.id === id)?.label)
     .filter(Boolean);
-  return [frame.label, frame.code, frame.colorName, frame.id, ...catLabels]
+  return [getFrameDisplayLabel(frame), frame.code, frame.colorName, frame.id, ...catLabels]
     .filter(Boolean)
     .join(" ")
     .toLocaleLowerCase("tr-TR");
@@ -403,8 +403,8 @@ function frameMatchesCategory(frame, categoryId) {
 export default function FramePicker() {
   const [uploadedImage, setUploadedImage] = useState(PLACEHOLDER_SRC);
   
-  const [selectedFrame, setSelectedFrame] = useState(FRAME_TYPES[1]);
-  const [selectedColor, setSelectedColor] = useState(FRAME_TYPES[1].colors[0]);
+  const [selectedFrameId, setSelectedFrameId] = useState(() => FRAME_TYPES[1]?.id ?? FRAME_TYPES[0]?.id ?? "none");
+  const [selectedColorId, setSelectedColorId] = useState(() => FRAME_TYPES[1]?.colors?.[0]?.id ?? null);
   const [selectedSize,  setSelectedSize]  = useState(SIZES[0]);
   const [activeView,    setActiveView]    = useState("tablo");
   const [added,         setAdded]         = useState(false);
@@ -444,19 +444,29 @@ export default function FramePicker() {
     [customFrames, hiddenFrameIds, frameOverrides]
   );
 
-  useEffect(() => {
-    const latest = allFrames.find((f) => f.id === selectedFrame.id);
-    if (!latest) return;
-    if (
-      latest.image !== selectedFrame.image
-      || latest.thickness !== selectedFrame.thickness
-      || latest.label !== selectedFrame.label
-      || latest.defaultMm !== selectedFrame.defaultMm
-    ) {
-      setSelectedFrame(latest);
-      setSelectedColor(latest.colors?.[0] ?? null);
+  const selectedFrame = useMemo(() => {
+    const found = allFrames.find((f) => f.id === selectedFrameId);
+    if (found) return found;
+    return allFrames[0] ?? FRAME_TYPES[0];
+  }, [allFrames, selectedFrameId]);
+
+  const selectedColor = useMemo(() => {
+    const colors = selectedFrame?.colors ?? [];
+    if (!colors.length) return null;
+    if (selectedColorId) {
+      const match = colors.find((c) => c.id === selectedColorId);
+      if (match) return match;
     }
-  }, [allFrames, selectedFrame.id, selectedFrame.image, selectedFrame.thickness, selectedFrame.label, selectedFrame.defaultMm]);
+    return colors[0];
+  }, [selectedFrame, selectedColorId]);
+
+  useEffect(() => {
+    if (!allFrames.length) return;
+    if (!allFrames.some((f) => f.id === selectedFrameId)) {
+      setSelectedFrameId(allFrames[0].id);
+      setSelectedColorId(allFrames[0].colors?.[0]?.id ?? null);
+    }
+  }, [allFrames, selectedFrameId]);
 
   const pickFallbackFrame = (excludeId) =>
     allFrames.find((f) => f.id !== excludeId) ?? FRAME_TYPES[0];
@@ -488,8 +498,8 @@ export default function FramePicker() {
   };
 
   const handleFrameSelect = (frame) => {
-    setSelectedFrame(frame);
-    setSelectedColor(frame.colors?.[0] ?? null);
+    setSelectedFrameId(frame.id);
+    setSelectedColorId(frame.colors?.[0]?.id ?? null);
   };
 
   const searchQuery = frameSearch.trim().toLocaleLowerCase("tr-TR");
@@ -501,8 +511,8 @@ export default function FramePicker() {
 
   const handleFrameAdded = (entry) => {
     setCustomFrames((prev) => [...prev, entry]);
-    setSelectedFrame(entry);
-    setSelectedColor(entry.colors?.[0] ?? null);
+    setSelectedFrameId(entry.id);
+    setSelectedColorId(entry.colors?.[0]?.id ?? null);
     setFrameCategory("custom");
   };
 
@@ -511,10 +521,6 @@ export default function FramePicker() {
       setCustomFrames((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
     } else {
       setFrameOverrides(loadFrameOverrides());
-    }
-    if (selectedFrame.id === updated.id) {
-      setSelectedFrame(updated);
-      setSelectedColor(updated.colors?.[0] ?? null);
     }
     setEditingFrame(null);
     showToast({ type: "success", message: "Çerçeve güncellendi." }, 2500);
@@ -538,26 +544,17 @@ export default function FramePicker() {
     }
   };
 
+  const dismissToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(null);
+  };
+
   useEffect(() => () => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
   }, []);
 
-  useEffect(() => {
-    const lastHiddenId = peekLastHiddenFrameId();
-    if (!lastHiddenId) return;
-
-    const catalogFrame = FRAME_TYPES.find((f) => f.id === lastHiddenId);
-    const name = catalogFrame?.label || catalogFrame?.colorName || lastHiddenId;
-
-    showToast({
-      type: "confirm-restore",
-      frameId: lastHiddenId,
-      message: `"${name}" geri getirilsin mi?`,
-    });
-  }, []);
-
   const requestRemoveFrame = (frame) => {
-    const name = frame.label || frame.colorName || frame.code || "Bu çerçeve";
+    const name = getFrameDisplayLabel(frame);
     showToast({
       type: "confirm",
       frame,
@@ -578,10 +575,10 @@ export default function FramePicker() {
         setHiddenFrameIds(hideFrameId(frame.id));
       }
 
-      if (selectedFrame.id === frame.id) {
+      if (selectedFrameId === frame.id) {
         const fallback = pickFallbackFrame(frame.id);
-        setSelectedFrame(fallback);
-        setSelectedColor(fallback.colors?.[0] ?? null);
+        setSelectedFrameId(fallback.id);
+        setSelectedColorId(fallback.colors?.[0]?.id ?? null);
       }
 
       if (frame.custom) {
@@ -590,7 +587,7 @@ export default function FramePicker() {
         showToast({
           type: "undo",
           frameId: frame.id,
-          message: `"${frame.label || frame.colorName || frame.code || "Çerçeve"}" kaldırıldı.`,
+          message: `"${getFrameDisplayLabel(frame)}" kaldırıldı.`,
         }, 6000);
       }
     } catch (err) {
@@ -782,14 +779,7 @@ export default function FramePicker() {
                 >
                   <FrameSwatch frame={f} />
                   <span className="fp-frame-btn-label">
-                    {f.code ? (
-                      <>
-                        {f.code}{" "}
-                        <span className="fp-frame-color-name">{f.colorName}</span>
-                      </>
-                    ) : (
-                      f.label
-                    )}
+                    {getFrameDisplayLabel(f)}
                   </span>
                 </button>
               </div>
@@ -808,7 +798,7 @@ export default function FramePicker() {
                   key={c.id}
                   title={c.label}
                   className={`fp-color-dot${selectedColor?.id === c.id ? " active" : ""}`}
-                  onClick={() => setSelectedColor(c)}
+                  onClick={() => setSelectedColorId(c.id)}
                   style={{
                     background: c.hex,
                     border: c.stroke
@@ -961,7 +951,7 @@ export default function FramePicker() {
 
       <Toast
         toast={toast}
-        onDismiss={() => setToast(null)}
+        onDismiss={dismissToast}
         onConfirm={confirmRemoveFrame}
         onUndo={handleToastUndo}
       />

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { EDITABLE_CATEGORY_OPTIONS, SERIES_OPTIONS } from "../data/frameFormOptions";
 import { mergeFrameMeta, updateCustomFrame } from "../utils/customFramesStorage";
 import { saveFrameOverride } from "../utils/frameOverridesStorage";
+import { getFrameDisplayLabel } from "../utils/frameDisplay";
 
 function frameToForm(frame) {
   return {
@@ -38,7 +39,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved }) {
   if (!open || !frame) return null;
 
   const hasSeries = Boolean(code.trim() || frame.code);
-  const displayLabel = label.trim() || frame.label || "Çerçeve";
+  const displayLabel = getFrameDisplayLabel({ ...frame, label: label.trim() || frame.label });
 
   const toggleCategory = (id) => {
     setSelectedCats((prev) =>
