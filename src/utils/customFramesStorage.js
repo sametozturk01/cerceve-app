@@ -112,7 +112,7 @@ export async function saveCustomFrame(frameMeta, imageBlob) {
   });
 }
 
-export function mergeFrameMeta(base, { code, colorName, label, categories, defaultMm }) {
+export function mergeFrameMeta(base, { code, colorName, label, categories, defaultMm, price }) {
   const cats = [...(categories ?? base.categories ?? [])];
   const seriesCode = code?.trim() || base.code || null;
   const color = colorName?.trim() || base.colorName || null;
@@ -141,6 +141,15 @@ export function mergeFrameMeta(base, { code, colorName, label, categories, defau
     next.label = label.trim();
   } else if (seriesCode && color) {
     next.label = `${seriesCode} ${color}`;
+  }
+
+  if (price !== undefined) {
+    if (price === null || price === "") {
+      delete next.price;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(price)));
+      next.price = Number.isFinite(parsed) ? parsed : 0;
+    }
   }
 
   return next;

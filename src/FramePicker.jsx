@@ -38,6 +38,26 @@ const SIZES = [
 
 const FRAME_PRICE = { none: 0, koseli: 89, ince: 59, yuvarlak: 99 };
 
+function getFramePrice(frame) {
+  if (!frame || frame.id === "none") return 0;
+  if (typeof frame.price === "number" && Number.isFinite(frame.price) && frame.price >= 0) {
+    return Math.round(frame.price);
+  }
+  return FRAME_PRICE[frame.id] ?? 0;
+}
+
+function calculateLinePrice({ frame }) {
+  const framePrice = getFramePrice(frame);
+  return { framePrice, totalPrice: framePrice };
+}
+
+function buildSizeLabel(isCustomSize, customW, customH, selectedSize) {
+  const w = Number(customW) || 0;
+  const h = Number(customH) || 0;
+  if (isCustomSize && w > 0 && h > 0) return `${w}×${h} cm`;
+  return selectedSize.label;
+}
+
 const PLACEHOLDER_SRC =
   "data:image/svg+xml;charset=utf-8," +
   encodeURIComponent(`
@@ -172,14 +192,105 @@ function drawFlatMetalFrame(ctx, x, y, w, h, t) {
 // ─── Canvas Önizleme (MM HESAPLAMALI GERÇEK DÜNYA MOTORU) ─────────────────────
 
 const CANVAS_SIZE = 640;
+const FULLSCREEN_MARGIN = 28;
 
+function getFullscreenCanvasSize(frameRatio, viewportW, viewportH) {
+  const maxW = viewportW * 0.96;
+  const maxH = viewportH * 0.88;
+  const margin = FULLSCREEN_MARGIN * 2;
 
-function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSize, customThickness }) {
+  let innerW;
+  let innerH;
+  if (frameRatio >= (maxW - margin) / (maxH - margin)) {
+    innerW = maxW - margin;
+    innerH = innerW / frameRatio;
+  } else {
+    innerH = maxH - margin;
+    innerW = innerH * frameRatio;
+  }
+
+  return {
+    w: Math.round(innerW + margin),
+    h: Math.round(innerH + margin),
+  };
+}
+
+function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness) {
+  const frameRatio = sizeW / sizeH;
+  const maxDimCm = Math.max(sizeW, sizeH);
+
+  let tW;
+  let tH;
+
+  if (fullscreen) {
+    const margin = FULLSCREEN_MARGIN;
+    const availW = W - margin * 2;
+    const availH = H - margin * 2;
+
+    if (frameRatio >= availW / availH) {
+      tW = availW;
+      tH = tW / frameRatio;
+    } else {
+      tH = availH;
+      tW = tH * frameRatio;
+    }
+  } else {
+    const sizeMultiplier = 0.6 + (maxDimCm / 80) * 0.4;
+    const baseDrawSize = W * (activeView === "dekor" ? 0.35 : 0.85);
+    const maxDrawSize = baseDrawSize * sizeMultiplier;
+    tW = maxDrawSize;
+    tH = maxDrawSize;
+
+    if (frameRatio > 1) {
+      tH = tW / frameRatio;
+    } else if (frameRatio < 1) {
+      tW = tH * frameRatio;
+    }
+  }
+
+  const tX = (W - tW) / 2;
+  const tY = fullscreen || activeView !== "dekor" ? (H - tH) / 2 : H * 0.15;
+
+  const pxPerMm = tW / (sizeW * 10);
+  const rawThickPx = customThickness * pxPerMm;
+  const targetThickPx = Math.min(rawThickPx, tW / 2 - 2, tH / 2 - 2);
+
+  const ix = tX + targetThickPx - 3;
+  const iy = tY + targetThickPx - 3;
+  const iw = tW - 2 * targetThickPx + 6;
+  const ih = tH - 2 * targetThickPx + 6;
+
+  return { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih };
+}
+
+function PreviewCanvas({
+  imageUrl,
+  frameType,
+  frameColor,
+  activeView,
+  selectedSize,
+  customThickness,
+  fullscreen = false,
+}) {
   const canvasRef = useRef(null);
   const frameId = frameType?.id ?? "none";
   const frameImage = frameType?.image ?? null;
   const frameRender = frameType?.render ?? null;
   const sliceSize = frameType?.thickness ?? 0;
+
+  const [viewport, setViewport] = useState(() => ({
+    w: typeof window !== "undefined" ? window.innerWidth : 1200,
+    h: typeof window !== "undefined" ? window.innerHeight : 800,
+  }));
+
+  useEffect(() => {
+    if (!fullscreen) return undefined;
+    const onResize = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [fullscreen]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -188,8 +299,14 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
     let cancelled = false;
     const ctx = canvas.getContext("2d", { alpha: false });
     const dpr = window.devicePixelRatio || 1;
-    const W = CANVAS_SIZE;
-    const H = CANVAS_SIZE;
+
+    const [sizeW, sizeH] = selectedSize.id.split("x").map(Number);
+    const frameRatio = sizeW / sizeH;
+    const canvasSize = fullscreen
+      ? getFullscreenCanvasSize(frameRatio, viewport.w, viewport.h)
+      : { w: CANVAS_SIZE, h: CANVAS_SIZE };
+    const W = canvasSize.w;
+    const H = canvasSize.h;
 
     canvas.width = W * dpr;
     canvas.height = H * dpr;
@@ -212,36 +329,17 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
       const photo = await loadImage(imageUrl).catch(() => null);
       if (cancelled || !photo) return;
 
-      const [sizeW, sizeH] = selectedSize.id.split("x").map(Number);
-      const frameRatio = sizeW / sizeH;
-
-      const maxDimCm = Math.max(sizeW, sizeH);
-      const sizeMultiplier = 0.6 + (maxDimCm / 80) * 0.4;
-
-      const baseDrawSize = W * (activeView === "dekor" ? 0.35 : 0.85);
-      const maxDrawSize = baseDrawSize * sizeMultiplier;
-
-      let tW = maxDrawSize;
-      let tH = maxDrawSize;
-
-      if (frameRatio > 1) {
-        tH = tW / frameRatio;
-      } else if (frameRatio < 1) {
-        tW = tH * frameRatio;
-      }
-
-      const tX = (W - tW) / 2;
-      const tY = activeView === "dekor" ? H * 0.15 : (H - tH) / 2;
-
-      const pxPerMm = tW / (sizeW * 10);
-      const rawThickPx = customThickness * pxPerMm;
-
-      const targetThickPx = Math.min(rawThickPx, tW / 2 - 2, tH / 2 - 2);
-
-      const ix = tX + targetThickPx - 3;
-      const iy = tY + targetThickPx - 3;
-      const iw = tW - 2 * targetThickPx + 6;
-      const ih = tH - 2 * targetThickPx + 6;
+      const {
+        tX,
+        tY,
+        tW,
+        tH,
+        targetThickPx,
+        ix,
+        iy,
+        iw,
+        ih,
+      } = computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness);
 
       const imgRatio = photo.width / photo.height;
       const targetRatio = iw / ih;
@@ -294,7 +392,7 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
 
       if (cancelled) return;
 
-      if (activeView === "dekor" || activeView === "tablo") {
+      if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
         ctx.shadowColor = "rgba(0,0,0,0.5)";
         ctx.shadowBlur = 15;
         ctx.shadowOffsetX = 5;
@@ -318,9 +416,18 @@ function PreviewCanvas({ imageUrl, frameType, frameColor, activeView, selectedSi
     activeView,
     selectedSize.id,
     customThickness,
+    fullscreen,
+    viewport.w,
+    viewport.h,
   ]);
 
-  return <canvas ref={canvasRef} style={{ width: "100%", height: "auto", display: "block" }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className={fullscreen ? "fp-canvas-fullscreen" : undefined}
+      style={{ width: "100%", height: "auto", display: "block" }}
+    />
+  );
 }
 
 // ─── Çerçeve Swatch ───────────────────────────────────────────────────────────
@@ -395,7 +502,12 @@ function frameSearchText(frame) {
 
 function frameMatchesCategory(frame, categoryId) {
   if (categoryId === "all") return true;
+  if (categoryId === "custom") return Boolean(frame.custom);
   return (frame.categories ?? []).includes(categoryId);
+}
+
+function countFramesInCategory(frames, categoryId) {
+  return frames.filter((f) => f.id !== "none" && frameMatchesCategory(f, categoryId)).length;
 }
 
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
@@ -403,13 +515,15 @@ function frameMatchesCategory(frame, categoryId) {
 export default function FramePicker() {
   const [uploadedImage, setUploadedImage] = useState(PLACEHOLDER_SRC);
   
-  const [selectedFrameId, setSelectedFrameId] = useState(() => FRAME_TYPES[1]?.id ?? FRAME_TYPES[0]?.id ?? "none");
-  const [selectedColorId, setSelectedColorId] = useState(() => FRAME_TYPES[1]?.colors?.[0]?.id ?? null);
+  const [selectedFrameId, setSelectedFrameId] = useState("none");
+  const [selectedColorId, setSelectedColorId] = useState(null);
   const [selectedSize,  setSelectedSize]  = useState(SIZES[0]);
   const [activeView,    setActiveView]    = useState("tablo");
   const [added,         setAdded]         = useState(false);
+  const [cartItems,     setCartItems]     = useState([]);
+  const addedTimerRef = useRef(null);
   const [frameSearch,   setFrameSearch]   = useState("");
-  const [frameCategory, setFrameCategory] = useState("all");
+  const [frameCategory, setFrameCategory] = useState(null);
   const [customFrames,  setCustomFrames]  = useState([]);
   const [hiddenFrameIds, setHiddenFrameIds] = useState(() => loadHiddenFrameIds());
   const [frameOverrides, setFrameOverrides] = useState(() => loadFrameOverrides());
@@ -503,11 +617,28 @@ export default function FramePicker() {
   };
 
   const searchQuery = frameSearch.trim().toLocaleLowerCase("tr-TR");
-  const filteredFrames = allFrames.filter((f) => {
-    if (!frameMatchesCategory(f, frameCategory)) return false;
-    if (!searchQuery) return true;
-    return frameSearchText(f).includes(searchQuery);
-  });
+
+  const visibleCategories = useMemo(
+    () => FRAME_CATEGORIES.filter((cat) => countFramesInCategory(allFrames, cat.id) > 0),
+    [allFrames]
+  );
+
+  const filteredFrames = useMemo(() => {
+    if (!searchQuery && !frameCategory) return [];
+
+    const noneFrame = allFrames.find((f) => f.id === "none");
+    const list = allFrames.filter((f) => {
+      if (f.id === "none") return false;
+      if (searchQuery) {
+        return frameSearchText(f).includes(searchQuery);
+      }
+      return frameMatchesCategory(f, frameCategory);
+    });
+
+    return noneFrame ? [noneFrame, ...list] : list;
+  }, [allFrames, frameCategory, searchQuery]);
+
+  const selectableFrameCount = filteredFrames.filter((f) => f.id !== "none").length;
 
   const handleFrameAdded = (entry) => {
     setCustomFrames((prev) => [...prev, entry]);
@@ -551,6 +682,7 @@ export default function FramePicker() {
 
   useEffect(() => () => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (addedTimerRef.current) clearTimeout(addedTimerRef.current);
   }, []);
 
   const requestRemoveFrame = (frame) => {
@@ -608,9 +740,42 @@ export default function FramePicker() {
   const safeW = Number(customW) || 0;
   const safeH = Number(customH) || 0;
 
-  const customBasePrice = Math.round(safeW * safeH * 0.15); 
-  const currentBasePrice = isCustomSize ? customBasePrice : selectedSize.price;
-  const totalPrice = currentBasePrice + (FRAME_PRICE[selectedFrame.id] ?? 0);
+  const framePrice = getFramePrice(selectedFrame);
+  const totalPrice = framePrice;
+
+  const cartTotal = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.totalPrice, 0),
+    [cartItems]
+  );
+
+  const handleAddToCart = () => {
+    if (isCustomSize && (safeW < 1 || safeH < 1)) {
+      showToast({ type: "error", message: "Özel ölçü için en ve boy girin." }, 3200);
+      return;
+    }
+
+    const pricing = calculateLinePrice({ frame: selectedFrame });
+
+    const item = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      frameLabel: getFrameDisplayLabel(selectedFrame),
+      sizeLabel: buildSizeLabel(isCustomSize, customW, customH, selectedSize),
+      viewLabel: activeView === "dekor" ? "Dekor" : "Tablo",
+      ...pricing,
+    };
+
+    setCartItems((prev) => [...prev, item]);
+    setAdded(true);
+    if (addedTimerRef.current) clearTimeout(addedTimerRef.current);
+    addedTimerRef.current = setTimeout(() => setAdded(false), 2200);
+    showToast({ type: "success", message: "Ürün sepete eklendi." }, 2200);
+  };
+
+  const removeCartItem = (id) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const clearCart = () => setCartItems([]);
 
   const displayW = safeW > 0 ? safeW : 50;
   const displayH = safeH > 0 ? safeH : 50;
@@ -665,7 +830,18 @@ export default function FramePicker() {
           type="button"
           onClick={() => setShowPhotoPicker(true)}
         >
-          Fotoğraf Yükle
+          <span className="fp-upload-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.75">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <circle cx="8.5" cy="10" r="1.5" fill="currentColor" stroke="none" />
+              <path d="M3 16l5-5 4 4 3-3 6 6" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span className="fp-upload-btn-text">
+            <span className="fp-upload-btn-title">Fotoğraf Yükle</span>
+            <span className="fp-upload-btn-sub">Galeriden seç veya fotoğraf çek</span>
+          </span>
+          <span className="fp-upload-btn-arrow" aria-hidden="true">›</span>
         </button>
 
         <input
@@ -685,7 +861,18 @@ export default function FramePicker() {
         />
 
         <div className="fp-view-panel">
-          <p className="fp-view-panel-label">👁️ Önizleme Modu</p>
+          <div className="fp-view-panel-header">
+            <span className="fp-view-panel-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </span>
+            <div>
+              <p className="fp-view-panel-label">Önizleme Modu</p>
+              <p className="fp-view-panel-hint">Çerçevenizi nasıl görmek istersiniz?</p>
+            </div>
+          </div>
 
           <div className="fp-view-toggle">
             <button
@@ -693,8 +880,14 @@ export default function FramePicker() {
               className={`fp-view-btn${activeView === "tablo" ? " active" : ""}`}
               onClick={() => setActiveView("tablo")}
             >
+              <span className="fp-view-btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75">
+                  <rect x="4" y="4" width="16" height="16" rx="1" />
+                  <rect x="8" y="8" width="8" height="8" rx="0.5" />
+                </svg>
+              </span>
               <span className="fp-view-btn-title">Tablo</span>
-              <span className="fp-view-btn-sub">Yakından İncele</span>
+              <span className="fp-view-btn-sub">Yakından incele</span>
             </button>
 
             <button
@@ -702,8 +895,13 @@ export default function FramePicker() {
               className={`fp-view-btn${activeView === "dekor" ? " active" : ""}`}
               onClick={() => setActiveView("dekor")}
             >
+              <span className="fp-view-btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75">
+                  <path d="M3 10.5L12 4l9 6.5V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1v-9.5z" strokeLinejoin="round" />
+                </svg>
+              </span>
               <span className="fp-view-btn-title">Dekor</span>
-              <span className="fp-view-btn-sub">Duvarda Gör</span>
+              <span className="fp-view-btn-sub">Duvarda gör</span>
             </button>
           </div>
         </div>
@@ -722,29 +920,61 @@ export default function FramePicker() {
           />
         </div>
 
-        <div className="fp-category-row">
-          {FRAME_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}`}
-              onClick={() => setFrameCategory(cat.id)}
-            >
-              {cat.label}
-            </button>
-          ))}
+        <div className="fp-category-panel">
+          <div className="fp-category-row">
+            {visibleCategories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}`}
+                onClick={() => {
+                  setFrameCategory(cat.id);
+                  setFrameSearch("");
+                }}
+              >
+                <span className="fp-category-chip-label">{cat.label}</span>
+                <span className="fp-category-count">{countFramesInCategory(allFrames, cat.id)}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="fp-category-panel-divider" aria-hidden="true" />
+
           <button
             type="button"
-            className="fp-category-chip fp-add-frame-chip"
+            className="fp-add-frame-btn"
             onClick={() => setShowAddModal(true)}
           >
-            + Çerçeve Ekle
+            <span className="fp-add-frame-btn-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="4" y="4" width="16" height="16" rx="1.5" />
+                <path d="M12 8v8M8 12h8" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="fp-add-frame-btn-text">
+              <span className="fp-add-frame-btn-title">Çerçeve Ekle</span>
+              <span className="fp-add-frame-btn-sub">Kendi çerçevenizi oluşturun</span>
+            </span>
+            <span className="fp-add-frame-btn-arrow" aria-hidden="true">›</span>
           </button>
         </div>
 
-        <p className="fp-section-label">Çerçeve Tipi</p>
+        <div className="fp-section-label-row">
+          <p className="fp-section-label">Çerçeve Tipi</p>
+          <span className="fp-section-meta">
+            {searchQuery
+              ? `${selectableFrameCount} sonuç`
+              : frameCategory
+                ? `${FRAME_CATEGORIES.find((c) => c.id === frameCategory)?.label ?? "Seri"} · ${selectableFrameCount} çerçeve`
+                : "Seri seçin"}
+          </span>
+        </div>
+
+        <div className="fp-frame-grid-wrap">
         <div className="fp-frame-grid">
-          {filteredFrames.length > 0 ? (
+          {!frameCategory && !searchQuery ? (
+            <p className="fp-frame-pick-hint">Çerçeveleri görmek için yukarıdan bir seri seçin.</p>
+          ) : filteredFrames.length > 0 ? (
             filteredFrames.map((f) => (
               <div
                 key={f.id}
@@ -788,6 +1018,7 @@ export default function FramePicker() {
             <p className="fp-search-empty">Sonuç bulunamadı.</p>
           )}
         </div>
+        </div>
 
         {selectedFrame.colors?.length > 0 && (
           <>
@@ -827,98 +1058,173 @@ export default function FramePicker() {
           ))}
         </div>
 
-        <p className="fp-section-label" style={{ marginTop: '20px' }}>Seçenekler</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}></div>
-
-        <div style={{ marginTop: '15px' }}>
-          {/* BUTON 1: ÖZEL ÖLÇÜ */}
-          <button 
-            className="fp-upload-btn" 
-            style={{ 
-              marginTop: 0, 
-              minHeight: '45px',       // Sabit height yerine minHeight yapıyoruz
-              height: 'auto',           // Yazı sığmazsa buton otomatik uzasın
-              padding: '10px 15px',     // İçeriden nefes payı veriyoruz
-              lineHeight: '1.2',        // Satırlar birbirine girmesin
-              fontSize: '13px', 
-              background: isCustomSize ? '#4f46e5' : '#6366f1' 
-            }}
-            onClick={() => { 
-              setIsCustomSize(!isCustomSize); 
-              if(!isCustomSize){setCustomW(""); setCustomH("");} 
+        <div className="fp-custom-size-panel">
+          <button
+            type="button"
+            className={`fp-custom-size-toggle${isCustomSize ? " open" : ""}`}
+            onClick={() => {
+              setIsCustomSize(!isCustomSize);
+              if (!isCustomSize) { setCustomW(""); setCustomH(""); }
             }}
           >
-            {isCustomSize ? " ÖZEL ÖLÇÜYÜ KAPAT" : " İSTEĞE BAĞLI ÖZEL ÖLÇÜ"}
+            <span className="fp-custom-size-toggle-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" strokeLinecap="round" />
+                <path d="M9 12h6M12 9v6" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="fp-custom-size-toggle-text">
+              <span className="fp-custom-size-toggle-title">
+                {isCustomSize ? "Özel Ölçü Aktif" : "İsteğe Bağlı Özel Ölçü"}
+              </span>
+              <span className="fp-custom-size-toggle-sub">
+                {isCustomSize ? "En ve boy değerlerini girin" : "Standart boyutların dışında ölçü belirleyin"}
+              </span>
+            </span>
+            <span className="fp-custom-size-toggle-chevron" aria-hidden="true">
+              {isCustomSize ? "−" : "+"}
+            </span>
           </button>
-          
+
           {isCustomSize && (
-            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-               
-               {/* TEMİZLE BUTONU VE BAŞLIK YAN YANA */}
-               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-                 <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>
-                   Özel Tablo Ölçüsü
-                 </label>
-                 <button 
-                   onClick={() => { setCustomW(""); setCustomH(""); }}
-                   style={{ background: 'transparent', border: 'none', color: '#e11d48', fontSize: '10px', fontWeight: 800, cursor: 'pointer', padding: 0 }}
-                 >
-                   ↺ TEMİZLE
-                 </button>
-               </div>
+            <div className="fp-custom-size-form">
+              <div className="fp-custom-size-form-header">
+                <span className="fp-custom-size-form-label">Özel Tablo Ölçüsü</span>
+                <button
+                  type="button"
+                  className="fp-custom-size-clear"
+                  onClick={() => { setCustomW(""); setCustomH(""); }}
+                >
+                  Temizle
+                </button>
+              </div>
 
-               <div style={{ display: 'flex', gap: '15px' }}>
-                 <div style={{ flex: 1 }}>
-                   <label style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>
-                     En (Genişlik)
-                   </label>
-                   <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px' }}>
-                      <input 
-                        type="text" 
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={customW} 
-                        onChange={e => setCustomW(e.target.value.replace(/[^0-9]/g, ''))} 
-                        placeholder="Örn: 50"
-                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 600, color: '#0f172a' }} 
-                      />
-                      <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600, marginLeft: '5px' }}>cm</span>
-                   </div>
-                 </div>
+              <div className="fp-custom-size-fields">
+                <label className="fp-custom-size-field">
+                  <span className="fp-custom-size-field-label">En (Genişlik)</span>
+                  <div className="fp-custom-size-input-wrap">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={customW}
+                      onChange={(e) => setCustomW(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="50"
+                    />
+                    <span className="fp-custom-size-unit">cm</span>
+                  </div>
+                </label>
 
-                 <div style={{ flex: 1 }}>
-                   <label style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>
-                     Boy (Yükseklik)
-                   </label>
-                   <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px' }}>
-                      <input 
-                        type="text" 
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={customH} 
-                        onChange={e => setCustomH(e.target.value.replace(/[^0-9]/g, ''))} 
-                        placeholder="Örn: 70"
-                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 600, color: '#0f172a' }} 
-                      />
-                      <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600, marginLeft: '5px' }}>cm</span>
-                   </div>
-                 </div>
-               </div>
+                <span className="fp-custom-size-times" aria-hidden="true">×</span>
 
+                <label className="fp-custom-size-field">
+                  <span className="fp-custom-size-field-label">Boy (Yükseklik)</span>
+                  <div className="fp-custom-size-input-wrap">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={customH}
+                      onChange={(e) => setCustomH(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="70"
+                    />
+                    <span className="fp-custom-size-unit">cm</span>
+                  </div>
+                </label>
+              </div>
+
+              {safeW > 0 && safeH > 0 && (
+                <p className="fp-custom-size-result">
+                  Seçilen ölçü: <strong>{safeW}×{safeH} cm</strong>
+                </p>
+              )}
             </div>
           )}
         </div>
 
-        <div className="fp-price-row">
-          <span className="fp-price">
-            {totalPrice.toLocaleString("tr-TR")} ₺
-          </span>
-          {selectedFrame.id !== "none" && (
-            <span className="fp-price-sub">
-              Çerçeve: +{FRAME_PRICE[selectedFrame.id]} ₺
+        <div className="fp-checkout-panel">
+          <div className="fp-checkout-price">
+            <span className="fp-checkout-price-label">Çerçeve Fiyatı</span>
+            <span className="fp-price">{totalPrice.toLocaleString("tr-TR")} ₺</span>
+            {selectedFrame.id !== "none" && (
+              <span className="fp-price-breakdown">
+                {getFrameDisplayLabel(selectedFrame)}
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className={`fp-add-cart-btn${added ? " done" : ""}`}
+            onClick={handleAddToCart}
+          >
+            <span className="fp-add-cart-btn-icon" aria-hidden="true">
+              {added ? (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.25">
+                  <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75">
+                  <path d="M6 6h15l-1.5 9h-12L4 4H2" strokeLinejoin="round" />
+                  <circle cx="9" cy="19" r="1.25" fill="currentColor" stroke="none" />
+                  <circle cx="17" cy="19" r="1.25" fill="currentColor" stroke="none" />
+                </svg>
+              )}
             </span>
-          )}
+            <span className="fp-add-cart-btn-text">
+              <span className="fp-add-cart-btn-title">
+                {added ? "Sepete Eklendi" : "Sepete Ekle"}
+              </span>
+              <span className="fp-add-cart-btn-sub">
+                {added
+                  ? "Ürün sepetinize kaydedildi"
+                  : `${totalPrice.toLocaleString("tr-TR")} ₺ tutarındaki seçimi ekle`}
+              </span>
+            </span>
+            {!added && <span className="fp-add-cart-btn-arrow" aria-hidden="true">›</span>}
+          </button>
         </div>
+
+        {cartItems.length > 0 && (
+          <div className="fp-cart-panel">
+            <div className="fp-cart-header">
+              <h3 className="fp-cart-title">Sepet ({cartItems.length})</h3>
+              <button type="button" className="fp-cart-clear" onClick={clearCart}>
+                Temizle
+              </button>
+            </div>
+            <ul className="fp-cart-list">
+              {cartItems.map((item) => (
+                <li key={item.id} className="fp-cart-item">
+                  <div className="fp-cart-item-info">
+                    <strong>{item.frameLabel}</strong>
+                    <span>{item.sizeLabel} · {item.viewLabel}</span>
+                    <span className="fp-cart-item-price-detail">
+                      Çerçeve: {item.framePrice.toLocaleString("tr-TR")} ₺
+                    </span>
+                  </div>
+                  <div className="fp-cart-item-actions">
+                    <span className="fp-cart-item-total">
+                      {item.totalPrice.toLocaleString("tr-TR")} ₺
+                    </span>
+                    <button
+                      type="button"
+                      className="fp-cart-item-remove"
+                      aria-label="Ürünü sepetten çıkar"
+                      onClick={() => removeCartItem(item.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="fp-cart-total">
+              <span>Sepet Toplamı</span>
+              <strong>{cartTotal.toLocaleString("tr-TR")} ₺</strong>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -933,7 +1239,7 @@ export default function FramePicker() {
         open={showFullscreenPreview}
         onClose={() => setShowFullscreenPreview(false)}
       >
-        <PreviewCanvas key={`fs-${previewProps.frameType.id}`} {...previewProps} />
+        <PreviewCanvas key={`fs-${previewProps.frameType.id}`} {...previewProps} fullscreen />
       </PreviewFullscreen>
 
       <FrameAddModal
