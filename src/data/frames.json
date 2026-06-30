@@ -17,6 +17,10 @@
       "label": "FA 22"
     },
     {
+      "id": "29d",
+      "label": "29 D"
+    },
+    {
       "id": "klasik",
       "label": "Klasik"
     },
@@ -434,6 +438,94 @@
       "defaultMm": 22,
       "radius": 0,
       "image": "/frames/fa-22-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "29 D Platin",
+      "code": "29 D",
+      "colorName": "Platin",
+      "label": "29 D Platin",
+      "categories": [
+        "29d",
+        "klasik",
+        "metal"
+      ],
+      "thickness": 75,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-platin.png",
+      "colors": [
+        {
+          "id": "platin",
+          "label": "Platin",
+          "hex": "#E5E4E2"
+        }
+      ]
+    },
+    {
+      "id": "29 D Siyah",
+      "code": "29 D",
+      "colorName": "Siyah",
+      "label": "29 D Siyah",
+      "categories": [
+        "29d",
+        "klasik",
+        "metal"
+      ],
+      "thickness": 53,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "29 D Altın",
+      "code": "29 D",
+      "colorName": "Altın",
+      "label": "29 D Altın",
+      "categories": [
+        "29d",
+        "klasik",
+        "metal"
+      ],
+      "thickness": 61,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "29 D Ceviz",
+      "code": "29 D",
+      "colorName": "Ceviz",
+      "label": "29 D Ceviz",
+      "categories": [
+        "29d",
+        "klasik",
+        "ahsap"
+      ],
+      "thickness": 56,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-ceviz.png",
       "colors": [
         {
           "id": "ceviz",

@@ -16,6 +16,7 @@ const COLOR_DEFAULTS = {
   yesil: { id: "yesil", label: "Yeşil", hex: "#2F5A3A" },
   "çizgili gümüş": { id: "cizgili-gumus", label: "Çizgili Gümüş", hex: "#C5C9CC" },
   lacivert: { id: "lacivert", label: "Lacivert", hex: "#1E3A5F" },
+  platin: { id: "platin", label: "Platin", hex: "#E5E4E2" },
 };
 
 const SERIES_CATEGORY = {
@@ -23,6 +24,7 @@ const SERIES_CATEGORY = {
   "FA 22": "fa22",
   "FA 30": "fa30",
   "FA 40": "fa40",
+  "29 D": "29d",
 };
 
 function openDb() {
