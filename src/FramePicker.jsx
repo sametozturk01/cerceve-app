@@ -189,6 +189,56 @@ function drawFlatMetalFrame(ctx, x, y, w, h, t) {
   ctx.restore();
 }
 
+function drawFrameShadow(ctx, x, y, w, h) {
+  const rx = Math.round(x);
+  const ry = Math.round(y);
+  const rw = Math.round(w);
+  const rh = Math.round(h);
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetX = 6;
+  ctx.shadowOffsetY = 12;
+  ctx.fillStyle = "rgba(0,0,0,0.01)";
+  ctx.fillRect(rx, ry, rw, rh);
+  ctx.restore();
+}
+
+function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
+  const sw = frameImg.width;
+  const sh = frameImg.height;
+  const s = slicePx;
+  const t = Math.max(1, Math.round(thickPx));
+  const fx = Math.round(x);
+  const fy = Math.round(y);
+  const fw = Math.round(w);
+  const fh = Math.round(h);
+  const bleed = 1;
+
+  const smooth = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+
+  const blit = (sx, sy, sW, sH, dx, dy, dW, dH) => {
+    if (sW <= 0 || sH <= 0 || dW <= 0 || dH <= 0) return;
+    ctx.drawImage(frameImg, sx, sy, sW, sH, dx, dy, dW, dH);
+  };
+
+  // Kenarlar önce; köşelere 1px bindirme ile boşluk kalmaz
+  blit(s, 0, sw - 2 * s, s, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
+  blit(s, sh - s, sw - 2 * s, s, fx + t - bleed, fy + fh - t, fw - 2 * t + 2 * bleed, t);
+  blit(0, s, s, sh - 2 * s, fx, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
+  blit(sw - s, s, s, sh - 2 * s, fx + fw - t, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
+
+  // Köşeler üstte
+  blit(0, 0, s, s, fx, fy, t, t);
+  blit(sw - s, 0, s, s, fx + fw - t, fy, t, t);
+  blit(0, sh - s, s, s, fx, fy + fh - t, t, t);
+  blit(sw - s, sh - s, s, s, fx + fw - t, fy + fh - t, t, t);
+
+  ctx.imageSmoothingEnabled = smooth;
+}
+
 // ─── Canvas Önizleme (MM HESAPLAMALI GERÇEK DÜNYA MOTORU) ─────────────────────
 
 const CANVAS_SIZE = 640;
@@ -253,12 +303,12 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
 
   const pxPerMm = tW / (sizeW * 10);
   const rawThickPx = customThickness * pxPerMm;
-  const targetThickPx = Math.min(rawThickPx, tW / 2 - 2, tH / 2 - 2);
+  const targetThickPx = Math.max(1, Math.round(Math.min(rawThickPx, tW / 2 - 2, tH / 2 - 2)));
 
-  const ix = tX + targetThickPx - 3;
-  const iy = tY + targetThickPx - 3;
-  const iw = tW - 2 * targetThickPx + 6;
-  const ih = tH - 2 * targetThickPx + 6;
+  const ix = Math.round(tX + targetThickPx - 2);
+  const iy = Math.round(tY + targetThickPx - 2);
+  const iw = Math.round(tW - 2 * targetThickPx + 4);
+  const ih = Math.round(tH - 2 * targetThickPx + 4);
 
   return { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih };
 }
@@ -341,6 +391,10 @@ function PreviewCanvas({
         ih,
       } = computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness);
 
+      if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
+        drawFrameShadow(ctx, tX, tY, tW, tH);
+      }
+
       const imgRatio = photo.width / photo.height;
       const targetRatio = iw / ih;
 
@@ -370,35 +424,15 @@ function PreviewCanvas({
         const frameImg = await loadImage(frameImage).catch(() => null);
         if (cancelled || !frameImg) return;
 
-        const sw = frameImg.width;
-        const sh = frameImg.height;
         const s = sliceSize;
-        const t = targetThickPx;
-
         if (s > 0) {
-          ctx.drawImage(frameImg, 0, 0, s, s, tX, tY, t, t);
-          ctx.drawImage(frameImg, sw - s, 0, s, s, tX + tW - t, tY, t, t);
-          ctx.drawImage(frameImg, 0, sh - s, s, s, tX, tY + tH - t, t, t);
-          ctx.drawImage(frameImg, sw - s, sh - s, s, s, tX + tW - t, tY + tH - t, t, t);
-
-          ctx.drawImage(frameImg, s, 0, sw - 2 * s, s, tX + t, tY, tW - 2 * t, t);
-          ctx.drawImage(frameImg, s, sh - s, sw - 2 * s, s, tX + t, tY + tH - t, tW - 2 * t, t);
-          ctx.drawImage(frameImg, 0, s, s, sh - 2 * s, tX, tY + t, t, tH - 2 * t);
-          ctx.drawImage(frameImg, sw - s, s, s, sh - 2 * s, tX + tW - t, tY + t, t, tH - 2 * t);
+          drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx);
         } else {
-          ctx.drawImage(frameImg, tX, tY, tW, tH);
+          ctx.drawImage(frameImg, Math.round(tX), Math.round(tY), Math.round(tW), Math.round(tH));
         }
       }
 
       if (cancelled) return;
-
-      if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetX = 5;
-        ctx.shadowOffsetY = 10;
-        ctx.strokeRect(tX, tY, tW, tH);
-      }
     }
 
     draw();
