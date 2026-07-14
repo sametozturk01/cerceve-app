@@ -17,6 +17,8 @@ const COLOR_DEFAULTS = {
   "çizgili gümüş": { id: "cizgili-gumus", label: "Çizgili Gümüş", hex: "#C5C9CC" },
   lacivert: { id: "lacivert", label: "Lacivert", hex: "#1E3A5F" },
   platin: { id: "platin", label: "Platin", hex: "#E5E4E2" },
+  şampanya: { id: "sampanya", label: "Şampanya", hex: "#D4C4A8" },
+  sampanya: { id: "sampanya", label: "Şampanya", hex: "#D4C4A8" },
 };
 
 const SERIES_CATEGORY = {
@@ -25,6 +27,11 @@ const SERIES_CATEGORY = {
   "FA 30": "fa30",
   "FA 40": "fa40",
   "29 D": "29d",
+  "FA 29 KR": "fa29kr",
+  "A 25": "a25",
+  "B 26": "b26",
+  "C 27": "c27",
+  "D 28": "d28",
 };
 
 function openDb() {

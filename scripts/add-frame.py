@@ -43,6 +43,8 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "cizgili gumus": {"id": "cizgili-gumus", "label": "Çizgili Gümüş", "hex": "#C5C9CC"},
     "lacivert": {"id": "lacivert", "label": "Lacivert", "hex": "#1E3A5F"},
     "platin": {"id": "platin", "label": "Platin", "hex": "#E5E4E2"},
+    "şampanya": {"id": "sampanya", "label": "Şampanya", "hex": "#D4C4A8"},
+    "sampanya": {"id": "sampanya", "label": "Şampanya", "hex": "#D4C4A8"},
 }
 
 SERIES_CATEGORY = {
@@ -51,6 +53,11 @@ SERIES_CATEGORY = {
     "FA 30": "fa30",
     "FA 40": "fa40",
     "29 D": "29d",
+    "FA 29 KR": "fa29kr",
+    "A 25": "a25",
+    "B 26": "b26",
+    "C 27": "c27",
+    "D 28": "d28",
 }
 
 
@@ -100,7 +107,7 @@ def is_frame_pixel(r: int, g: int, b: int, a: int) -> bool:
     return a > 50 and not is_hole_pixel(r, g, b, a)
 
 
-def process_frame_png(src: Path, dest: Path) -> int:
+def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
     img = Image.open(src).convert("RGBA")
     px = img.load()
     w, h = img.size
@@ -126,7 +133,7 @@ def process_frame_png(src: Path, dest: Path) -> int:
     if right <= left or bottom <= top:
         raise ValueError("Çerçeve kenarı tespit edilemedi. PNG'yi kontrol edin.")
 
-    B = max(left, top, w - 1 - right, h - 1 - bottom)
+    B = force_thickness if force_thickness is not None else max(left, top, w - 1 - right, h - 1 - bottom)
     hole_size = max(right - left + 1, bottom - top + 1)
     out_size = hole_size + 2 * B
     out = Image.new("RGBA", (out_size, out_size), (0, 0, 0, 0))
@@ -231,6 +238,7 @@ def main() -> None:
     parser.add_argument("--categories", help="Virgülle ayrılmış: fa20,metal,klasik")
     parser.add_argument("--default-mm", type=int, default=20, help="Varsayılan kalınlık mm")
     parser.add_argument("--output-name", help="Dosya adı (örn. fa-20-gumus.png)")
+    parser.add_argument("--thickness", type=int, help="Nine-slice kalınlığı (px); verilmezse otomatik tespit")
     parser.add_argument("--update-only", action="store_true", help="Sadece mevcut kaydın PNG/thickness güncelle")
     args = parser.parse_args()
 
@@ -244,7 +252,7 @@ def main() -> None:
         filename = output_filename(args.code, args.color, src.stem)
 
     dest = FRAMES_DIR / filename
-    thickness = process_frame_png(src, dest)
+    thickness = process_frame_png(src, dest, force_thickness=args.thickness)
     image_url = f"/frames/{filename}"
 
     catalog = load_catalog()
