@@ -45,6 +45,7 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "platin": {"id": "platin", "label": "Platin", "hex": "#E5E4E2"},
     "şampanya": {"id": "sampanya", "label": "Şampanya", "hex": "#D4C4A8"},
     "sampanya": {"id": "sampanya", "label": "Şampanya", "hex": "#D4C4A8"},
+    "gri": {"id": "gri", "label": "Gri", "hex": "#948073"},
 }
 
 SERIES_CATEGORY = {
@@ -58,6 +59,9 @@ SERIES_CATEGORY = {
     "B 26": "b26",
     "C 27": "c27",
     "D 28": "d28",
+    "E 29": "e29",
+    "G 20": "g20",
+    "R 21": "r21",
 }
 
 
@@ -95,10 +99,9 @@ def is_hole_pixel(r: int, g: int, b: int, a: int) -> bool:
         return True
     if is_solid_background(r, g, b, a):
         return True
-    if r + g + b < 35 and a < 128:
-        return True
-    br = (r + g + b) / 3
-    if abs(r - g) < 20 and abs(g - b) < 20 and 90 < br < 170:
+    brightness = (r + g + b) / 3
+    # Yalnızca opak siyah iç boşluk — gümüş/gri çerçeve rayını delik sayma
+    if brightness < 42 and a > 120:
         return True
     return False
 

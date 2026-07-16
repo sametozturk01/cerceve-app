@@ -5,6 +5,7 @@ import FrameEditModal from "./components/FrameEditModal";
 import PreviewFullscreen from "./components/PreviewFullscreen";
 import PhotoSourcePicker from "./components/PhotoSourcePicker";
 import Toast from "./components/Toast";
+import HorizontalScrollStrip from "./components/HorizontalScrollStrip";
 import { loadCustomFrames, revokeFrameUrls, deleteCustomFrame, mergeFrameMeta } from "./utils/customFramesStorage";
 import {
   loadHiddenFrameIds,
@@ -214,7 +215,7 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
   const fy = Math.round(y);
   const fw = Math.round(w);
   const fh = Math.round(h);
-  const bleed = 1;
+  const bleed = 2;
 
   const smooth = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
@@ -224,17 +225,16 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
     ctx.drawImage(frameImg, sx, sy, sW, sH, dx, dy, dW, dH);
   };
 
-  // Kenarlar önce; köşelere 1px bindirme ile boşluk kalmaz
-  blit(s, 0, sw - 2 * s, s, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
-  blit(s, sh - s, sw - 2 * s, s, fx + t - bleed, fy + fh - t, fw - 2 * t + 2 * bleed, t);
-  blit(0, s, s, sh - 2 * s, fx, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
-  blit(sw - s, s, s, sh - 2 * s, fx + fw - t, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
-
-  // Köşeler üstte
+  // Köşeler önce; kenarlar üstte bindirme ile mitre boşluğu kalmaz
   blit(0, 0, s, s, fx, fy, t, t);
   blit(sw - s, 0, s, s, fx + fw - t, fy, t, t);
   blit(0, sh - s, s, s, fx, fy + fh - t, t, t);
   blit(sw - s, sh - s, s, s, fx + fw - t, fy + fh - t, t, t);
+
+  blit(s, 0, sw - 2 * s, s, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
+  blit(s, sh - s, sw - 2 * s, s, fx + t - bleed, fy + fh - t, fw - 2 * t + 2 * bleed, t);
+  blit(0, s, s, sh - 2 * s, fx, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
+  blit(sw - s, s, s, sh - 2 * s, fx + fw - t, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
 
   ctx.imageSmoothingEnabled = smooth;
 }
@@ -818,7 +818,8 @@ export default function FramePicker() {
     ? { id: `${displayW}x${displayH}` } 
     : selectedSize;
 
-  const activeThickness = selectedFrame.defaultMm;
+  const activeThickness =
+    (selectedFrame.defaultMm ?? 20) * (selectedFrame.previewMmFactor ?? 1);
 
   const previewProps = {
     imageUrl: uploadedImage,
@@ -955,7 +956,11 @@ export default function FramePicker() {
         </div>
 
         <div className="fp-category-panel">
-          <div className="fp-category-row">
+          <HorizontalScrollStrip
+            className="fp-category-hscroll"
+            trackClassName="fp-category-row"
+            ariaLabel="Çerçeve serileri"
+          >
             {visibleCategories.map((cat) => (
               <button
                 key={cat.id}
@@ -970,7 +975,8 @@ export default function FramePicker() {
                 <span className="fp-category-count">{countFramesInCategory(allFrames, cat.id)}</span>
               </button>
             ))}
-          </div>
+          </HorizontalScrollStrip>
+          <p className="fp-scroll-hint">Serileri yana kaydırabilirsiniz</p>
 
           <div className="fp-category-panel-divider" aria-hidden="true" />
 
@@ -1004,55 +1010,66 @@ export default function FramePicker() {
           </span>
         </div>
 
-        <div className="fp-frame-grid-wrap">
-        <div className="fp-frame-grid">
-          {!frameCategory && !searchQuery ? (
-            <p className="fp-frame-pick-hint">Çerçeveleri görmek için yukarıdan bir seri seçin.</p>
-          ) : filteredFrames.length > 0 ? (
-            filteredFrames.map((f) => (
-              <div
-                key={f.id}
-                className={`fp-frame-card${selectedFrame.id === f.id ? " active" : ""}`}
-              >
-                {f.id !== "none" && (
-                  <div className="fp-frame-card-tools">
+        {!frameCategory && !searchQuery ? (
+          <p className="fp-frame-pick-hint">
+            Çerçeveleri görmek için yukarıdan bir seri seçin veya arama yapın.
+          </p>
+        ) : (
+          <HorizontalScrollStrip
+            className="fp-frame-hscroll"
+            trackClassName="fp-frame-grid-wrap"
+            ariaLabel="Çerçeve modelleri"
+          >
+            <div className="fp-frame-grid">
+              {filteredFrames.length > 0 ? (
+                filteredFrames.map((f) => (
+                  <div
+                    key={f.id}
+                    className={`fp-frame-card${selectedFrame.id === f.id ? " active" : ""}`}
+                  >
+                    {f.id !== "none" && (
+                      <div className="fp-frame-card-tools">
+                        <button
+                          type="button"
+                          className="fp-frame-tool fp-frame-tool-edit"
+                          title="Çerçeve Düzenle"
+                          aria-label="Çerçeve Düzenle"
+                          onClick={() => openEditFrame(f)}
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          className="fp-frame-tool fp-frame-tool-remove"
+                          title="Çerçeve Kaldır"
+                          aria-label="Çerçeve Kaldır"
+                          onClick={() => requestRemoveFrame(f)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
                     <button
                       type="button"
-                      className="fp-frame-tool fp-frame-tool-edit"
-                      title="Çerçeve Düzenle"
-                      aria-label="Çerçeve Düzenle"
-                      onClick={() => openEditFrame(f)}
+                      className={`fp-frame-btn${selectedFrame.id === f.id ? " active" : ""}`}
+                      onClick={() => handleFrameSelect(f)}
                     >
-                      ✎
-                    </button>
-                    <button
-                      type="button"
-                      className="fp-frame-tool fp-frame-tool-remove"
-                      title="Çerçeve Kaldır"
-                      aria-label="Çerçeve Kaldır"
-                      onClick={() => requestRemoveFrame(f)}
-                    >
-                      ×
+                      <FrameSwatch frame={f} />
+                      <span className="fp-frame-btn-label">
+                        {getFrameDisplayLabel(f)}
+                      </span>
                     </button>
                   </div>
-                )}
-                <button
-                  type="button"
-                  className={`fp-frame-btn${selectedFrame.id === f.id ? " active" : ""}`}
-                  onClick={() => handleFrameSelect(f)}
-                >
-                  <FrameSwatch frame={f} />
-                  <span className="fp-frame-btn-label">
-                    {getFrameDisplayLabel(f)}
-                  </span>
-                </button>
-              </div>
-            ))
-          ) : (
-            <p className="fp-search-empty">Sonuç bulunamadı.</p>
-          )}
-        </div>
-        </div>
+                ))
+              ) : (
+                <p className="fp-search-empty">Sonuç bulunamadı.</p>
+              )}
+            </div>
+          </HorizontalScrollStrip>
+        )}
+        {(frameCategory || searchQuery) && filteredFrames.length > 0 && (
+          <p className="fp-scroll-hint fp-scroll-hint-below">Çerçeveleri yana kaydırabilirsiniz</p>
+        )}
 
         {selectedFrame.colors?.length > 0 && (
           <>

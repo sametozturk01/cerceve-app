@@ -41,6 +41,18 @@
       "label": "D 28"
     },
     {
+      "id": "e29",
+      "label": "E 29"
+    },
+    {
+      "id": "g20",
+      "label": "G 20"
+    },
+    {
+      "id": "r21",
+      "label": "R 21"
+    },
+    {
       "id": "klasik",
       "label": "Klasik"
     },
@@ -1016,7 +1028,7 @@
         "klasik",
         "metal"
       ],
-      "thickness": 46,
+      "thickness": 43,
       "defaultMm": 28,
       "radius": 0,
       "image": "/frames/d-28-gumus.png",
@@ -1025,6 +1037,342 @@
           "id": "gumus",
           "label": "Gümüş",
           "hex": "#D8DCDC"
+        }
+      ]
+    },
+    {
+      "id": "E 29",
+      "label": "E 29",
+      "categories": [
+        "e29",
+        "klasik",
+        "metal"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29.png",
+      "colors": []
+    },
+    {
+      "id": "E 29 Yeşil",
+      "code": "E 29",
+      "colorName": "Yeşil",
+      "label": "E 29 Yeşil",
+      "categories": [
+        "e29",
+        "klasik",
+        "ahsap"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29-yesil.png",
+      "colors": [
+        {
+          "id": "yesil",
+          "label": "Yeşil",
+          "hex": "#2F5A3A"
+        }
+      ]
+    },
+    {
+      "id": "E 29 Altın",
+      "code": "E 29",
+      "colorName": "Altın",
+      "label": "E 29 Altın",
+      "categories": [
+        "e29",
+        "klasik",
+        "metal"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "E 29 Gri",
+      "code": "E 29",
+      "colorName": "Gri",
+      "label": "E 29 Gri",
+      "categories": [
+        "e29",
+        "klasik",
+        "metal"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29-gri.png",
+      "colors": [
+        {
+          "id": "gri",
+          "label": "Gri",
+          "hex": "#948073"
+        }
+      ]
+    },
+    {
+      "id": "E 29 Beyaz",
+      "code": "E 29",
+      "colorName": "Beyaz",
+      "label": "E 29 Beyaz",
+      "categories": [
+        "e29",
+        "klasik",
+        "metal"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#E8E4E0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "E 29 Ceviz",
+      "code": "E 29",
+      "colorName": "Ceviz",
+      "label": "E 29 Ceviz",
+      "categories": [
+        "e29",
+        "ahsap"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "E 29 Siyah",
+      "code": "E 29",
+      "colorName": "Siyah",
+      "label": "E 29 Siyah",
+      "categories": [
+        "e29",
+        "metal"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "E 29 Şampanya",
+      "code": "E 29",
+      "colorName": "Şampanya",
+      "label": "E 29 Şampanya",
+      "categories": [
+        "e29",
+        "metal"
+      ],
+      "thickness": 39,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/e-29-sampanya.png",
+      "colors": [
+        {
+          "id": "sampanya",
+          "label": "Şampanya",
+          "hex": "#D4C4A8"
+        }
+      ]
+    },
+    {
+      "id": "G 20 Beyaz",
+      "code": "G 20",
+      "colorName": "Beyaz",
+      "label": "G 20 Beyaz",
+      "categories": [
+        "g20",
+        "klasik"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/g-20-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "G 20 Şampanya",
+      "code": "G 20",
+      "colorName": "Şampanya",
+      "label": "G 20 Şampanya",
+      "categories": [
+        "g20",
+        "metal"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/g-20-sampanya.png",
+      "colors": [
+        {
+          "id": "sampanya",
+          "label": "Şampanya",
+          "hex": "#D4C4A8"
+        }
+      ]
+    },
+    {
+      "id": "G 20 Ceviz",
+      "code": "G 20",
+      "colorName": "Ceviz",
+      "label": "G 20 Ceviz",
+      "categories": [
+        "g20",
+        "ahsap"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/g-20-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "G 20 Siyah",
+      "code": "G 20",
+      "colorName": "Siyah",
+      "label": "G 20 Siyah",
+      "categories": [
+        "g20",
+        "metal"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/g-20-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "G 20 Altın",
+      "code": "G 20",
+      "colorName": "Altın",
+      "label": "G 20 Altın",
+      "categories": [
+        "g20",
+        "metal"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/g-20-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "G 20 Kahve",
+      "code": "G 20",
+      "colorName": "Kahve",
+      "label": "G 20 Kahve",
+      "categories": [
+        "g20",
+        "ahsap"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/g-20-kahve.png",
+      "colors": [
+        {
+          "id": "kahve",
+          "label": "Kahve",
+          "hex": "#5C3D1E"
+        }
+      ]
+    },
+    {
+      "id": "R 21 Beyaz",
+      "code": "R 21",
+      "colorName": "Beyaz",
+      "label": "R 21 Beyaz",
+      "categories": [
+        "r21",
+        "klasik"
+      ],
+      "thickness": 51,
+      "defaultMm": 21,
+      "radius": 0,
+      "image": "/frames/r-21-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "R 21 Altın",
+      "code": "R 21",
+      "colorName": "Altın",
+      "label": "R 21 Altın",
+      "categories": [
+        "r21",
+        "metal"
+      ],
+      "thickness": 51,
+      "defaultMm": 21,
+      "radius": 0,
+      "image": "/frames/r-21-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
         }
       ]
     }

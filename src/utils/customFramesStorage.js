@@ -19,6 +19,7 @@ const COLOR_DEFAULTS = {
   platin: { id: "platin", label: "Platin", hex: "#E5E4E2" },
   şampanya: { id: "sampanya", label: "Şampanya", hex: "#D4C4A8" },
   sampanya: { id: "sampanya", label: "Şampanya", hex: "#D4C4A8" },
+  gri: { id: "gri", label: "Gri", hex: "#948073" },
 };
 
 const SERIES_CATEGORY = {
@@ -32,6 +33,9 @@ const SERIES_CATEGORY = {
   "B 26": "b26",
   "C 27": "c27",
   "D 28": "d28",
+  "E 29": "e29",
+  "G 20": "g20",
+  "R 21": "r21",
 };
 
 function openDb() {
