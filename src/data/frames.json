@@ -53,6 +53,10 @@
       "label": "R 21"
     },
     {
+      "id": "yeni20",
+      "label": "Yeni 20"
+    },
+    {
       "id": "klasik",
       "label": "Klasik"
     },
@@ -1373,6 +1377,70 @@
           "id": "altin",
           "label": "Altın",
           "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "Yeni 20 Siyah",
+      "code": "Yeni 20",
+      "colorName": "Siyah",
+      "label": "Yeni 20 Siyah",
+      "categories": [
+        "yeni20",
+        "metal"
+      ],
+      "thickness": 51,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/yeni-20-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "Yeni 20 Beyaz",
+      "code": "Yeni 20",
+      "colorName": "Beyaz",
+      "label": "Yeni 20 Beyaz",
+      "categories": [
+        "yeni20",
+        "ahsap"
+      ],
+      "thickness": 99,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/yeni-20-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "Yeni 20 Ceviz",
+      "code": "Yeni 20",
+      "colorName": "Ceviz",
+      "label": "Yeni 20 Ceviz",
+      "categories": [
+        "yeni20",
+        "ahsap"
+      ],
+      "thickness": 82,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/yeni-20-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
         }
       ]
     }

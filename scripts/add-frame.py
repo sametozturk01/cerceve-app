@@ -18,7 +18,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import statistics
 import unicodedata
+from collections import deque
 from pathlib import Path
 
 from PIL import Image
@@ -62,6 +64,7 @@ SERIES_CATEGORY = {
     "E 29": "e29",
     "G 20": "g20",
     "R 21": "r21",
+    "Yeni 20": "yeni20",
 }
 
 
@@ -110,12 +113,31 @@ def is_frame_pixel(r: int, g: int, b: int, a: int) -> bool:
     return a > 50 and not is_hole_pixel(r, g, b, a)
 
 
-def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
-    img = Image.open(src).convert("RGBA")
-    px = img.load()
-    w, h = img.size
+def is_true_hole_seed(r: int, g: int, b: int, a: int) -> bool:
+    return a > 100 and r + g + b < 8
 
-    cx, cy = w // 2, h // 2
+
+def flood_hole_bounds(px, w: int, h: int, cx: int, cy: int) -> tuple[int, int, int, int]:
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int]] = deque([(cx, cy)])
+    vis[cy * w + cx] = 1
+    box = [cx, cy, cx, cy]
+    while q:
+        x, y = q.popleft()
+        box[0] = min(box[0], x)
+        box[1] = min(box[1], y)
+        box[2] = max(box[2], x)
+        box[3] = max(box[3], y)
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if 0 <= nx < w and 0 <= ny < h:
+                i = ny * w + nx
+                if not vis[i] and is_true_hole_seed(*px[nx, ny]):
+                    vis[i] = 1
+                    q.append((nx, ny))
+    return box[0], box[1], box[2], box[3]
+
+
+def scan_hole_bounds(px, w: int, h: int, cx: int, cy: int) -> tuple[int, int, int, int]:
     left = cx
     while left > 0 and not is_frame_pixel(*px[left, cy]):
         left -= 1
@@ -132,32 +154,111 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
     while bottom < h - 1 and not is_frame_pixel(*px[cx, bottom]):
         bottom += 1
     bottom -= 1
+    return left, top, right, bottom
 
+
+def detect_hole_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
+    cx, cy = w // 2, h // 2
+    left, top, right, bottom = scan_hole_bounds(px, w, h, cx, cy)
+    rails = [left, top, w - 1 - right, h - 1 - bottom]
     if right <= left or bottom <= top:
+        return flood_hole_bounds(px, w, h, cx, cy)
+    if max(rails) - min(rails) > 12:
+        return flood_hole_bounds(px, w, h, cx, cy)
+    return left, top, right, bottom
+
+
+def pad_to_square(img: Image.Image) -> Image.Image:
+    w, h = img.size
+    if w == h:
+        return img
+    side = max(w, h)
+    out = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    ox = (side - w) // 2
+    oy = (side - h) // 2
+    out.paste(img, (ox, oy))
+    px = out.load()
+    if ox > 0:
+        for x in range(ox):
+            for y in range(side):
+                px[x, y] = px[ox, y]
+        for x in range(ox + w, side):
+            for y in range(side):
+                px[x, y] = px[ox + w - 1, y]
+    if oy > 0:
+        for y in range(oy):
+            for x in range(side):
+                px[x, y] = px[x, oy]
+        for y in range(oy + h, side):
+            for x in range(side):
+                px[x, y] = px[x, oy + h - 1]
+    return out
+
+
+def crop_clamped(img: Image.Image, box: tuple[int, int, int, int]) -> Image.Image:
+    l, t, r, b = box
+    w, h = img.size
+    l = max(0, l)
+    t = max(0, t)
+    r = min(w, r)
+    b = min(h, b)
+    if r <= l or b <= t:
+        return Image.new("RGBA", (1, 1), (0, 0, 0, 0))
+    return img.crop((l, t, r, b))
+
+
+def paste_resized(out: Image.Image, patch: Image.Image, dest: tuple[int, int, int, int]) -> None:
+    dx0, dy0, dx1, dy1 = dest
+    dw, dh = dx1 - dx0, dy1 - dy0
+    if dw <= 0 or dh <= 0:
+        return
+    if patch.size == (dw, dh):
+        out.paste(patch, (dx0, dy0))
+        return
+    out.paste(patch.resize((dw, dh), Image.LANCZOS), (dx0, dy0))
+
+
+def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
+    raw = Image.open(src).convert("RGBA")
+    raw_px = raw.load()
+    raw_w, raw_h = raw.size
+    il, it, ir, ib = detect_hole_bounds(raw_px, raw_w, raw_h)
+    if ir <= il or ib <= it:
         raise ValueError("Çerçeve kenarı tespit edilemedi. PNG'yi kontrol edin.")
 
-    B = force_thickness if force_thickness is not None else max(left, top, w - 1 - right, h - 1 - bottom)
-    hole_size = max(right - left + 1, bottom - top + 1)
+    raw_rails = [il, it, raw_w - 1 - ir, raw_h - 1 - ib]
+    B = force_thickness if force_thickness is not None else int(round(statistics.median(raw_rails)))
+
+    img = pad_to_square(raw)
+    pad_ox = (img.width - raw_w) // 2
+    pad_oy = (img.height - raw_h) // 2
+    il += pad_ox
+    ir += pad_ox
+    it += pad_oy
+    ib += pad_oy
+    w, h = img.size
+
+    hole_size = max(ir - il + 1, ib - it + 1)
     out_size = hole_size + 2 * B
     out = Image.new("RGBA", (out_size, out_size), (0, 0, 0, 0))
 
-    tl = img.crop((0, 0, left, top))
-    tr = img.crop((right + 1, 0, w, top))
-    bl = img.crop((0, bottom + 1, left, h))
-    br = img.crop((right + 1, bottom + 1, w, h))
-    top_e = img.crop((left, 0, right + 1, top))
-    bot_e = img.crop((left, bottom + 1, right + 1, h))
-    lef_e = img.crop((0, top, left, bottom + 1))
-    rig_e = img.crop((right + 1, top, w, bottom + 1))
+    tl = crop_clamped(img, (il - B, it - B, il, it))
+    tr = crop_clamped(img, (ir + 1, it - B, ir + 1 + B, it))
+    bl = crop_clamped(img, (il - B, ib + 1, il, ib + 1 + B))
+    br = crop_clamped(img, (ir + 1, ib + 1, ir + 1 + B, ib + 1 + B))
+    top_e = crop_clamped(img, (il, it - B, ir + 1, it))
+    bot_e = crop_clamped(img, (il, ib + 1, ir + 1, ib + 1 + B))
+    lef_e = crop_clamped(img, (il - B, it, il, ib + 1))
+    rig_e = crop_clamped(img, (ir + 1, it, ir + 1 + B, ib + 1))
 
-    out.paste(tl.resize((B, B), Image.LANCZOS), (0, 0))
-    out.paste(tr.resize((B, B), Image.LANCZOS), (out_size - B, 0))
-    out.paste(bl.resize((B, B), Image.LANCZOS), (0, out_size - B))
-    out.paste(br.resize((B, B), Image.LANCZOS), (out_size - B, out_size - B))
-    out.paste(top_e.resize((hole_size, B), Image.LANCZOS), (B, 0))
-    out.paste(bot_e.resize((hole_size, B), Image.LANCZOS), (B, out_size - B))
-    out.paste(lef_e.resize((B, hole_size), Image.LANCZOS), (0, B))
-    out.paste(rig_e.resize((B, hole_size), Image.LANCZOS), (out_size - B, B))
+    paste_resized(out, tl, (0, 0, B, B))
+    paste_resized(out, tr, (out_size - B, 0, out_size, B))
+    paste_resized(out, bl, (0, out_size - B, B, out_size))
+    paste_resized(out, br, (out_size - B, out_size - B, out_size, out_size))
+    paste_resized(out, top_e, (B, 0, B + hole_size, B))
+    paste_resized(out, bot_e, (B, out_size - B, B + hole_size, out_size))
+    paste_resized(out, lef_e, (0, B, B, B + hole_size))
+    paste_resized(out, rig_e, (out_size - B, B, out_size, B + hole_size))
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     out.save(dest, "PNG")

@@ -141,7 +141,7 @@ body {
 
 .fp-preview-box {
   position: relative;
-  background: #ffffff;
+  background: #e8eaed;
   /* Müşterinin isteği üzerine köşeleri tam 90 derece sivri (köşeli) yaptık */
   border-radius: 0 !important; 
   /* Resmin kenarlardaki parazitleri yutması için */

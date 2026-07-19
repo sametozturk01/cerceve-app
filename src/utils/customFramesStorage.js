@@ -36,6 +36,7 @@ const SERIES_CATEGORY = {
   "E 29": "e29",
   "G 20": "g20",
   "R 21": "r21",
+  "Yeni 20": "yeni20",
 };
 
 function openDb() {

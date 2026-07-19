@@ -190,19 +190,43 @@ function drawFlatMetalFrame(ctx, x, y, w, h, t) {
   ctx.restore();
 }
 
-function drawFrameShadow(ctx, x, y, w, h) {
+function drawFrameShadow(ctx, x, y, w, h, strong = false) {
   const rx = Math.round(x);
   const ry = Math.round(y);
   const rw = Math.round(w);
   const rh = Math.round(h);
 
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = 18;
+  ctx.shadowColor = strong ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = strong ? 22 : 18;
   ctx.shadowOffsetX = 6;
   ctx.shadowOffsetY = 12;
   ctx.fillStyle = "rgba(0,0,0,0.01)";
   ctx.fillRect(rx, ry, rw, rh);
+  ctx.restore();
+}
+
+function isLightFrameColor(color) {
+  const hex = color?.hex;
+  if (!hex?.startsWith("#")) return false;
+  const h = hex.replace("#", "");
+  if (h.length < 6) return false;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return (r + g + b) / 3 > 190;
+}
+
+function drawLightFrameOutline(ctx, x, y, w, h) {
+  const rx = Math.round(x) + 0.5;
+  const ry = Math.round(y) + 0.5;
+  const rw = Math.round(w) - 1;
+  const rh = Math.round(h) - 1;
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(rx, ry, rw, rh);
   ctx.restore();
 }
 
@@ -218,7 +242,9 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
   const bleed = 2;
 
   const smooth = ctx.imageSmoothingEnabled;
-  ctx.imageSmoothingEnabled = false;
+  const downscale = slicePx > thickPx * 1.25;
+  ctx.imageSmoothingEnabled = downscale;
+  if (downscale) ctx.imageSmoothingQuality = "high";
 
   const blit = (sx, sy, sW, sH, dx, dy, dW, dH) => {
     if (sW <= 0 || sH <= 0 || dW <= 0 || dH <= 0) return;
@@ -367,7 +393,7 @@ function PreviewCanvas({
     ctx.imageSmoothingQuality = "high";
 
     async function draw() {
-      ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#ffffff";
+      ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#e8eaed";
       ctx.fillRect(0, 0, W, H);
 
       if (activeView === "dekor") {
@@ -392,7 +418,7 @@ function PreviewCanvas({
       } = computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness);
 
       if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
-        drawFrameShadow(ctx, tX, tY, tW, tH);
+        drawFrameShadow(ctx, tX, tY, tW, tH, isLightFrameColor(frameColor));
       }
 
       const imgRatio = photo.width / photo.height;
@@ -427,6 +453,9 @@ function PreviewCanvas({
         const s = sliceSize;
         if (s > 0) {
           drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx);
+          if (isLightFrameColor(frameColor)) {
+            drawLightFrameOutline(ctx, tX, tY, tW, tH);
+          }
         } else {
           ctx.drawImage(frameImg, Math.round(tX), Math.round(tY), Math.round(tW), Math.round(tH));
         }
