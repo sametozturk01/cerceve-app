@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import framesCatalog from "./data/frames.json";
 import FrameAddModal from "./components/FrameAddModal";
 import FrameEditModal from "./components/FrameEditModal";
 import SeriesManageModal from "./components/SeriesManageModal";
 import PreviewFullscreen from "./components/PreviewFullscreen";
+import PreviewMagnifier from "./components/PreviewMagnifier";
 import PhotoSourcePicker from "./components/PhotoSourcePicker";
 import Toast from "./components/Toast";
 import HorizontalScrollStrip from "./components/HorizontalScrollStrip";
@@ -372,7 +373,65 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
   return { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih };
 }
 
-function PreviewCanvas({
+function renderPreviewScene(ctx, scene) {
+  const {
+    W,
+    H,
+    activeView,
+    fullscreen,
+    frameColor,
+    decorImg,
+    photo,
+    layout,
+    photoSrc,
+    photoPad,
+    frameRender,
+    frameImg,
+    sliceSize,
+  } = scene;
+
+  const { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih } = layout;
+  const { sx, sy, sWidth, sHeight } = photoSrc;
+
+  ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#e8eaed";
+  ctx.fillRect(0, 0, W, H);
+
+  if (activeView === "dekor" && decorImg) {
+    ctx.drawImage(decorImg, 0, 0, W, H);
+  }
+
+  if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
+    drawFrameShadow(ctx, tX, tY, tW, tH, isLightFrameColor(frameColor));
+  }
+
+  const pX = ix - photoPad;
+  const pY = iy - photoPad;
+  const pW = iw + 2 * photoPad;
+  const pH = ih + 2 * photoPad;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(pX, pY, pW, pH);
+  ctx.clip();
+  ctx.drawImage(photo, sx, sy, sWidth, sHeight, pX, pY, pW, pH);
+  ctx.restore();
+
+  if (frameRender === "flatMetal") {
+    drawFlatMetalFrame(ctx, tX, tY, tW, tH, targetThickPx);
+  } else if (frameImg) {
+    const s = sliceSize;
+    if (s > 0) {
+      drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx);
+      if (isLightFrameColor(frameColor)) {
+        drawLightFrameOutline(ctx, tX, tY, tW, tH);
+      }
+    } else {
+      ctx.drawImage(frameImg, Math.round(tX), Math.round(tY), Math.round(tW), Math.round(tH));
+    }
+  }
+}
+
+const PreviewCanvas = forwardRef(function PreviewCanvas({
   imageUrl,
   frameType,
   frameColor,
@@ -380,8 +439,9 @@ function PreviewCanvas({
   selectedSize,
   customThickness,
   fullscreen = false,
-}) {
+}, ref) {
   const canvasRef = useRef(null);
+  const sceneRef = useRef(null);
   const frameId = frameType?.id ?? "none";
   const frameImage = frameType?.image ?? null;
   const frameRender = frameType?.render ?? null;
@@ -400,6 +460,63 @@ function PreviewCanvas({
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [fullscreen]);
+
+  useImperativeHandle(ref, () => ({
+    paintLoupe(loupeCanvas, diameter, zoom, clientX, clientY) {
+      const scene = sceneRef.current;
+      const canvas = canvasRef.current;
+      if (!canvas?.width || !canvas?.height || !loupeCanvas) return false;
+
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return false;
+
+      const relX = clientX - rect.left;
+      const relY = clientY - rect.top;
+      if (relX < 0 || relY < 0 || relX > rect.width || relY > rect.height) return false;
+
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const cx = relX * scaleX;
+      const cy = relY * scaleY;
+
+      const sampleCss = diameter / zoom;
+      const srcW = sampleCss * scaleX;
+      const srcH = sampleCss * scaleY;
+      let sx = cx - srcW / 2;
+      let sy = cy - srcH / 2;
+      sx = Math.max(0, Math.min(canvas.width - srcW, sx));
+      sy = Math.max(0, Math.min(canvas.height - srcH, sy));
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const side = Math.round(diameter * dpr);
+      loupeCanvas.width = side;
+      loupeCanvas.height = side;
+
+      const lctx = loupeCanvas.getContext("2d", { alpha: false });
+      if (!lctx) return false;
+
+      const bg = scene?.activeView === "dekor" ? "#f8fafc" : "#e8eaed";
+
+      lctx.setTransform(1, 0, 0, 1, 0, 0);
+      lctx.fillStyle = bg;
+      lctx.fillRect(0, 0, side, side);
+      lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      lctx.imageSmoothingEnabled = true;
+      lctx.imageSmoothingQuality = "high";
+
+      const r = diameter / 2;
+      lctx.save();
+      lctx.beginPath();
+      lctx.arc(r, r, r, 0, Math.PI * 2);
+      lctx.clip();
+      lctx.fillStyle = bg;
+      lctx.fillRect(0, 0, diameter, diameter);
+      lctx.drawImage(canvas, sx, sy, srcW, srcH, 0, 0, diameter, diameter);
+      lctx.restore();
+
+      return true;
+    },
+  }));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -426,36 +543,21 @@ function PreviewCanvas({
     ctx.imageSmoothingQuality = "high";
 
     async function draw() {
-      ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#e8eaed";
-      ctx.fillRect(0, 0, W, H);
+      const photoPad = frameColor?.id === "siyah" ? 4 : 0;
 
+      let decorImg = null;
       if (activeView === "dekor") {
-        const decorImg = await loadImage(DECOR_SAMPLES[0].url).catch(() => null);
+        decorImg = await loadImage(DECOR_SAMPLES[0].url).catch(() => null);
         if (cancelled) return;
-        if (decorImg) ctx.drawImage(decorImg, 0, 0, W, H);
       }
 
       const photo = await loadImage(imageUrl).catch(() => null);
       if (cancelled || !photo) return;
 
-      const {
-        tX,
-        tY,
-        tW,
-        tH,
-        targetThickPx,
-        ix,
-        iy,
-        iw,
-        ih,
-      } = computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness);
-
-      if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
-        drawFrameShadow(ctx, tX, tY, tW, tH, isLightFrameColor(frameColor));
-      }
+      const layout = computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness);
 
       const imgRatio = photo.width / photo.height;
-      const targetRatio = iw / ih;
+      const targetRatio = layout.iw / layout.ih;
 
       let sx = 0;
       let sy = 0;
@@ -470,35 +572,30 @@ function PreviewCanvas({
         sy = (photo.height - sHeight) / 2;
       }
 
-      const photoPad = frameColor?.id === "siyah" ? 4 : 0;
-      const pX = ix - photoPad;
-      const pY = iy - photoPad;
-      const pW = iw + 2 * photoPad;
-      const pH = ih + 2 * photoPad;
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(pX, pY, pW, pH);
-      ctx.clip();
-      ctx.drawImage(photo, sx, sy, sWidth, sHeight, pX, pY, pW, pH);
-      ctx.restore();
-
-      if (frameRender === "flatMetal") {
-        drawFlatMetalFrame(ctx, tX, tY, tW, tH, targetThickPx);
-      } else if (frameImage) {
-        const frameImg = await loadImage(frameImage).catch(() => null);
-        if (cancelled || !frameImg) return;
-
-        const s = sliceSize;
-        if (s > 0) {
-          drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx);
-          if (isLightFrameColor(frameColor)) {
-            drawLightFrameOutline(ctx, tX, tY, tW, tH);
-          }
-        } else {
-          ctx.drawImage(frameImg, Math.round(tX), Math.round(tY), Math.round(tW), Math.round(tH));
-        }
+      let frameImg = null;
+      if (frameRender !== "flatMetal" && frameImage) {
+        frameImg = await loadImage(frameImage).catch(() => null);
+        if (cancelled) return;
       }
+
+      const scene = {
+        W,
+        H,
+        activeView,
+        fullscreen,
+        frameColor,
+        decorImg,
+        photo,
+        layout,
+        photoSrc: { sx, sy, sWidth, sHeight },
+        photoPad,
+        frameRender,
+        frameImg,
+        sliceSize,
+      };
+
+      sceneRef.current = scene;
+      renderPreviewScene(ctx, scene);
 
       if (cancelled) return;
     }
@@ -530,7 +627,7 @@ function PreviewCanvas({
       style={{ width: "100%", height: "auto", display: "block" }}
     />
   );
-}
+});
 
 // ─── Çerçeve Swatch ───────────────────────────────────────────────────────────
 
@@ -637,6 +734,7 @@ export default function FramePicker() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingFrame, setEditingFrame] = useState(null);
   const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
+  const fullscreenPreviewRef = useRef(null);
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [toast,         setToast]         = useState(null);
   const toastTimerRef = useRef(null);
@@ -1506,7 +1604,14 @@ export default function FramePicker() {
         open={showFullscreenPreview}
         onClose={() => setShowFullscreenPreview(false)}
       >
-        <PreviewCanvas key={`fs-${previewProps.frameType.id}`} {...previewProps} fullscreen />
+        <PreviewMagnifier previewRef={fullscreenPreviewRef} className="fp-preview-magnifier--fullscreen">
+          <PreviewCanvas
+            ref={fullscreenPreviewRef}
+            key={`fs-${previewProps.frameType.id}`}
+            {...previewProps}
+            fullscreen
+          />
+        </PreviewMagnifier>
       </PreviewFullscreen>
 
       <FrameAddModal

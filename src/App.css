@@ -153,6 +153,53 @@ body {
   overflow: hidden;
 }
 
+.fp-preview-magnifier {
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.fp-preview-magnifier--fullscreen {
+  width: auto;
+  max-width: 96vw;
+  max-height: calc(100vh - 100px);
+}
+
+.fp-preview-loupe-portal {
+  position: fixed;
+  z-index: 200010;
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-sizing: border-box;
+}
+
+.fp-preview-loupe-portal.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.fp-preview-loupe-portal .fp-preview-loupe-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fp-preview-magnifier--fullscreen {
+    cursor: zoom-in;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .fp-preview-loupe-portal {
+    display: none !important;
+  }
+}
+
 .fp-preview-fullscreen-btn {
   position: absolute;
   top: 10px;
@@ -207,6 +254,12 @@ body {
   gap: 12px;
 }
 
+.fp-fullscreen-preview-stack {
+  position: relative;
+  display: inline-block;
+  max-width: 96vw;
+}
+
 .fp-fullscreen-canvas-wrap {
   position: relative;
   width: auto;
@@ -228,23 +281,31 @@ body {
 
 .fp-fullscreen-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  width: 36px;
-  height: 36px;
+  top: -24px;
+  right: -24px;
+  z-index: 3;
+  width: 46px;
+  height: 46px;
+  padding: 0;
   border: none;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.55);
-  color: #fff;
-  font-size: 24px;
-  line-height: 1;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #ffffff;
   cursor: pointer;
-  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(255, 255, 255, 0.25);
+  transition: transform 0.15s, background 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .fp-fullscreen-close:hover {
-  background: rgba(15, 23, 42, 0.78);
+  background: #b91c1c;
+  transform: scale(1.06);
 }
 
 .fp-fullscreen-hint {
