@@ -237,7 +237,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
             <h3 className="fp-modal-edit-section-title">Fiyatlandırma</h3>
             <div className="fp-modal-price-grid">
               <div className="fp-modal-price-field">
-                <label>Çerçeve fiyatı</label>
+                <label>Çerçeve fiyatı (₺/m)</label>
                 <div className="fp-modal-price-input-wrap">
                   <input
                     type="text"
@@ -251,7 +251,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
                 </div>
               </div>
               <div className="fp-modal-price-field">
-                <label>Pleksi fiyatı</label>
+                <label>Pleksi fiyatı (₺/m²)</label>
                 <div className="fp-modal-price-input-wrap">
                   <input
                     type="text"
@@ -265,7 +265,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
                 </div>
               </div>
               <div className="fp-modal-price-field">
-                <label>Cam fiyatı</label>
+                <label>Cam fiyatı (₺/m²)</label>
                 <div className="fp-modal-price-input-wrap">
                   <input
                     type="text"

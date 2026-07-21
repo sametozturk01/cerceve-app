@@ -1,4 +1,4 @@
-/** Standart tablo ölçüleri (cm). Fiyat çevre × birim fiyat ile hesaplanır. */
+/** Standart tablo ölçüleri (cm). Çerçeve: çevre (m) × ₺/m birim fiyat. */
 export const SIZE_OPTIONS = [
   { id: "20x20", label: "20×20 cm", widthCm: 20, heightCm: 20 },
   { id: "30x30", label: "30×30 cm", widthCm: 30, heightCm: 30 },

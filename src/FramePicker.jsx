@@ -48,10 +48,11 @@ const FRAME_PRICE = { none: 0 };
 
 function getActiveSizeDimensions(isCustomSize, customW, customH, selectedSize) {
   if (isCustomSize) {
-    return {
-      widthCm: Math.max(0, Number(customW) || 0),
-      heightCm: Math.max(0, Number(customH) || 0),
-    };
+    const w = Math.max(0, Number(customW) || 0);
+    const h = Math.max(0, Number(customH) || 0);
+    if (w > 0 && h > 0) {
+      return { widthCm: w, heightCm: h };
+    }
   }
   const parsed = parseSizeId(selectedSize?.id);
   return parsed ?? { widthCm: 0, heightCm: 0 };
@@ -61,9 +62,9 @@ function calculateLinePrice({ frame, widthCm, heightCm }) {
   return linePriceForSize(frame, FRAME_PRICE, widthCm, heightCm);
 }
 
-function PriceLineList({ framePrice, pleksiPrice, camPrice, className = "" }) {
-  const showPleksi = pleksiPrice > 0;
-  const showCam = camPrice > 0;
+function PriceLineList({ framePrice, pleksiPrice, camPrice, className = "", showAllLines = false }) {
+  const showPleksi = showAllLines || pleksiPrice > 0;
+  const showCam = showAllLines || camPrice > 0;
   return (
     <ul className={`fp-price-lines ${className}`.trim()}>
       <li>
@@ -1052,8 +1053,8 @@ export default function FramePicker() {
 
   const {
     framePrice,
-    pleksiPrice: pleksiUnit,
-    camPrice: camUnit,
+    pleksiPrice,
+    camPrice,
     totalPrice,
   } = calculateLinePrice({
     frame: selectedFrame,
@@ -1499,12 +1500,26 @@ export default function FramePicker() {
 
         <div className="fp-checkout-panel">
           {selectedFrame.id !== "none" && (
-            <PriceLineList
-              framePrice={framePrice}
-              pleksiPrice={pleksiUnit}
-              camPrice={camUnit}
-              className="fp-price-lines-checkout"
-            />
+            <>
+              <p className="fp-section-label fp-checkout-section-label">Fiyatlandırma</p>
+              {activeWidthCm > 0 && activeHeightCm > 0 && (
+                <p className="fp-checkout-size-note">
+                  {activeWidthCm}×{activeHeightCm} cm için (çerçeve ₺/m · pleksi/cam ₺/m²)
+                </p>
+              )}
+              <PriceLineList
+                framePrice={framePrice}
+                pleksiPrice={pleksiPrice}
+                camPrice={camPrice}
+                showAllLines
+                className="fp-price-lines-checkout"
+              />
+              {totalPrice === 0 && (
+                <p className="fp-checkout-price-hint">
+                  Tutar görünmüyorsa çerçeveyi düzenleyip birim fiyatları girin.
+                </p>
+              )}
+            </>
           )}
           <div className="fp-checkout-price">
             <span className="fp-checkout-price-label">Toplam</span>

@@ -2911,7 +2911,28 @@ body {
 }
 
 .fp-price-lines-checkout {
-  padding: 10px 14px 4px;
+  padding: 4px 14px 4px;
+}
+
+.fp-checkout-section-label {
+  margin: 10px 14px 0;
+}
+
+.fp-checkout-size-note {
+  margin: 4px 14px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.fp-checkout-price-hint {
+  margin: 0;
+  padding: 0 14px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
+  line-height: 1.4;
 }
 
 .fp-price-lines-cart {
