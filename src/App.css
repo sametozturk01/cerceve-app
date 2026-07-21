@@ -163,6 +163,7 @@ body {
   width: auto;
   max-width: 96vw;
   max-height: calc(100vh - 100px);
+  touch-action: none;
 }
 
 .fp-preview-loupe-portal {
@@ -194,9 +195,39 @@ body {
   }
 }
 
+.fp-fullscreen-hint--touch {
+  display: none;
+}
+
 @media (hover: none), (pointer: coarse) {
-  .fp-preview-loupe-portal {
-    display: none !important;
+  .fp-fullscreen-hint--desktop {
+    display: none;
+  }
+
+  .fp-fullscreen-hint--touch {
+    display: block;
+  }
+
+  .fp-fullscreen-close {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    z-index: 200020;
+    width: 44px;
+    height: 44px;
+  }
+
+  .fp-fullscreen-panel {
+    max-width: 100%;
+  }
+
+  .fp-fullscreen-preview-stack {
+    max-width: calc(100vw - 24px);
+  }
+
+  .fp-fullscreen-canvas-wrap canvas,
+  .fp-canvas-fullscreen {
+    max-width: calc(100vw - 24px);
   }
 }
 
@@ -252,6 +283,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  overflow: visible;
 }
 
 .fp-fullscreen-preview-stack {

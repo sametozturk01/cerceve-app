@@ -43,7 +43,12 @@ export default function PreviewFullscreen({ open, onClose, children }) {
           </button>
           <div className="fp-fullscreen-canvas-wrap">{children}</div>
         </div>
-        <p className="fp-fullscreen-hint">Önizlemenin üzerinde gezdirin — büyüteç imleci takip eder · Kapatmak için dışarı tıklayın</p>
+        <p className="fp-fullscreen-hint fp-fullscreen-hint--desktop">
+          Önizlemenin üzerinde gezdirin — büyüteç imleci takip eder · Kapatmak için dışarı tıklayın
+        </p>
+        <p className="fp-fullscreen-hint fp-fullscreen-hint--touch">
+          Parmağınızı önizlemede gezdirin — büyüteç parmağı takip eder · Kapatmak için dışarı tıklayın
+        </p>
       </div>
     </div>,
     document.body

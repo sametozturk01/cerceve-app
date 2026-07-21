@@ -1,9 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-const LOUPE_PX = 88;
-const ZOOM = 5;
+const LOUPE_DESKTOP_PX = 88;
+const LOUPE_TOUCH_PX = 100;
+const ZOOM_DESKTOP = 5;
+const ZOOM_TOUCH = 4;
 const POINTER_GAP = 16;
+
+function useCoarsePointer() {
+  const [coarse, setCoarse] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(pointer: coarse)").matches;
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    const onChange = () => setCoarse(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  return coarse;
+}
 
 export default function PreviewMagnifier({ children, previewRef, className = "" }) {
   const rootRef = useRef(null);
@@ -11,6 +29,10 @@ export default function PreviewMagnifier({ children, previewRef, className = "" 
   const [loupe, setLoupe] = useState({ visible: false, x: 0, y: 0 });
   const rafRef = useRef(0);
   const lastPointRef = useRef({ x: 0, y: 0 });
+  const coarsePointer = useCoarsePointer();
+
+  const loupePx = coarsePointer ? LOUPE_TOUCH_PX : LOUPE_DESKTOP_PX;
+  const zoom = coarsePointer ? ZOOM_TOUCH : ZOOM_DESKTOP;
 
   const hideLoupe = useCallback(() => {
     setLoupe((prev) => (prev.visible ? { ...prev, visible: false } : prev));
@@ -20,7 +42,7 @@ export default function PreviewMagnifier({ children, previewRef, className = "" 
     const loupeCanvas = loupeCanvasRef.current;
     if (!loupeCanvas) return;
 
-    const painted = previewRef?.current?.paintLoupe?.(loupeCanvas, LOUPE_PX, ZOOM, clientX, clientY);
+    const painted = previewRef?.current?.paintLoupe?.(loupeCanvas, loupePx, zoom, clientX, clientY);
     if (!painted) {
       hideLoupe();
       return;
@@ -28,33 +50,37 @@ export default function PreviewMagnifier({ children, previewRef, className = "" 
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const pad = 12;
+    const pad = Math.max(12, coarsePointer ? 16 : 12);
 
     let x = clientX + POINTER_GAP;
-    let y = clientY - LOUPE_PX - POINTER_GAP;
+    let y = clientY - loupePx - POINTER_GAP;
 
-    if (x + LOUPE_PX + pad > vw) {
-      x = clientX - LOUPE_PX - POINTER_GAP;
+    if (x + loupePx + pad > vw) {
+      x = clientX - loupePx - POINTER_GAP;
     }
     if (y < pad) {
       y = clientY + POINTER_GAP;
     }
-    if (y + LOUPE_PX + pad > vh) {
-      y = vh - LOUPE_PX - pad;
+    if (y + loupePx + pad > vh) {
+      y = vh - loupePx - pad;
     }
-    x = Math.max(pad, Math.min(vw - LOUPE_PX - pad, x));
+    x = Math.max(pad, Math.min(vw - loupePx - pad, x));
 
     setLoupe({ visible: true, x, y });
-  }, [previewRef, hideLoupe]);
+  }, [previewRef, hideLoupe, loupePx, zoom, coarsePointer]);
 
-  const handleMouseMove = (event) => {
-    lastPointRef.current = { x: event.clientX, y: event.clientY };
+  const schedulePaint = useCallback((clientX, clientY) => {
+    lastPointRef.current = { x: clientX, y: clientY };
     if (rafRef.current) return;
     rafRef.current = window.requestAnimationFrame(() => {
       rafRef.current = 0;
       const { x, y } = lastPointRef.current;
       paintLoupe(x, y);
     });
+  }, [paintLoupe]);
+
+  const handleMouseMove = (event) => {
+    schedulePaint(event.clientX, event.clientY);
   };
 
   const handleMouseLeave = () => {
@@ -65,6 +91,44 @@ export default function PreviewMagnifier({ children, previewRef, className = "" 
     hideLoupe();
   };
 
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+
+    const onTouchStart = (event) => {
+      if (event.touches.length !== 1) return;
+      const t = event.touches[0];
+      schedulePaint(t.clientX, t.clientY);
+    };
+
+    const onTouchMove = (event) => {
+      if (event.touches.length !== 1) return;
+      event.preventDefault();
+      const t = event.touches[0];
+      schedulePaint(t.clientX, t.clientY);
+    };
+
+    const onTouchEnd = () => {
+      if (rafRef.current) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = 0;
+      }
+      hideLoupe();
+    };
+
+    root.addEventListener("touchstart", onTouchStart, { passive: true });
+    root.addEventListener("touchmove", onTouchMove, { passive: false });
+    root.addEventListener("touchend", onTouchEnd);
+    root.addEventListener("touchcancel", onTouchEnd);
+
+    return () => {
+      root.removeEventListener("touchstart", onTouchStart);
+      root.removeEventListener("touchmove", onTouchMove);
+      root.removeEventListener("touchend", onTouchEnd);
+      root.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [schedulePaint, hideLoupe]);
+
   useEffect(() => () => {
     if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
   }, []);
@@ -72,7 +136,7 @@ export default function PreviewMagnifier({ children, previewRef, className = "" 
   const loupePortal = createPortal(
     <div
       className={`fp-preview-loupe-portal${loupe.visible ? " is-visible" : ""}`}
-      style={{ left: loupe.x, top: loupe.y, width: LOUPE_PX, height: LOUPE_PX }}
+      style={{ left: loupe.x, top: loupe.y, width: loupePx, height: loupePx }}
       aria-hidden
     >
       <canvas ref={loupeCanvasRef} className="fp-preview-loupe-canvas" />
