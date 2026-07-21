@@ -7,6 +7,8 @@ const PRICE_KEYS = [
   "pleksiPricePerCm",
   "camPrice",
   "camPricePerCm",
+  "motifCamPrice",
+  "motifCamPricePerCm",
 ];
 
 function readAll() {

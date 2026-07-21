@@ -19,15 +19,13 @@ import {
   saveFrameOverride,
   overridePatchFromSavedFrame,
 } from "./utils/frameOverridesStorage";
-import {
-  formatTurkishPrice,
-  linePriceForSize,
-} from "./utils/framePricing";
+import { formatTurkishPrice, linePriceForSize } from "./utils/framePricing";
 import { getFrameDisplayLabel } from "./utils/frameDisplay";
 import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride } from "./utils/categoriesStorage";
 import { loadHiddenSeriesIds, hideSeriesCategory } from "./utils/hiddenSeriesStorage";
 import { BASE_CATEGORY_OPTIONS, buildSeriesOptions } from "./data/frameFormOptions";
 import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
+import { BACKING_OPTIONS } from "./data/backingOptions";
 
 // ─── Veri (frames.json) ───────────────────────────────────────────────────────
 
@@ -58,29 +56,31 @@ function getActiveSizeDimensions(isCustomSize, customW, customH, selectedSize) {
   return parsed ?? { widthCm: 0, heightCm: 0 };
 }
 
-function calculateLinePrice({ frame, widthCm, heightCm }) {
-  return linePriceForSize(frame, FRAME_PRICE, widthCm, heightCm);
+function calculateLinePrice({ frame, widthCm, heightCm, backingId = null, backingUnitPerM2 = null }) {
+  return linePriceForSize(frame, FRAME_PRICE, widthCm, heightCm, backingId, backingUnitPerM2);
 }
 
-function PriceLineList({ framePrice, pleksiPrice, camPrice, className = "", showAllLines = false }) {
-  const showPleksi = showAllLines || pleksiPrice > 0;
-  const showCam = showAllLines || camPrice > 0;
+function PriceLineList({
+  framePrice,
+  backingLabel,
+  backingPrice,
+  className = "",
+  showBackingWhenSelected = false,
+}) {
+  const showBacking = showBackingWhenSelected
+    ? Boolean(backingLabel)
+    : backingPrice > 0;
+
   return (
     <ul className={`fp-price-lines ${className}`.trim()}>
       <li>
         <span>Çerçeve</span>
         <span>{formatTurkishPrice(framePrice)} ₺</span>
       </li>
-      {showPleksi && (
+      {showBacking && backingLabel && (
         <li>
-          <span>Pleksi</span>
-          <span>{formatTurkishPrice(pleksiPrice)} ₺</span>
-        </li>
-      )}
-      {showCam && (
-        <li>
-          <span>Cam</span>
-          <span>{formatTurkishPrice(camPrice)} ₺</span>
+          <span>{backingLabel}</span>
+          <span>{formatTurkishPrice(backingPrice)} ₺</span>
         </li>
       )}
     </ul>
@@ -792,8 +792,20 @@ export default function FramePicker() {
     allFrames.find((f) => f.id !== excludeId) ?? FRAME_TYPES[0];
 
   const [isCustomSize, setIsCustomSize] = useState(false);
-  const [customW, setCustomW] = useState(""); 
-  const [customH, setCustomH] = useState(""); 
+  const [customW, setCustomW] = useState("");
+  const [customH, setCustomH] = useState("");
+  const [selectedBackingId, setSelectedBackingId] = useState(null);
+  const [backingUnitPrices, setBackingUnitPrices] = useState({
+    pleksi: "",
+    duz_cam: "",
+    motif_cam: "",
+  });
+  const [isCamCategoryOpen, setIsCamCategoryOpen] = useState(false);
+
+  const clearCamCategory = () => {
+    setSelectedBackingId(null);
+    setBackingUnitPrices({ pleksi: "", duz_cam: "", motif_cam: "" });
+  };
 
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -820,6 +832,8 @@ export default function FramePicker() {
   const handleFrameSelect = (frame) => {
     setSelectedFrameId(frame.id);
     setSelectedColorId(frame.colors?.[0]?.id ?? null);
+    setIsCamCategoryOpen(false);
+    clearCamCategory();
   };
 
   const searchQuery = frameSearch.trim().toLocaleLowerCase("tr-TR");
@@ -894,6 +908,8 @@ export default function FramePicker() {
                 frame: updated,
                 widthCm: item.widthCm,
                 heightCm: item.heightCm,
+                backingId: item.backingId,
+                backingUnitPerM2: item.backingUnitPerM2 ?? null,
               }),
             }
           : item
@@ -1051,15 +1067,22 @@ export default function FramePicker() {
     selectedSize
   );
 
+  const activeBackingUnitRaw =
+    selectedBackingId != null ? backingUnitPrices[selectedBackingId] ?? "" : "";
+  const activeBackingUnitPerM2 =
+    activeBackingUnitRaw.trim() === "" ? null : Math.max(0, Math.round(Number(activeBackingUnitRaw) || 0));
+
   const {
     framePrice,
-    pleksiPrice,
-    camPrice,
+    backingLabel,
+    backingPrice,
     totalPrice,
   } = calculateLinePrice({
     frame: selectedFrame,
     widthCm: activeWidthCm,
     heightCm: activeHeightCm,
+    backingId: selectedBackingId,
+    backingUnitPerM2: activeBackingUnitPerM2,
   });
 
   const cartTotal = useMemo(
@@ -1073,10 +1096,17 @@ export default function FramePicker() {
       return;
     }
 
+    if (selectedBackingId && (activeBackingUnitPerM2 == null || activeBackingUnitPerM2 <= 0)) {
+      showToast({ type: "error", message: "Cam kategorisinde ₺/m² birim fiyat girin." }, 3200);
+      return;
+    }
+
     const pricing = calculateLinePrice({
       frame: selectedFrame,
       widthCm: activeWidthCm,
       heightCm: activeHeightCm,
+      backingId: selectedBackingId,
+      backingUnitPerM2: activeBackingUnitPerM2,
     });
 
     const item = {
@@ -1498,25 +1528,127 @@ export default function FramePicker() {
           )}
         </div>
 
+        {selectedFrame.id !== "none" && (
+          <div className="fp-custom-size-panel fp-cam-category-panel">
+            <button
+              type="button"
+              className={`fp-custom-size-toggle${isCamCategoryOpen ? " open" : ""}`}
+              onClick={() => {
+                if (isCamCategoryOpen) {
+                  clearCamCategory();
+                  setIsCamCategoryOpen(false);
+                } else {
+                  setIsCamCategoryOpen(true);
+                }
+              }}
+            >
+              <span className="fp-custom-size-toggle-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75">
+                  <rect x="5" y="5" width="14" height="14" rx="2" />
+                  <path d="M5 9h14M9 5v14" strokeLinecap="round" opacity="0.55" />
+                </svg>
+              </span>
+              <span className="fp-custom-size-toggle-text">
+                <span className="fp-custom-size-toggle-title">
+                  {isCamCategoryOpen ? "Cam Kategorisi Aktif" : "İsteğe Bağlı Cam Kategorisi"}
+                </span>
+                <span className="fp-custom-size-toggle-sub">
+                  {isCamCategoryOpen
+                    ? "Tür seçin, birim fiyatı ₺/m² girin"
+                    : "Pleksi veya cam eklemek için açın"}
+                </span>
+              </span>
+              <span className="fp-custom-size-toggle-chevron" aria-hidden="true">
+                {isCamCategoryOpen ? "−" : "+"}
+              </span>
+            </button>
+
+            {isCamCategoryOpen && (
+              <div className="fp-custom-size-form fp-cam-category-form">
+                <div className="fp-custom-size-form-header">
+                  <span className="fp-custom-size-form-label">Cam seçimi</span>
+                  <button type="button" className="fp-custom-size-clear" onClick={clearCamCategory}>
+                    Temizle
+                  </button>
+                </div>
+
+                <p className="fp-cam-category-hint">
+                  Tutarlar yukarıdaki çerçeve ölçüsüne (en × boy) göre hesaplanır.
+                </p>
+
+                <div className="fp-glazing-grid" role="group" aria-label="Cam kategorisi seçimi">
+                  {BACKING_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`fp-size-btn fp-glazing-btn${selectedBackingId === opt.id ? " active" : ""}`}
+                      aria-pressed={selectedBackingId === opt.id}
+                      onClick={() => {
+                        setSelectedBackingId((prev) => (prev === opt.id ? null : opt.id));
+                      }}
+                    >
+                      <span className="fp-glazing-btn-label">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {selectedBackingId && (
+                  <div className="fp-backing-unit-field">
+                    <label className="fp-backing-unit-label" htmlFor="fp-backing-unit-price">
+                      Birim fiyat (₺/m²)
+                    </label>
+                    <div className="fp-backing-unit-row">
+                      <input
+                        id="fp-backing-unit-price"
+                        type="text"
+                        inputMode="numeric"
+                        className="fp-backing-unit-input"
+                        placeholder="Örn. 450"
+                        value={backingUnitPrices[selectedBackingId] ?? ""}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^0-9]/g, "");
+                          setBackingUnitPrices((prev) => ({
+                            ...prev,
+                            [selectedBackingId]: digits,
+                          }));
+                        }}
+                      />
+                      <span className="fp-backing-unit-suffix" aria-hidden="true">
+                        ₺/m²
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="fp-checkout-panel">
           {selectedFrame.id !== "none" && (
             <>
               <p className="fp-section-label fp-checkout-section-label">Fiyatlandırma</p>
               {activeWidthCm > 0 && activeHeightCm > 0 && (
                 <p className="fp-checkout-size-note">
-                  {activeWidthCm}×{activeHeightCm} cm için (çerçeve ₺/m · pleksi/cam ₺/m²)
+                  {activeWidthCm}×{activeHeightCm} cm · çerçeve çevre (m) × ₺/m
+                  {selectedBackingId ? " · cam alanı (m²) × ₺/m²" : ""}
                 </p>
               )}
               <PriceLineList
                 framePrice={framePrice}
-                pleksiPrice={pleksiPrice}
-                camPrice={camPrice}
-                showAllLines
+                backingLabel={backingLabel}
+                backingPrice={backingPrice}
+                showBackingWhenSelected
                 className="fp-price-lines-checkout"
               />
-              {totalPrice === 0 && (
+              {selectedBackingId && activeBackingUnitPerM2 != null && activeBackingUnitPerM2 <= 0 && (
                 <p className="fp-checkout-price-hint">
-                  Tutar görünmüyorsa çerçeveyi düzenleyip birim fiyatları girin.
+                  Cam kategorisinde seçili tür için ₺/m² birim fiyatını girin.
+                </p>
+              )}
+              {totalPrice === 0 && !selectedBackingId && (
+                <p className="fp-checkout-price-hint">
+                  Çerçeve birim fiyatı yoksa düzenle ekranından ₺/m girin.
                 </p>
               )}
             </>
@@ -1581,8 +1713,8 @@ export default function FramePicker() {
                     </div>
                     <PriceLineList
                       framePrice={item.framePrice}
-                      pleksiPrice={item.pleksiPrice}
-                      camPrice={item.camPrice}
+                      backingLabel={item.backingLabel}
+                      backingPrice={item.backingPrice}
                       className="fp-price-lines-cart"
                     />
                   </div>

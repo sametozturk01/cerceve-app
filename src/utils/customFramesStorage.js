@@ -140,6 +140,8 @@ export function mergeFrameMeta(
     pleksiPricePerCm,
     camPrice,
     camPricePerCm,
+    motifCamPrice,
+    motifCamPricePerCm,
   }
 ) {
   const cats = [...(categories ?? base.categories ?? [])];
@@ -199,6 +201,15 @@ export function mergeFrameMeta(
     }
   }
 
+  if (motifCamPrice !== undefined) {
+    if (motifCamPrice === null || motifCamPrice === "") {
+      delete next.motifCamPrice;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(motifCamPrice)));
+      next.motifCamPrice = Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
   if (pricePerCm !== undefined) {
     if (pricePerCm === null || pricePerCm === "") {
       delete next.pricePerCm;
@@ -226,6 +237,15 @@ export function mergeFrameMeta(
     }
   }
 
+  if (motifCamPricePerCm !== undefined) {
+    if (motifCamPricePerCm === null || motifCamPricePerCm === "") {
+      delete next.motifCamPricePerCm;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(motifCamPricePerCm)));
+      next.motifCamPricePerCm = Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
   return next;
 }
 
@@ -244,6 +264,8 @@ export function applyCatalogOverride(base, patch) {
     "pleksiPricePerCm",
     "camPrice",
     "camPricePerCm",
+    "motifCamPrice",
+    "motifCamPricePerCm",
   ]) {
     if (Object.prototype.hasOwnProperty.call(patch, key)) {
       picked[key] = patch[key];
@@ -257,6 +279,8 @@ export function applyCatalogOverride(base, patch) {
     "pleksiPricePerCm",
     "camPrice",
     "camPricePerCm",
+    "motifCamPrice",
+    "motifCamPricePerCm",
   ]) {
     if (Object.prototype.hasOwnProperty.call(patch, key)) {
       if (patch[key] === null || patch[key] === "") {

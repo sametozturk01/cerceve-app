@@ -1,3 +1,5 @@
+import { findBackingOption } from "../data/backingOptions";
+
 export function framePerimeterCm(widthCm, heightCm) {
   const w = Math.max(0, Number(widthCm) || 0);
   const h = Math.max(0, Number(heightCm) || 0);
@@ -78,26 +80,79 @@ function surfaceMaterialPrice(frame, m2Field, cm2LegacyField, widthCm, heightCm)
   return 0;
 }
 
-export function getPleksiPrice(frame, widthCm = 0, heightCm = 0) {
-  return surfaceMaterialPrice(frame, "pleksiPrice", "pleksiPricePerCm", widthCm, heightCm);
+export function getBackingLinePriceFromUnit(backingId, unitPerM2, widthCm, heightCm) {
+  const opt = findBackingOption(backingId);
+  if (!opt) {
+    return { backingId: null, backingLabel: null, backingPrice: 0, backingUnitPerM2: 0 };
+  }
+  const unit = Math.max(0, Math.round(Number(unitPerM2) || 0));
+  const amount =
+    unit > 0 && widthCm > 0 && heightCm > 0
+      ? Math.round(unit * frameAreaSquareMeters(widthCm, heightCm))
+      : 0;
+  return {
+    backingId: opt.id,
+    backingLabel: opt.label,
+    backingPrice: amount,
+    backingUnitPerM2: unit,
+  };
 }
 
-export function getCamPrice(frame, widthCm = 0, heightCm = 0) {
-  return surfaceMaterialPrice(frame, "camPrice", "camPricePerCm", widthCm, heightCm);
+export function getBackingLinePrice(frame, backingId, widthCm, heightCm) {
+  const opt = findBackingOption(backingId);
+  if (!opt) {
+    return { backingId: null, backingLabel: null, backingPrice: 0 };
+  }
+  const amount = surfaceMaterialPrice(frame, opt.priceField, opt.legacyField, widthCm, heightCm);
+  return {
+    backingId: opt.id,
+    backingLabel: opt.label,
+    backingPrice: amount,
+  };
+}
+
+export function getBackingUnitPrice(frame, backingId) {
+  const opt = findBackingOption(backingId);
+  if (!opt || !frame || frame.id === "none") return 0;
+  if (Object.prototype.hasOwnProperty.call(frame, opt.priceField)) {
+    return readFrameUnitPrice(frame, opt.priceField);
+  }
+  if (Object.prototype.hasOwnProperty.call(frame, opt.legacyField)) {
+    return readFrameUnitPrice(frame, opt.legacyField);
+  }
+  return 0;
 }
 
 export function formatTurkishPrice(value) {
   return Math.max(0, Math.round(Number(value) || 0)).toLocaleString("tr-TR");
 }
 
-export function linePriceForSize(frame, legacyPriceMap, widthCm, heightCm) {
+export function linePriceForSize(
+  frame,
+  legacyPriceMap,
+  widthCm,
+  heightCm,
+  backingId = null,
+  backingUnitPerM2 = null,
+) {
   const framePrice = getFramePrice(frame, legacyPriceMap, widthCm, heightCm);
-  const pleksiPrice = getPleksiPrice(frame, widthCm, heightCm);
-  const camPrice = getCamPrice(frame, widthCm, heightCm);
+  const backing = backingId
+    ? getBackingLinePriceFromUnit(
+        backingId,
+        backingUnitPerM2 ?? 0,
+        widthCm,
+        heightCm,
+      )
+    : { backingLabel: null, backingPrice: 0, backingUnitPerM2: 0 };
+
+  const { backingLabel, backingPrice, backingUnitPerM2: unitStored } = backing;
+
   return {
     framePrice,
-    pleksiPrice,
-    camPrice,
-    totalPrice: framePrice + pleksiPrice + camPrice,
+    backingId: backingId || null,
+    backingLabel,
+    backingPrice,
+    backingUnitPerM2: unitStored ?? 0,
+    totalPrice: framePrice + backingPrice,
   };
 }

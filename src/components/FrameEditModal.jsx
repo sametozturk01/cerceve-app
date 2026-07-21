@@ -18,8 +18,6 @@ function frameToForm(frame) {
     label: frame.label ?? "",
     defaultMm: frame.defaultMm ?? 20,
     price: parsePriceString(frame.price ?? frame.pricePerCm),
-    pleksiPrice: parsePriceString(frame.pleksiPrice),
-    camPrice: parsePriceString(frame.camPrice),
     categories: [...(frame.categories ?? [])].filter((c) => c !== "custom"),
   };
 }
@@ -36,8 +34,6 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
   const [label, setLabel] = useState("");
   const [defaultMm, setDefaultMm] = useState(20);
   const [price, setPrice] = useState("");
-  const [pleksiPrice, setPleksiPrice] = useState("");
-  const [camPrice, setCamPrice] = useState("");
   const [selectedCats, setSelectedCats] = useState([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -50,8 +46,6 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
     setLabel(form.label);
     setDefaultMm(form.defaultMm);
     setPrice(form.price);
-    setPleksiPrice(form.pleksiPrice);
-    setCamPrice(form.camPrice);
     setSelectedCats(form.categories);
     setError("");
     setSaving(false);
@@ -62,8 +56,6 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
   const hasSeries = Boolean(code.trim() || frame.code);
   const displayLabel = getFrameDisplayLabel({ ...frame, label: label.trim() || frame.label });
   const previewPrice = price.trim() === "" ? 0 : parsePriceInput(price);
-  const previewPleksi = pleksiPrice.trim() === "" ? 0 : parsePriceInput(pleksiPrice);
-  const previewCam = camPrice.trim() === "" ? 0 : parsePriceInput(camPrice);
 
   const toggleCategory = (id) => {
     setSelectedCats((prev) =>
@@ -82,8 +74,6 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
     }
 
     const priceValue = price.trim() === "" ? null : parsePriceInput(price);
-    const pleksiValue = pleksiPrice.trim() === "" ? null : parsePriceInput(pleksiPrice);
-    const camValue = camPrice.trim() === "" ? null : parsePriceInput(camPrice);
 
     const codeTrim = code.trim();
     let categories = [...selectedCats];
@@ -101,11 +91,13 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
       categories: frame.custom ? [...categories, "custom"] : categories,
       defaultMm,
       price: priceValue,
-      pleksiPrice: pleksiValue,
-      camPrice: camValue,
       pricePerCm: null,
+      pleksiPrice: null,
+      camPrice: null,
+      motifCamPrice: null,
       pleksiPricePerCm: null,
       camPricePerCm: null,
+      motifCamPricePerCm: null,
     };
 
     setSaving(true);
@@ -144,7 +136,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
             </span>
             <div>
               <h2>Çerçeve Düzenle</h2>
-              <p>Ad, çerçeve fiyatı, pleksi/cam ve kategorileri güncelleyin</p>
+              <p>Ad, kategori ve çerçeve birim fiyatını (₺/m) güncelleyin</p>
             </div>
           </div>
           <button type="button" className="fp-modal-close" onClick={onClose} aria-label="Kapat">
@@ -167,18 +159,8 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
             </p>
             <div className="fp-modal-edit-price-badges">
               <span className="fp-modal-edit-price-badge">
-                Çerçeve fiyatı: {previewPrice.toLocaleString("tr-TR")} ₺
+                Çerçeve fiyatı: {previewPrice.toLocaleString("tr-TR")} ₺/m
               </span>
-              {previewPleksi > 0 && (
-                <span className="fp-modal-edit-price-badge fp-modal-edit-price-badge-muted">
-                  Pleksi: {previewPleksi.toLocaleString("tr-TR")} ₺
-                </span>
-              )}
-              {previewCam > 0 && (
-                <span className="fp-modal-edit-price-badge fp-modal-edit-price-badge-muted">
-                  Cam: {previewCam.toLocaleString("tr-TR")} ₺
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -235,7 +217,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
 
           <section className="fp-modal-edit-section">
             <h3 className="fp-modal-edit-section-title">Fiyatlandırma</h3>
-            <div className="fp-modal-price-grid">
+            <div className="fp-modal-price-grid fp-modal-price-grid-single">
               <div className="fp-modal-price-field">
                 <label>Çerçeve fiyatı (₺/m)</label>
                 <div className="fp-modal-price-input-wrap">
@@ -245,34 +227,6 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
                     pattern="[0-9]*"
                     value={price}
                     onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="0"
-                  />
-                  <span>₺</span>
-                </div>
-              </div>
-              <div className="fp-modal-price-field">
-                <label>Pleksi fiyatı (₺/m²)</label>
-                <div className="fp-modal-price-input-wrap">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={pleksiPrice}
-                    onChange={(e) => setPleksiPrice(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="0"
-                  />
-                  <span>₺</span>
-                </div>
-              </div>
-              <div className="fp-modal-price-field">
-                <label>Cam fiyatı (₺/m²)</label>
-                <div className="fp-modal-price-input-wrap">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={camPrice}
-                    onChange={(e) => setCamPrice(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="0"
                   />
                   <span>₺</span>
