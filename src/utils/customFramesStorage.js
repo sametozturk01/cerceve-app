@@ -190,6 +190,15 @@ export function mergeFrameMeta(
     }
   }
 
+  if (camPrice !== undefined) {
+    if (camPrice === null || camPrice === "") {
+      delete next.camPrice;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(camPrice)));
+      next.camPrice = Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
   if (pricePerCm !== undefined) {
     if (pricePerCm === null || pricePerCm === "") {
       delete next.pricePerCm;
