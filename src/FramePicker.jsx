@@ -1153,9 +1153,32 @@ export default function FramePicker() {
                 )}
               </span>
             ))}
+          </HorizontalScrollStrip>
+          <p className="fp-scroll-hint">Serileri yana kaydırabilirsiniz</p>
+
+          <div className="fp-category-panel-divider" aria-hidden="true" />
+
+          <div className="fp-category-panel-actions">
+            <button
+              type="button"
+              className="fp-add-frame-btn"
+              onClick={() => setShowAddModal(true)}
+            >
+              <span className="fp-add-frame-btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="4" y="4" width="16" height="16" rx="1.5" />
+                  <path d="M12 8v8M8 12h8" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className="fp-add-frame-btn-text">
+                <span className="fp-add-frame-btn-title">Çerçeve Ekle</span>
+                <span className="fp-add-frame-btn-sub">Kendi çerçevenizi oluşturun</span>
+              </span>
+              <span className="fp-add-frame-btn-arrow" aria-hidden="true">›</span>
+            </button>
 
             {showCatInput ? (
-              <span className="fp-category-add-wrap">
+              <span className="fp-category-add-wrap fp-category-add-wrap-block">
                 <input
                   className="fp-category-add-input"
                   placeholder="Seri adı"
@@ -1201,36 +1224,24 @@ export default function FramePicker() {
             ) : (
               <button
                 type="button"
-                className="fp-category-chip fp-category-add-btn"
+                className="fp-add-frame-btn"
                 onClick={() => setShowCatInput(true)}
                 title="Yeni seri ekle"
               >
-                <span className="fp-category-add-btn-icon" aria-hidden="true">+</span>
-                <span>Seri</span>
+                <span className="fp-add-frame-btn-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" strokeLinejoin="round" />
+                    <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <span className="fp-add-frame-btn-text">
+                  <span className="fp-add-frame-btn-title">Seri Ekle</span>
+                  <span className="fp-add-frame-btn-sub">Yeni çerçeve serisi oluşturun</span>
+                </span>
+                <span className="fp-add-frame-btn-arrow" aria-hidden="true">›</span>
               </button>
             )}
-          </HorizontalScrollStrip>
-          <p className="fp-scroll-hint">Serileri yana kaydırabilirsiniz</p>
-
-          <div className="fp-category-panel-divider" aria-hidden="true" />
-
-          <button
-            type="button"
-            className="fp-add-frame-btn"
-            onClick={() => setShowAddModal(true)}
-          >
-            <span className="fp-add-frame-btn-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="4" y="4" width="16" height="16" rx="1.5" />
-                <path d="M12 8v8M8 12h8" strokeLinecap="round" />
-              </svg>
-            </span>
-            <span className="fp-add-frame-btn-text">
-              <span className="fp-add-frame-btn-title">Çerçeve Ekle</span>
-              <span className="fp-add-frame-btn-sub">Kendi çerçevenizi oluşturun</span>
-            </span>
-            <span className="fp-add-frame-btn-arrow" aria-hidden="true">›</span>
-          </button>
+          </div>
         </div>
 
         <div className="fp-section-label-row">
