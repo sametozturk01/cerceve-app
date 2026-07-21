@@ -29,7 +29,7 @@ export default function Toast({ toast, onDismiss, onConfirm, onUndo }) {
               İptal
             </button>
             <button type="button" className="fp-toast-btn fp-toast-btn-danger" onClick={onConfirm}>
-              Kaldır
+              {toast.confirmLabel ?? "Kaldır"}
             </button>
           </div>
         ) : null}

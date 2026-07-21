@@ -159,6 +159,8 @@ def scan_hole_bounds(px, w: int, h: int, cx: int, cy: int) -> tuple[int, int, in
 
 def detect_hole_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
     cx, cy = w // 2, h // 2
+    if px[cx, cy][3] < 30:
+        return flood_hole_transparent(px, w, h, cx, cy)
     left, top, right, bottom = scan_hole_bounds(px, w, h, cx, cy)
     rails = [left, top, w - 1 - right, h - 1 - bottom]
     if right <= left or bottom <= top:
@@ -166,6 +168,29 @@ def detect_hole_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
     if max(rails) - min(rails) > 12:
         return flood_hole_bounds(px, w, h, cx, cy)
     return left, top, right, bottom
+
+
+def flood_hole_transparent(px, w: int, h: int, cx: int, cy: int) -> tuple[int, int, int, int]:
+    def seed(r: int, g: int, b: int, a: int) -> bool:
+        return a < 30
+
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int]] = deque([(cx, cy)])
+    vis[cy * w + cx] = 1
+    box = [cx, cy, cx, cy]
+    while q:
+        x, y = q.popleft()
+        box[0] = min(box[0], x)
+        box[1] = min(box[1], y)
+        box[2] = max(box[2], x)
+        box[3] = max(box[3], y)
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if 0 <= nx < w and 0 <= ny < h:
+                i = ny * w + nx
+                if not vis[i] and seed(*px[nx, ny]):
+                    vis[i] = 1
+                    q.append((nx, ny))
+    return box[0], box[1], box[2], box[3]
 
 
 def pad_to_square(img: Image.Image) -> Image.Image:

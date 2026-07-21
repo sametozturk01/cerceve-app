@@ -126,7 +126,22 @@ export async function saveCustomFrame(frameMeta, imageBlob) {
   });
 }
 
-export function mergeFrameMeta(base, { code, colorName, label, categories, defaultMm, price }) {
+export function mergeFrameMeta(
+  base,
+  {
+    code,
+    colorName,
+    label,
+    categories,
+    defaultMm,
+    price,
+    pricePerCm,
+    pleksiPrice,
+    pleksiPricePerCm,
+    camPrice,
+    camPricePerCm,
+  }
+) {
   const cats = [...(categories ?? base.categories ?? [])];
   const seriesCode = code?.trim() || base.code || null;
   const color = colorName?.trim() || base.colorName || null;
@@ -166,7 +181,83 @@ export function mergeFrameMeta(base, { code, colorName, label, categories, defau
     }
   }
 
+  if (pleksiPrice !== undefined) {
+    if (pleksiPrice === null || pleksiPrice === "") {
+      delete next.pleksiPrice;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(pleksiPrice)));
+      next.pleksiPrice = Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
+  if (pricePerCm !== undefined) {
+    if (pricePerCm === null || pricePerCm === "") {
+      delete next.pricePerCm;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(pricePerCm)));
+      next.pricePerCm = Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
+  if (pleksiPricePerCm !== undefined) {
+    if (pleksiPricePerCm === null || pleksiPricePerCm === "") {
+      delete next.pleksiPricePerCm;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(pleksiPricePerCm)));
+      next.pleksiPricePerCm = Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
+  if (camPricePerCm !== undefined) {
+    if (camPricePerCm === null || camPricePerCm === "") {
+      delete next.camPricePerCm;
+    } else {
+      const parsed = Math.max(0, Math.round(Number(camPricePerCm)));
+      next.camPricePerCm = Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
   return next;
+}
+
+export function applyCatalogOverride(base, patch) {
+  if (!patch) return base;
+  const picked = {};
+  for (const key of [
+    "code",
+    "colorName",
+    "label",
+    "categories",
+    "defaultMm",
+    "price",
+    "pricePerCm",
+    "pleksiPrice",
+    "pleksiPricePerCm",
+    "camPrice",
+    "camPricePerCm",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      picked[key] = patch[key];
+    }
+  }
+  const merged = mergeFrameMeta(base, picked);
+  for (const key of [
+    "price",
+    "pricePerCm",
+    "pleksiPrice",
+    "pleksiPricePerCm",
+    "camPrice",
+    "camPricePerCm",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      if (patch[key] === null || patch[key] === "") {
+        delete merged[key];
+      } else {
+        merged[key] = Math.max(0, Math.round(Number(patch[key]) || 0));
+      }
+    }
+  }
+  return merged;
 }
 
 export async function updateCustomFrame(id, updates) {

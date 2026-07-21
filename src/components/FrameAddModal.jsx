@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { processFrameImage } from "../utils/frameProcessor";
-import { EDITABLE_CATEGORY_OPTIONS, SERIES_OPTIONS } from "../data/frameFormOptions";
+import { EDITABLE_CATEGORY_OPTIONS, buildSeriesOptions } from "../data/frameFormOptions";
 import { buildFrameEntry, saveCustomFrame } from "../utils/customFramesStorage";
 
-const CATEGORY_OPTIONS = EDITABLE_CATEGORY_OPTIONS;
+// fallback; overridden by prop when passed from parent
+const DEFAULT_CATEGORY_OPTIONS = EDITABLE_CATEGORY_OPTIONS;
 
 const STEPS = {
   idle: "idle",
@@ -14,18 +15,20 @@ const STEPS = {
   error: "error",
 };
 
-export default function FrameAddModal({ open, onClose, onSaved }) {
+export default function FrameAddModal({ open, onClose, onSaved, categoryOptions, seriesOptions }) {
+  const CATEGORY_OPTIONS = categoryOptions ?? DEFAULT_CATEGORY_OPTIONS;
+  const effectiveSeriesOptions = seriesOptions ?? buildSeriesOptions();
   const fileRef = useRef(null);
   const [step, setStep] = useState(STEPS.idle);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(null);
   const [processed, setProcessed] = useState(null);
 
-  const [code, setCode] = useState("FA 20");
+  const [code, setCode] = useState("Yeni 20");
   const [colorName, setColorName] = useState("");
   const [label, setLabel] = useState("");
   const [defaultMm, setDefaultMm] = useState(20);
-  const [selectedCats, setSelectedCats] = useState(["fa20"]);
+  const [selectedCats, setSelectedCats] = useState(["yeni20"]);
 
   const [progressText, setProgressText] = useState("");
 
@@ -37,11 +40,11 @@ export default function FrameAddModal({ open, onClose, onSaved }) {
     setPreview(null);
     setProcessed(null);
     setProgressText("");
-    setCode("FA 20");
+    setCode("Yeni 20");
     setColorName("");
     setLabel("");
     setDefaultMm(20);
-    setSelectedCats(["fa20"]);
+    setSelectedCats(["yeni20"]);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -90,12 +93,21 @@ export default function FrameAddModal({ open, onClose, onSaved }) {
     setError("");
 
     try {
+      const codeTrim = code.trim() || null;
+      let categories = [...selectedCats];
+      if (codeTrim) {
+        const seriesCat = CATEGORY_OPTIONS.find((c) => c.label === codeTrim);
+        if (seriesCat && !categories.includes(seriesCat.id)) {
+          categories.push(seriesCat.id);
+        }
+      }
+
       const imageUrl = URL.createObjectURL(processed.blob);
       const entry = buildFrameEntry({
-        code: code.trim() || null,
+        code: codeTrim,
         colorName: colorName.trim() || null,
         label: label.trim() || null,
-        categories: selectedCats,
+        categories,
         thickness: processed.thickness,
         defaultMm,
         imageUrl,
@@ -171,14 +183,26 @@ export default function FrameAddModal({ open, onClose, onSaved }) {
         {step === STEPS.ready && (
           <div className="fp-modal-form">
             <div className="fp-modal-field">
-              <label>Seri kodu</label>
-              <select value={code} onChange={(e) => setCode(e.target.value)}>
-                {SERIES_OPTIONS.map((s) => (
-                  <option key={s || "none"} value={s}>
-                    {s || "— Seri yok —"}
-                  </option>
+              <label>Seri</label>
+              <div className="fp-category-row fp-modal-series-row">
+                <button
+                  type="button"
+                  className={`fp-category-chip${!code ? " active" : ""}`}
+                  onClick={() => setCode("")}
+                >
+                  Seri yok
+                </button>
+                {effectiveSeriesOptions.filter(Boolean).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`fp-category-chip${code === s ? " active" : ""}`}
+                    onClick={() => setCode(s)}
+                  >
+                    {s}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="fp-modal-field">

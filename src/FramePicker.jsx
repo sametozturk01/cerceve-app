@@ -6,14 +6,26 @@ import PreviewFullscreen from "./components/PreviewFullscreen";
 import PhotoSourcePicker from "./components/PhotoSourcePicker";
 import Toast from "./components/Toast";
 import HorizontalScrollStrip from "./components/HorizontalScrollStrip";
-import { loadCustomFrames, revokeFrameUrls, deleteCustomFrame, mergeFrameMeta } from "./utils/customFramesStorage";
+import { loadCustomFrames, revokeFrameUrls, deleteCustomFrame, mergeFrameMeta, applyCatalogOverride } from "./utils/customFramesStorage";
 import {
   loadHiddenFrameIds,
   hideFrameId,
   unhideFrameId,
 } from "./utils/hiddenFramesStorage";
-import { loadFrameOverrides } from "./utils/frameOverridesStorage";
+import {
+  loadFrameOverrides,
+  saveFrameOverride,
+  overridePatchFromSavedFrame,
+} from "./utils/frameOverridesStorage";
+import {
+  formatTurkishPrice,
+  linePriceForSize,
+} from "./utils/framePricing";
 import { getFrameDisplayLabel } from "./utils/frameDisplay";
+import { loadCustomCategories, addCustomCategory, deleteCustomCategory } from "./utils/categoriesStorage";
+import { loadHiddenSeriesIds, hideSeriesCategory } from "./utils/hiddenSeriesStorage";
+import { BASE_CATEGORY_OPTIONS, buildSeriesOptions } from "./data/frameFormOptions";
+import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
 
 // ─── Veri (frames.json) ───────────────────────────────────────────────────────
 
@@ -28,28 +40,48 @@ const DECOR_SAMPLES = [
   },
 ];
 
-const SIZES = [
-  { id: "20x20", label: "20×20 cm", price: 149 },
-  { id: "30x30", label: "30×30 cm", price: 199 },
-  { id: "40x40", label: "40×40 cm", price: 279 },
-  { id: "50x50", label: "50×50 cm", price: 349 },
-  { id: "60x40", label: "60×40 cm", price: 319 },
-  { id: "80x60", label: "80×60 cm", price: 449 },
-];
+const SIZES = SIZE_OPTIONS;
 
-const FRAME_PRICE = { none: 0, koseli: 89, ince: 59, yuvarlak: 99 };
+const FRAME_PRICE = { none: 0 };
 
-function getFramePrice(frame) {
-  if (!frame || frame.id === "none") return 0;
-  if (typeof frame.price === "number" && Number.isFinite(frame.price) && frame.price >= 0) {
-    return Math.round(frame.price);
+function getActiveSizeDimensions(isCustomSize, customW, customH, selectedSize) {
+  if (isCustomSize) {
+    return {
+      widthCm: Math.max(0, Number(customW) || 0),
+      heightCm: Math.max(0, Number(customH) || 0),
+    };
   }
-  return FRAME_PRICE[frame.id] ?? 0;
+  const parsed = parseSizeId(selectedSize?.id);
+  return parsed ?? { widthCm: 0, heightCm: 0 };
 }
 
-function calculateLinePrice({ frame }) {
-  const framePrice = getFramePrice(frame);
-  return { framePrice, totalPrice: framePrice };
+function calculateLinePrice({ frame, widthCm, heightCm }) {
+  return linePriceForSize(frame, FRAME_PRICE, widthCm, heightCm);
+}
+
+function PriceLineList({ framePrice, pleksiPrice, camPrice, className = "" }) {
+  const showPleksi = pleksiPrice > 0;
+  const showCam = camPrice > 0;
+  return (
+    <ul className={`fp-price-lines ${className}`.trim()}>
+      <li>
+        <span>Çerçeve</span>
+        <span>{formatTurkishPrice(framePrice)} ₺</span>
+      </li>
+      {showPleksi && (
+        <li>
+          <span>Pleksi</span>
+          <span>{formatTurkishPrice(pleksiPrice)} ₺</span>
+        </li>
+      )}
+      {showCam && (
+        <li>
+          <span>Cam</span>
+          <span>{formatTurkishPrice(camPrice)} ₺</span>
+        </li>
+      )}
+    </ul>
+  );
 }
 
 function buildSizeLabel(isCustomSize, customW, customH, selectedSize) {
@@ -331,10 +363,10 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
   const rawThickPx = customThickness * pxPerMm;
   const targetThickPx = Math.max(1, Math.round(Math.min(rawThickPx, tW / 2 - 2, tH / 2 - 2)));
 
-  const ix = Math.round(tX + targetThickPx - 2);
-  const iy = Math.round(tY + targetThickPx - 2);
-  const iw = Math.round(tW - 2 * targetThickPx + 4);
-  const ih = Math.round(tH - 2 * targetThickPx + 4);
+  const ix = Math.round(tX + targetThickPx);
+  const iy = Math.round(tY + targetThickPx);
+  const iw = Math.round(tW - 2 * targetThickPx);
+  const ih = Math.round(tH - 2 * targetThickPx);
 
   return { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih };
 }
@@ -437,11 +469,17 @@ function PreviewCanvas({
         sy = (photo.height - sHeight) / 2;
       }
 
+      const photoPad = frameColor?.id === "siyah" ? 4 : 0;
+      const pX = ix - photoPad;
+      const pY = iy - photoPad;
+      const pW = iw + 2 * photoPad;
+      const pH = ih + 2 * photoPad;
+
       ctx.save();
       ctx.beginPath();
-      ctx.rect(ix, iy, iw, ih);
+      ctx.rect(pX, pY, pW, pH);
       ctx.clip();
-      ctx.drawImage(photo, sx, sy, sWidth, sHeight, ix, iy, iw, ih);
+      ctx.drawImage(photo, sx, sy, sWidth, sHeight, pX, pY, pW, pH);
       ctx.restore();
 
       if (frameRender === "flatMetal") {
@@ -555,7 +593,7 @@ function FrameSwatch({ frame }) {
 
 function frameSearchText(frame) {
   const catLabels = (frame.categories ?? [])
-    .map((id) => FRAME_CATEGORIES.find((c) => c.id === id)?.label)
+    .map((id) => framesCatalog.categories.find((c) => c.id === id)?.label)
     .filter(Boolean);
   return [getFrameDisplayLabel(frame), frame.code, frame.colorName, frame.id, ...catLabels]
     .filter(Boolean)
@@ -590,6 +628,10 @@ export default function FramePicker() {
   const [customFrames,  setCustomFrames]  = useState([]);
   const [hiddenFrameIds, setHiddenFrameIds] = useState(() => loadHiddenFrameIds());
   const [frameOverrides, setFrameOverrides] = useState(() => loadFrameOverrides());
+  const [userCategories, setUserCategories] = useState(() => loadCustomCategories());
+  const [hiddenSeriesIds, setHiddenSeriesIds] = useState(() => loadHiddenSeriesIds());
+  const [showCatInput, setShowCatInput] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
   const [showAddModal,  setShowAddModal]  = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingFrame, setEditingFrame] = useState(null);
@@ -614,7 +656,8 @@ export default function FramePicker() {
         .filter((f) => !hiddenFrameIds.has(f.id))
         .map((f) => {
           const patch = frameOverrides[f.id];
-          return patch ? mergeFrameMeta(f, patch) : f;
+          if (!patch) return f;
+          return applyCatalogOverride(f, patch);
         });
       return [...catalog, ...customFrames];
     },
@@ -681,9 +724,23 @@ export default function FramePicker() {
 
   const searchQuery = frameSearch.trim().toLocaleLowerCase("tr-TR");
 
+  const allCategories = useMemo(
+    () => [...FRAME_CATEGORIES, ...userCategories],
+    [userCategories]
+  );
+
   const visibleCategories = useMemo(
-    () => FRAME_CATEGORIES.filter((cat) => countFramesInCategory(allFrames, cat.id) > 0),
-    [allFrames]
+    () =>
+      allCategories.filter((cat) => {
+        if (hiddenSeriesIds.has(cat.id)) return false;
+        return cat.id === "all" || countFramesInCategory(allFrames, cat.id) > 0 || cat.custom;
+      }),
+    [allCategories, allFrames, hiddenSeriesIds]
+  );
+
+  const seriesOptions = useMemo(
+    () => buildSeriesOptions(userCategories, allFrames),
+    [userCategories, allFrames]
   );
 
   const filteredFrames = useMemo(() => {
@@ -711,11 +768,34 @@ export default function FramePicker() {
   };
 
   const handleFrameEdited = (updated) => {
+    if (!updated?.id) return;
+
     if (updated.custom) {
       setCustomFrames((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
     } else {
-      setFrameOverrides(loadFrameOverrides());
+      const patch = overridePatchFromSavedFrame(updated);
+      saveFrameOverride(updated.id, patch);
+      setFrameOverrides((prev) => ({
+        ...prev,
+        [updated.id]: { ...(prev[updated.id] ?? {}), ...patch },
+      }));
     }
+
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.frameId === updated.id
+          ? {
+              ...item,
+              ...calculateLinePrice({
+                frame: updated,
+                widthCm: item.widthCm,
+                heightCm: item.heightCm,
+              }),
+            }
+          : item
+      )
+    );
+
     setEditingFrame(null);
     showToast({ type: "success", message: "Çerçeve güncellendi." }, 2500);
   };
@@ -752,9 +832,45 @@ export default function FramePicker() {
     const name = getFrameDisplayLabel(frame);
     showToast({
       type: "confirm",
+      confirmKind: "frame",
       frame,
       message: `"${name}" kaldırılsın mı?`,
+      confirmLabel: "Kaldır",
     });
+  };
+
+  const requestDeleteSeries = (cat) => {
+    const hint = cat.custom
+      ? "Bu seri kalıcı olarak silinir."
+      : "Çerçeveler silinmez; seri yalnızca listeden gizlenir.";
+    showToast({
+      type: "confirm",
+      confirmKind: "series",
+      seriesCat: cat,
+      message: `"${cat.label}" serisi kaldırılsın mı? ${hint}`,
+      confirmLabel: "Sil",
+    });
+  };
+
+  const confirmDeleteSeries = () => {
+    const cat = toast?.seriesCat;
+    if (!cat) return;
+
+    if (frameCategory === cat.id) setFrameCategory(null);
+    if (cat.custom) {
+      setUserCategories(deleteCustomCategory(cat.id));
+    } else {
+      setHiddenSeriesIds(hideSeriesCategory(cat.id));
+    }
+    showToast({ type: "success", message: `"${cat.label}" serisi kaldırıldı.` }, 2800);
+  };
+
+  const handleToastConfirm = () => {
+    if (toast?.confirmKind === "series") {
+      confirmDeleteSeries();
+      return;
+    }
+    confirmRemoveFrame();
   };
 
   const confirmRemoveFrame = async () => {
@@ -802,9 +918,23 @@ export default function FramePicker() {
 
   const safeW = Number(customW) || 0;
   const safeH = Number(customH) || 0;
+  const { widthCm: activeWidthCm, heightCm: activeHeightCm } = getActiveSizeDimensions(
+    isCustomSize,
+    customW,
+    customH,
+    selectedSize
+  );
 
-  const framePrice = getFramePrice(selectedFrame);
-  const totalPrice = framePrice;
+  const {
+    framePrice,
+    pleksiPrice: pleksiUnit,
+    camPrice: camUnit,
+    totalPrice,
+  } = calculateLinePrice({
+    frame: selectedFrame,
+    widthCm: activeWidthCm,
+    heightCm: activeHeightCm,
+  });
 
   const cartTotal = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.totalPrice, 0),
@@ -817,13 +947,20 @@ export default function FramePicker() {
       return;
     }
 
-    const pricing = calculateLinePrice({ frame: selectedFrame });
+    const pricing = calculateLinePrice({
+      frame: selectedFrame,
+      widthCm: activeWidthCm,
+      heightCm: activeHeightCm,
+    });
 
     const item = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      frameId: selectedFrame.id,
       frameLabel: getFrameDisplayLabel(selectedFrame),
       sizeLabel: buildSizeLabel(isCustomSize, customW, customH, selectedSize),
       viewLabel: activeView === "dekor" ? "Dekor" : "Tablo",
+      widthCm: activeWidthCm,
+      heightCm: activeHeightCm,
       ...pricing,
     };
 
@@ -991,19 +1128,87 @@ export default function FramePicker() {
             ariaLabel="Çerçeve serileri"
           >
             {visibleCategories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}`}
-                onClick={() => {
-                  setFrameCategory(cat.id);
-                  setFrameSearch("");
-                }}
-              >
-                <span className="fp-category-chip-label">{cat.label}</span>
-                <span className="fp-category-count">{countFramesInCategory(allFrames, cat.id)}</span>
-              </button>
+              <span key={cat.id} className="fp-category-chip-wrap">
+                <button
+                  type="button"
+                  className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}${cat.custom ? " user-cat" : ""}`}
+                  onClick={() => {
+                    setFrameCategory(cat.id);
+                    setFrameSearch("");
+                  }}
+                >
+                  <span className="fp-category-chip-label">{cat.label}</span>
+                  <span className="fp-category-count">{countFramesInCategory(allFrames, cat.id)}</span>
+                </button>
+                {cat.id !== "all" && (
+                  <button
+                    type="button"
+                    className="fp-category-chip-delete"
+                    aria-label={`${cat.label} serisini kaldır`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      requestDeleteSeries(cat);
+                    }}
+                  >×</button>
+                )}
+              </span>
             ))}
+
+            {showCatInput ? (
+              <span className="fp-category-add-wrap">
+                <input
+                  className="fp-category-add-input"
+                  placeholder="Seri adı"
+                  value={newCatLabel}
+                  autoFocus
+                  maxLength={32}
+                  onChange={(e) => setNewCatLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newCatLabel.trim()) {
+                      const entry = addCustomCategory(newCatLabel.trim());
+                      setUserCategories(loadCustomCategories());
+                      setNewCatLabel("");
+                      setShowCatInput(false);
+                      setFrameCategory(entry.id);
+                      setFrameSearch("");
+                    }
+                    if (e.key === "Escape") {
+                      setShowCatInput(false);
+                      setNewCatLabel("");
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="fp-category-add-confirm"
+                  disabled={!newCatLabel.trim()}
+                  onClick={() => {
+                    if (!newCatLabel.trim()) return;
+                    const entry = addCustomCategory(newCatLabel.trim());
+                    setUserCategories(loadCustomCategories());
+                    setNewCatLabel("");
+                    setShowCatInput(false);
+                    setFrameCategory(entry.id);
+                    setFrameSearch("");
+                  }}
+                >✓</button>
+                <button
+                  type="button"
+                  className="fp-category-add-cancel"
+                  onClick={() => { setShowCatInput(false); setNewCatLabel(""); }}
+                >✕</button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="fp-category-chip fp-category-add-btn"
+                onClick={() => setShowCatInput(true)}
+                title="Yeni seri ekle"
+              >
+                <span className="fp-category-add-btn-icon" aria-hidden="true">+</span>
+                <span>Seri</span>
+              </button>
+            )}
           </HorizontalScrollStrip>
           <p className="fp-scroll-hint">Serileri yana kaydırabilirsiniz</p>
 
@@ -1034,7 +1239,7 @@ export default function FramePicker() {
             {searchQuery
               ? `${selectableFrameCount} sonuç`
               : frameCategory
-                ? `${FRAME_CATEGORIES.find((c) => c.id === frameCategory)?.label ?? "Seri"} · ${selectableFrameCount} çerçeve`
+                ? `${allCategories.find((c) => c.id === frameCategory)?.label ?? "Seri"} · ${selectableFrameCount} çerçeve`
                 : "Seri seçin"}
           </span>
         </div>
@@ -1223,11 +1428,19 @@ export default function FramePicker() {
         </div>
 
         <div className="fp-checkout-panel">
+          {selectedFrame.id !== "none" && (
+            <PriceLineList
+              framePrice={framePrice}
+              pleksiPrice={pleksiUnit}
+              camPrice={camUnit}
+              className="fp-price-lines-checkout"
+            />
+          )}
           <div className="fp-checkout-price">
-            <span className="fp-checkout-price-label">Çerçeve Fiyatı</span>
+            <span className="fp-checkout-price-label">Toplam</span>
             <span className="fp-price">{totalPrice.toLocaleString("tr-TR")} ₺</span>
             {selectedFrame.id !== "none" && (
-              <span className="fp-price-breakdown">
+              <span className="fp-price-breakdown fp-price-breakdown-sub">
                 {getFrameDisplayLabel(selectedFrame)}
               </span>
             )}
@@ -1276,17 +1489,19 @@ export default function FramePicker() {
             <ul className="fp-cart-list">
               {cartItems.map((item) => (
                 <li key={item.id} className="fp-cart-item">
-                  <div className="fp-cart-item-info">
-                    <strong>{item.frameLabel}</strong>
-                    <span>{item.sizeLabel} · {item.viewLabel}</span>
-                    <span className="fp-cart-item-price-detail">
-                      Çerçeve: {item.framePrice.toLocaleString("tr-TR")} ₺
-                    </span>
+                  <div className="fp-cart-item-main">
+                    <div className="fp-cart-item-info">
+                      <strong>{item.frameLabel}</strong>
+                      <span>{item.sizeLabel} · {item.viewLabel}</span>
+                    </div>
+                    <PriceLineList
+                      framePrice={item.framePrice}
+                      pleksiPrice={item.pleksiPrice}
+                      camPrice={item.camPrice}
+                      className="fp-price-lines-cart"
+                    />
                   </div>
                   <div className="fp-cart-item-actions">
-                    <span className="fp-cart-item-total">
-                      {item.totalPrice.toLocaleString("tr-TR")} ₺
-                    </span>
                     <button
                       type="button"
                       className="fp-cart-item-remove"
@@ -1326,6 +1541,8 @@ export default function FramePicker() {
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSaved={handleFrameAdded}
+        categoryOptions={[...BASE_CATEGORY_OPTIONS, ...userCategories]}
+        seriesOptions={seriesOptions}
       />
 
       <FrameEditModal
@@ -1333,12 +1550,14 @@ export default function FramePicker() {
         frame={editingFrame}
         onClose={closeEditModal}
         onSaved={handleFrameEdited}
+        categoryOptions={[...BASE_CATEGORY_OPTIONS, ...userCategories]}
+        seriesOptions={seriesOptions}
       />
 
       <Toast
         toast={toast}
         onDismiss={dismissToast}
-        onConfirm={confirmRemoveFrame}
+        onConfirm={handleToastConfirm}
         onUndo={handleToastUndo}
       />
     </div>
