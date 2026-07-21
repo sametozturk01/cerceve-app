@@ -213,12 +213,14 @@ body {
   }
 
   .fp-fullscreen-preview-stack {
-    max-width: calc(100vw - 24px);
+    max-width: calc(100vw - 48px);
+    padding-top: 18px;
+    padding-right: 18px;
   }
 
   .fp-fullscreen-canvas-wrap canvas,
   .fp-canvas-fullscreen {
-    max-width: calc(100vw - 24px);
+    max-width: calc(100vw - 48px);
   }
 }
 
@@ -281,8 +283,9 @@ body {
   position: relative;
   display: inline-block;
   max-width: 96vw;
-  padding-top: 6px;
-  padding-right: 6px;
+  padding-top: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
 }
 
 .fp-fullscreen-canvas-wrap {
@@ -306,8 +309,8 @@ body {
 
 .fp-fullscreen-close {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: -16px;
+  right: -16px;
   z-index: 5;
   width: 42px;
   height: 42px;
@@ -320,9 +323,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow:
-    0 4px 18px rgba(0, 0, 0, 0.45),
-    0 0 0 2px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
   transition: transform 0.15s, background 0.15s;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;

@@ -25,26 +25,28 @@ export default function PreviewFullscreen({ open, onClose, children }) {
     <div className="fp-fullscreen-backdrop" onClick={onClose}>
       <div className="fp-fullscreen-panel" onClick={(e) => e.stopPropagation()}>
         <div className="fp-fullscreen-preview-stack">
-          <button
-            type="button"
-            className="fp-fullscreen-close"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            aria-label="Tam ekranı kapat"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M7 7l10 10M17 7L7 17"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-          <div className="fp-fullscreen-canvas-wrap">{children}</div>
+          <div className="fp-fullscreen-canvas-wrap">
+            <button
+              type="button"
+              className="fp-fullscreen-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              aria-label="Tam ekranı kapat"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  d="M7 7l10 10M17 7L7 17"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+            {children}
+          </div>
         </div>
         <p className="fp-fullscreen-hint fp-fullscreen-hint--desktop">
           Önizlemenin üzerinde gezdirin — büyüteç imleci takip eder · Kapatmak için dışarı tıklayın
