@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { EDITABLE_CATEGORY_OPTIONS, buildSeriesOptions } from "../data/frameFormOptions";
 import { mergeFrameMeta, updateCustomFrame } from "../utils/customFramesStorage";
-import { saveFrameOverride } from "../utils/frameOverridesStorage";
+import { saveFrameOverride, overridePatchFromSavedFrame } from "../utils/frameOverridesStorage";
 import { getFrameDisplayLabel } from "../utils/frameDisplay";
 
 function parsePriceString(value) {
@@ -119,8 +119,8 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
           URL.revokeObjectURL(frame.image);
         }
       } else {
-        saveFrameOverride(frame.id, updates);
         saved = mergeFrameMeta(frame, updates);
+        saveFrameOverride(frame.id, overridePatchFromSavedFrame(saved));
       }
       onSaved(saved);
       onClose();

@@ -1,5 +1,14 @@
 const STORAGE_KEY = "cerceve-frame-overrides";
 
+const PRICE_KEYS = [
+  "price",
+  "pricePerCm",
+  "pleksiPrice",
+  "pleksiPricePerCm",
+  "camPrice",
+  "camPricePerCm",
+];
+
 function readAll() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -18,9 +27,20 @@ export function loadFrameOverrides() {
   return readAll();
 }
 
+/** undefined atlanır; null ilgili anahtarı siler */
 export function saveFrameOverride(id, patch) {
   const all = readAll();
-  all[id] = { ...(all[id] ?? {}), ...patch };
+  const next = { ...(all[id] ?? {}) };
+
+  for (const [key, value] of Object.entries(patch ?? {})) {
+    if (value === undefined) continue;
+    if (value === null) delete next[key];
+    else next[key] = value;
+  }
+
+  if (Object.keys(next).length === 0) delete all[id];
+  else all[id] = next;
+
   writeAll(all);
   return all;
 }
@@ -31,29 +51,26 @@ const OVERRIDE_KEYS = [
   "label",
   "categories",
   "defaultMm",
-  "price",
-  "pricePerCm",
-  "pleksiPrice",
-  "pleksiPricePerCm",
-  "camPrice",
-  "camPricePerCm",
+  ...PRICE_KEYS,
 ];
 
-/** Düzenleme kaydından override patch üretir */
+/** Düzenleme kaydından override patch üretir (yalnızca çerçevede tanımlı fiyat alanları). */
 export function overridePatchFromSavedFrame(frame) {
-  return {
+  const patch = {
     code: frame.code ?? null,
     colorName: frame.colorName ?? null,
     label: frame.label ?? null,
     categories: (frame.categories ?? []).filter((c) => c !== "custom"),
     defaultMm: frame.defaultMm,
-    price: frame.price,
-    pricePerCm: frame.pricePerCm,
-    pleksiPrice: frame.pleksiPrice,
-    pleksiPricePerCm: frame.pleksiPricePerCm,
-    camPrice: frame.camPrice,
-    camPricePerCm: frame.camPricePerCm,
   };
+
+  for (const key of PRICE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(frame, key)) {
+      patch[key] = frame[key];
+    }
+  }
+
+  return patch;
 }
 
 /** localStorage override'ını katalog çerçevesine uygular (yalnızca patch'te olan alanlar). */
