@@ -37,3 +37,24 @@ export function renameCustomCategory(id, newLabel) {
   localStorage.setItem(LS_KEY, JSON.stringify(cats));
   return cats;
 }
+
+const LABEL_OVERRIDE_KEY = "cerceve-series-label-overrides";
+
+export function loadSeriesLabelOverrides() {
+  try {
+    const raw = localStorage.getItem(LABEL_OVERRIDE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveSeriesLabelOverride(id, label) {
+  const all = { ...loadSeriesLabelOverrides() };
+  const trimmed = (label ?? "").trim();
+  if (!trimmed) delete all[id];
+  else all[id] = trimmed;
+  localStorage.setItem(LABEL_OVERRIDE_KEY, JSON.stringify(all));
+  return all;
+}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import framesCatalog from "./data/frames.json";
 import FrameAddModal from "./components/FrameAddModal";
 import FrameEditModal from "./components/FrameEditModal";
+import SeriesManageModal from "./components/SeriesManageModal";
 import PreviewFullscreen from "./components/PreviewFullscreen";
 import PhotoSourcePicker from "./components/PhotoSourcePicker";
 import Toast from "./components/Toast";
@@ -22,7 +23,7 @@ import {
   linePriceForSize,
 } from "./utils/framePricing";
 import { getFrameDisplayLabel } from "./utils/frameDisplay";
-import { loadCustomCategories, addCustomCategory, deleteCustomCategory } from "./utils/categoriesStorage";
+import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride } from "./utils/categoriesStorage";
 import { loadHiddenSeriesIds, hideSeriesCategory } from "./utils/hiddenSeriesStorage";
 import { BASE_CATEGORY_OPTIONS, buildSeriesOptions } from "./data/frameFormOptions";
 import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
@@ -629,10 +630,10 @@ export default function FramePicker() {
   const [hiddenFrameIds, setHiddenFrameIds] = useState(() => loadHiddenFrameIds());
   const [frameOverrides, setFrameOverrides] = useState(() => loadFrameOverrides());
   const [userCategories, setUserCategories] = useState(() => loadCustomCategories());
+  const [seriesLabelOverrides, setSeriesLabelOverrides] = useState(() => loadSeriesLabelOverrides());
   const [hiddenSeriesIds, setHiddenSeriesIds] = useState(() => loadHiddenSeriesIds());
-  const [showCatInput, setShowCatInput] = useState(false);
-  const [newCatLabel, setNewCatLabel] = useState("");
   const [showAddModal,  setShowAddModal]  = useState(false);
+  const [showSeriesManage, setShowSeriesManage] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingFrame, setEditingFrame] = useState(null);
   const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
@@ -725,8 +726,12 @@ export default function FramePicker() {
   const searchQuery = frameSearch.trim().toLocaleLowerCase("tr-TR");
 
   const allCategories = useMemo(
-    () => [...FRAME_CATEGORIES, ...userCategories],
-    [userCategories]
+    () =>
+      [...FRAME_CATEGORIES, ...userCategories].map((cat) => ({
+        ...cat,
+        label: seriesLabelOverrides[cat.id] ?? cat.label,
+      })),
+    [userCategories, seriesLabelOverrides]
   );
 
   const visibleCategories = useMemo(
@@ -850,6 +855,28 @@ export default function FramePicker() {
       message: `"${cat.label}" serisi kaldırılsın mı? ${hint}`,
       confirmLabel: "Sil",
     });
+  };
+
+  const handleAddSeries = (label) => {
+    const entry = addCustomCategory(label);
+    setUserCategories(loadCustomCategories());
+    setFrameCategory(entry.id);
+    setFrameSearch("");
+    showToast({ type: "success", message: `"${entry.label}" serisi eklendi.` }, 2200);
+  };
+
+  const handleRenameSeries = (cat, newLabel) => {
+    const trimmed = newLabel.trim();
+    if (!trimmed) return;
+    if (cat.custom) {
+      setUserCategories(renameCustomCategory(cat.id, trimmed));
+      if (seriesLabelOverrides[cat.id]) {
+        setSeriesLabelOverrides(saveSeriesLabelOverride(cat.id, ""));
+      }
+    } else {
+      setSeriesLabelOverrides(saveSeriesLabelOverride(cat.id, trimmed));
+    }
+    showToast({ type: "success", message: "Seri adı güncellendi." }, 2200);
   };
 
   const confirmDeleteSeries = () => {
@@ -1122,36 +1149,35 @@ export default function FramePicker() {
         </div>
 
         <div className="fp-category-panel">
+          <div className="fp-category-panel-header">
+            <span className="fp-category-panel-title">Seriler</span>
+            <button
+              type="button"
+              className="fp-category-panel-edit"
+              onClick={() => setShowSeriesManage(true)}
+            >
+              Düzenle
+            </button>
+          </div>
+
           <HorizontalScrollStrip
             className="fp-category-hscroll"
             trackClassName="fp-category-row"
             ariaLabel="Çerçeve serileri"
           >
             {visibleCategories.map((cat) => (
-              <span key={cat.id} className="fp-category-chip-wrap">
-                <button
-                  type="button"
-                  className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}${cat.custom ? " user-cat" : ""}`}
-                  onClick={() => {
-                    setFrameCategory(cat.id);
-                    setFrameSearch("");
-                  }}
-                >
-                  <span className="fp-category-chip-label">{cat.label}</span>
-                  <span className="fp-category-count">{countFramesInCategory(allFrames, cat.id)}</span>
-                </button>
-                {cat.id !== "all" && (
-                  <button
-                    type="button"
-                    className="fp-category-chip-delete"
-                    aria-label={`${cat.label} serisini kaldır`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      requestDeleteSeries(cat);
-                    }}
-                  >×</button>
-                )}
-              </span>
+              <button
+                key={cat.id}
+                type="button"
+                className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}${cat.custom ? " user-cat" : ""}`}
+                onClick={() => {
+                  setFrameCategory(cat.id);
+                  setFrameSearch("");
+                }}
+              >
+                <span className="fp-category-chip-label">{cat.label}</span>
+                <span className="fp-category-count">{countFramesInCategory(allFrames, cat.id)}</span>
+              </button>
             ))}
           </HorizontalScrollStrip>
           <p className="fp-scroll-hint">Serileri yana kaydırabilirsiniz</p>
@@ -1176,71 +1202,6 @@ export default function FramePicker() {
               </span>
               <span className="fp-add-frame-btn-arrow" aria-hidden="true">›</span>
             </button>
-
-            {showCatInput ? (
-              <span className="fp-category-add-wrap fp-category-add-wrap-block">
-                <input
-                  className="fp-category-add-input"
-                  placeholder="Seri adı"
-                  value={newCatLabel}
-                  autoFocus
-                  maxLength={32}
-                  onChange={(e) => setNewCatLabel(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newCatLabel.trim()) {
-                      const entry = addCustomCategory(newCatLabel.trim());
-                      setUserCategories(loadCustomCategories());
-                      setNewCatLabel("");
-                      setShowCatInput(false);
-                      setFrameCategory(entry.id);
-                      setFrameSearch("");
-                    }
-                    if (e.key === "Escape") {
-                      setShowCatInput(false);
-                      setNewCatLabel("");
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="fp-category-add-confirm"
-                  disabled={!newCatLabel.trim()}
-                  onClick={() => {
-                    if (!newCatLabel.trim()) return;
-                    const entry = addCustomCategory(newCatLabel.trim());
-                    setUserCategories(loadCustomCategories());
-                    setNewCatLabel("");
-                    setShowCatInput(false);
-                    setFrameCategory(entry.id);
-                    setFrameSearch("");
-                  }}
-                >✓</button>
-                <button
-                  type="button"
-                  className="fp-category-add-cancel"
-                  onClick={() => { setShowCatInput(false); setNewCatLabel(""); }}
-                >✕</button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="fp-add-frame-btn"
-                onClick={() => setShowCatInput(true)}
-                title="Yeni seri ekle"
-              >
-                <span className="fp-add-frame-btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" strokeLinejoin="round" />
-                    <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" strokeLinejoin="round" />
-                  </svg>
-                </span>
-                <span className="fp-add-frame-btn-text">
-                  <span className="fp-add-frame-btn-title">Seri Ekle</span>
-                  <span className="fp-add-frame-btn-sub">Yeni çerçeve serisi oluşturun</span>
-                </span>
-                <span className="fp-add-frame-btn-arrow" aria-hidden="true">›</span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -1563,6 +1524,24 @@ export default function FramePicker() {
         onSaved={handleFrameEdited}
         categoryOptions={[...BASE_CATEGORY_OPTIONS, ...userCategories]}
         seriesOptions={seriesOptions}
+      />
+
+      <SeriesManageModal
+        open={showSeriesManage}
+        onClose={() => setShowSeriesManage(false)}
+        categories={visibleCategories}
+        getCount={(id) => countFramesInCategory(allFrames, id)}
+        selectedId={frameCategory}
+        onSelect={(id) => {
+          setFrameCategory(id);
+          setFrameSearch("");
+        }}
+        onAdd={handleAddSeries}
+        onRename={handleRenameSeries}
+        onDelete={(cat) => {
+          setShowSeriesManage(false);
+          requestDeleteSeries(cat);
+        }}
       />
 
       <Toast
