@@ -133,26 +133,19 @@ export function linePriceForSize(
   widthCm,
   heightCm,
   backingId = null,
-  backingUnitPerM2 = null,
 ) {
   const framePrice = getFramePrice(frame, legacyPriceMap, widthCm, heightCm);
   const backing = backingId
-    ? getBackingLinePriceFromUnit(
-        backingId,
-        backingUnitPerM2 ?? 0,
-        widthCm,
-        heightCm,
-      )
-    : { backingLabel: null, backingPrice: 0, backingUnitPerM2: 0 };
+    ? getBackingLinePrice(frame, backingId, widthCm, heightCm)
+    : { backingLabel: null, backingPrice: 0 };
 
-  const { backingLabel, backingPrice, backingUnitPerM2: unitStored } = backing;
+  const { backingLabel, backingPrice } = backing;
 
   return {
     framePrice,
     backingId: backingId || null,
     backingLabel,
     backingPrice,
-    backingUnitPerM2: unitStored ?? 0,
     totalPrice: framePrice + backingPrice,
   };
 }

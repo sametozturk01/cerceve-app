@@ -1,4 +1,4 @@
-/** Siparişte tek seçim: pleksi veya cam türü (₺/m² müşteri girer) */
+/** Siparişte tek seçim: pleksi veya cam türü (₺/m² cam kategorisi → birim fiyat düzenle) */
 export const BACKING_OPTIONS = [
   {
     id: "pleksi",

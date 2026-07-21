@@ -92,12 +92,6 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
       defaultMm,
       price: priceValue,
       pricePerCm: null,
-      pleksiPrice: null,
-      camPrice: null,
-      motifCamPrice: null,
-      pleksiPricePerCm: null,
-      camPricePerCm: null,
-      motifCamPricePerCm: null,
     };
 
     setSaving(true);
