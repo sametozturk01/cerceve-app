@@ -214,8 +214,8 @@ body {
 
   .fp-fullscreen-preview-stack {
     max-width: calc(100vw - 48px);
-    padding-top: 18px;
-    padding-right: 18px;
+    padding-top: 36px;
+    padding-right: 22px;
   }
 
   .fp-fullscreen-canvas-wrap canvas,
@@ -283,8 +283,8 @@ body {
   position: relative;
   display: inline-block;
   max-width: 96vw;
-  padding-top: 20px;
-  padding-right: 20px;
+  padding-top: 38px;
+  padding-right: 24px;
   box-sizing: border-box;
 }
 
@@ -309,8 +309,9 @@ body {
 
 .fp-fullscreen-close {
   position: absolute;
-  top: -16px;
-  right: -16px;
+  top: 0;
+  right: 0;
+  transform: translate(40%, calc(-100% - 10px));
   z-index: 5;
   width: 42px;
   height: 42px;
@@ -331,7 +332,7 @@ body {
 
 .fp-fullscreen-close:hover {
   background: #b91c1c;
-  transform: scale(1.06);
+  transform: translate(40%, calc(-100% - 10px)) scale(1.06);
 }
 
 .fp-fullscreen-hint {
