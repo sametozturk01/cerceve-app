@@ -54,10 +54,16 @@ const FRAME_CATEGORIES = framesCatalog.categories;
 const FRAME_TYPES = framesCatalog.frames;
 
 const DECOR_SAMPLES = [
-  { 
-    id: 'benimSalon',
-    label: 'Benim Salonum',
-    url: '/koltuk.png'
+  {
+    id: "koltuk",
+    label: "Benim Salonum",
+    url: "/koltuk.png",
+  },
+  {
+    id: "koltuk-jpg",
+    label: "Salon",
+    url: "/decor/koltuk.jpg",
+    layout: { cx: 0.487, cy: 0.27, slotW: 0.373, slotH: 0.195 },
   },
 ];
 
@@ -347,7 +353,53 @@ function getFullscreenCanvasSize(frameRatio, viewportW, viewportH) {
   };
 }
 
-function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness) {
+function drawDecorBackground(ctx, img, W, H) {
+  ctx.drawImage(img, 0, 0, W, H);
+}
+
+/** Dekor arka planındaki boş çerçeveyi tam kapla (cover). */
+function computeDecorSlotLayout(W, H, sizeW, sizeH, customThickness, decorLayout) {
+  const { cx, cy, slotW, slotH } = decorLayout;
+  const slotTW = slotW * W;
+  const slotTH = slotH * H;
+  const frameRatio = sizeW / sizeH;
+  const slotRatio = slotTW / slotTH;
+  const cover = 1.04;
+
+  let tW;
+  let tH;
+  if (frameRatio > slotRatio) {
+    tH = slotTH * cover;
+    tW = tH * frameRatio;
+  } else {
+    tW = slotTW * cover;
+    tH = tW / frameRatio;
+  }
+
+  const tX = cx * W - tW / 2;
+  const tY = cy * H - tH / 2;
+  const pxPerMm = tW / (sizeW * 10);
+  const rawThickPx = customThickness * pxPerMm;
+  const targetThickPx = Math.max(1, Math.round(Math.min(rawThickPx, tW / 2 - 2, tH / 2 - 2)));
+
+  return {
+    tX,
+    tY,
+    tW,
+    tH,
+    targetThickPx,
+    ix: Math.round(tX + targetThickPx),
+    iy: Math.round(tY + targetThickPx),
+    iw: Math.round(tW - 2 * targetThickPx),
+    ih: Math.round(tH - 2 * targetThickPx),
+  };
+}
+
+function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness, decorLayout) {
+  if (activeView === "dekor" && !fullscreen && decorLayout) {
+    return computeDecorSlotLayout(W, H, sizeW, sizeH, customThickness, decorLayout);
+  }
+
   const frameRatio = sizeW / sizeH;
   const maxDimCm = Math.max(sizeW, sizeH);
 
@@ -366,10 +418,19 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
       tH = availH;
       tW = tH * frameRatio;
     }
+  } else if (activeView === "dekor") {
+    const maxDrawSize = W * 0.35;
+    tW = maxDrawSize;
+    tH = maxDrawSize;
+
+    if (frameRatio > 1) {
+      tH = tW / frameRatio;
+    } else if (frameRatio < 1) {
+      tW = tH * frameRatio;
+    }
   } else {
     const sizeMultiplier = 0.6 + (maxDimCm / 80) * 0.4;
-    const baseDrawSize = W * (activeView === "dekor" ? 0.35 : 0.85);
-    const maxDrawSize = baseDrawSize * sizeMultiplier;
+    const maxDrawSize = W * 0.85 * sizeMultiplier;
     tW = maxDrawSize;
     tH = maxDrawSize;
 
@@ -381,7 +442,7 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
   }
 
   const tX = (W - tW) / 2;
-  const tY = fullscreen || activeView !== "dekor" ? (H - tH) / 2 : H * 0.15;
+  const tY = activeView === "dekor" && !fullscreen ? H * 0.15 : (H - tH) / 2;
 
   const pxPerMm = tW / (sizeW * 10);
   const rawThickPx = customThickness * pxPerMm;
@@ -419,7 +480,7 @@ function renderPreviewScene(ctx, scene) {
   ctx.fillRect(0, 0, W, H);
 
   if (activeView === "dekor" && decorImg) {
-    ctx.drawImage(decorImg, 0, 0, W, H);
+    drawDecorBackground(ctx, decorImg, W, H);
   }
 
   if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
@@ -458,6 +519,7 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
   frameType,
   frameColor,
   activeView,
+  decorId,
   selectedSize,
   customThickness,
   fullscreen = false,
@@ -567,16 +629,27 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
     async function draw() {
       const photoPad = frameColor?.id === "siyah" ? 4 : 0;
 
+      let decorSample = null;
       let decorImg = null;
       if (activeView === "dekor") {
-        decorImg = await loadImage(DECOR_SAMPLES[0].url).catch(() => null);
+        decorSample = DECOR_SAMPLES.find((d) => d.id === decorId) ?? DECOR_SAMPLES[0];
+        decorImg = await loadImage(decorSample.url).catch(() => null);
         if (cancelled) return;
       }
 
       const photo = await loadImage(imageUrl).catch(() => null);
       if (cancelled || !photo) return;
 
-      const layout = computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customThickness);
+      const layout = computeFrameLayout(
+        W,
+        H,
+        sizeW,
+        sizeH,
+        activeView,
+        fullscreen,
+        customThickness,
+        decorSample?.layout,
+      );
 
       const imgRatio = photo.width / photo.height;
       const targetRatio = layout.iw / layout.ih;
@@ -635,6 +708,7 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
     sliceSize,
     frameColor?.id,
     activeView,
+    decorId,
     selectedSize.id,
     customThickness,
     fullscreen,
@@ -740,6 +814,7 @@ export default function FramePicker() {
   const [selectedColorId, setSelectedColorId] = useState(null);
   const [selectedSize,  setSelectedSize]  = useState(SIZES[0]);
   const [activeView,    setActiveView]    = useState("tablo");
+  const [selectedDecor, setSelectedDecor] = useState("koltuk");
   const [added,         setAdded]         = useState(false);
   const [cartItems,     setCartItems]     = useState([]);
   const addedTimerRef = useRef(null);
@@ -1195,6 +1270,7 @@ export default function FramePicker() {
     frameType: selectedFrame,
     frameColor: selectedColor,
     activeView,
+    decorId: selectedDecor,
     selectedSize: activeSizeForCanvas,
     customThickness: activeThickness,
   };
@@ -1308,6 +1384,35 @@ export default function FramePicker() {
               <span className="fp-view-btn-sub">Duvarda gör</span>
             </button>
           </div>
+
+          {activeView === "dekor" && (
+            <div className="fp-decor-panel">
+              <p className="fp-decor-panel-label">Salon seçin</p>
+              <HorizontalScrollStrip
+                className="fp-decor-hscroll"
+                trackClassName="fp-decor-row"
+                ariaLabel="Dekor mekanları"
+              >
+                {DECOR_SAMPLES.map((sample) => (
+                  <button
+                    key={sample.id}
+                    type="button"
+                    className={`fp-decor-chip${selectedDecor === sample.id ? " active" : ""}`}
+                    onClick={() => setSelectedDecor(sample.id)}
+                    title={sample.label}
+                  >
+                    <span
+                      className="fp-decor-chip-thumb"
+                      style={{ backgroundImage: `url(${sample.url})` }}
+                      aria-hidden="true"
+                    />
+                    <span className="fp-decor-chip-label">{sample.label}</span>
+                  </button>
+                ))}
+              </HorizontalScrollStrip>
+              <p className="fp-scroll-hint">Mekanları yana kaydırabilirsiniz</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1598,7 +1703,7 @@ export default function FramePicker() {
               </span>
               <span className="fp-custom-size-toggle-text">
                 <span className="fp-custom-size-toggle-title">
-                  {isCamCategoryOpen ? "Cam Kategorisi Aktif" : "İsteğe Bağlı Cam Kategorisi"}
+                  {isCamCategoryOpen ? "Cam Kategorisi" : "İsteğe Bağlı Cam Kategorisi"}
                 </span>
                 <span className="fp-custom-size-toggle-sub">
                   {isCamCategoryOpen
