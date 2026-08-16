@@ -1,8 +1,9 @@
-export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "29 KR", "29 -210", "30 luk", "30 d 91", "34 L", "48 L", "41 lik", "41 -545", "41 -13", "41 -11", "41 -07", "41 -03", "41 -02", "41 -01", "52 B", ""];
+export const SERIES_OPTIONS = ["20 lik", "22 lik", "35 lik", "29 D", "29 KR", "29 -210", "30 luk", "30 d 91", "34 L", "48 L", "41 lik", "41 -545", "41 -13", "41 -11", "41 -07", "41 -03", "41 -02", "41 -01", "52 B", ""];
 
 export const BASE_CATEGORY_OPTIONS = [
   { id: "20lik", label: "20 lik" },
   { id: "22lik", label: "22 lik" },
+  { id: "35lik", label: "35 lik" },
   { id: "29d", label: "29 D" },
   { id: "fa29kr", label: "29 KR" },
   { id: "29210", label: "29 -210" },

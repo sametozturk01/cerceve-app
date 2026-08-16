@@ -105,6 +105,7 @@ SERIES_CATEGORY = {
     "R 21": "r21",
     "Yeni 20": "yeni20",
     "22 lik": "22lik",
+    "35 lik": "35lik",
     "20 lik": "20lik",
     "30 luk": "30luk",
     "30 d 91": "30d91",

@@ -500,7 +500,7 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
   return { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih };
 }
 
-const ASSET_SLICE_CATEGORIES = new Set(["34l", "48l", "41lik", "41545", "4113", "4111", "4107", "4103", "4102", "4101", "52b"]);
+const ASSET_SLICE_CATEGORIES = new Set(["34l", "48l", "35lik", "41lik", "41545", "4113", "4111", "4107", "4103", "4102", "4101", "52b"]);
 const ASSET_PROFILE_DRAW_ON_TOP = new Set(["34l", "41lik", "41545", "4113", "4111", "4107", "4103", "4102", "4101"]);
 const FLAT_DECOR_SERIES = new Set(["41 -545", "41 -13", "41 -11", "41 -07", "41 -03", "41 -02", "41 -01"]);
 const FLAT_DECOR_CATEGORIES = new Set(["41545", "4113", "4111", "4107", "4103", "4102", "4101"]);
@@ -524,7 +524,7 @@ function isFlatDecorFrame(frameType) {
   );
 }
 
-const FLAT_ASSET_CATEGORIES = new Set(["52b", "48l"]);
+const FLAT_ASSET_CATEGORIES = new Set(["52b", "48l", "35lik"]);
 
 function getAssetHoleRails(frameType, frameImg) {
   if (frameType?.rails) return frameType.rails;

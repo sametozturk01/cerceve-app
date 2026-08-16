@@ -13,6 +13,10 @@
       "label": "22 lik"
     },
     {
+      "id": "35lik",
+      "label": "35 lik"
+    },
+    {
       "id": "29d",
       "label": "29 D"
     },
@@ -1133,6 +1137,26 @@
           "id": "eskitme-gumus",
           "label": "Eskitme Gümüş",
           "hex": "#B8B0A4"
+        }
+      ]
+    },
+    {
+      "id": "35 lik Yeşil",
+      "code": "35 lik",
+      "colorName": "Yeşil",
+      "label": "35 lik Yeşil",
+      "categories": [
+        "35lik"
+      ],
+      "thickness": 98,
+      "defaultMm": 35,
+      "radius": 0,
+      "image": "/frames/35-lik-yesil.png?v=2",
+      "colors": [
+        {
+          "id": "yesil",
+          "label": "Yeşil",
+          "hex": "#2F5A3A"
         }
       ]
     }
