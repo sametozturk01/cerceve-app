@@ -1,4 +1,4 @@
-export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "29 KR", "29 -210", "30 luk", "30 d 91", "35 lik", ""];
+export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "29 KR", "29 -210", "30 luk", "30 d 91", "34 L", "48 L", "41 lik", "41 -545", "41 -13", "41 -11", "41 -07", "41 -03", "41 -02", "41 -01", "52 B", ""];
 
 export const BASE_CATEGORY_OPTIONS = [
   { id: "20lik", label: "20 lik" },
@@ -8,7 +8,17 @@ export const BASE_CATEGORY_OPTIONS = [
   { id: "29210", label: "29 -210" },
   { id: "30luk", label: "30 luk" },
   { id: "30d91", label: "30 d 91" },
-  { id: "35lik", label: "35 lik" },
+  { id: "34l", label: "34 L" },
+  { id: "48l", label: "48 L" },
+  { id: "41lik", label: "41 lik" },
+  { id: "41545", label: "41 -545" },
+  { id: "4113", label: "41 -13" },
+  { id: "4111", label: "41 -11" },
+  { id: "4107", label: "41 -07" },
+  { id: "4103", label: "41 -03" },
+  { id: "4102", label: "41 -02" },
+  { id: "4101", label: "41 -01" },
+  { id: "52b", label: "52 B" },
 ];
 
 export const EDITABLE_CATEGORY_OPTIONS = BASE_CATEGORY_OPTIONS;

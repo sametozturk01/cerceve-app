@@ -33,8 +33,48 @@
       "label": "30 d 91"
     },
     {
-      "id": "35lik",
-      "label": "35 lik"
+      "id": "34l",
+      "label": "34 L"
+    },
+    {
+      "id": "48l",
+      "label": "48 L"
+    },
+    {
+      "id": "41lik",
+      "label": "41 lik"
+    },
+    {
+      "id": "41545",
+      "label": "41 -545"
+    },
+    {
+      "id": "4113",
+      "label": "41 -13"
+    },
+    {
+      "id": "4111",
+      "label": "41 -11"
+    },
+    {
+      "id": "4107",
+      "label": "41 -07"
+    },
+    {
+      "id": "4103",
+      "label": "41 -03"
+    },
+    {
+      "id": "4102",
+      "label": "41 -02"
+    },
+    {
+      "id": "4101",
+      "label": "41 -01"
+    },
+    {
+      "id": "52b",
+      "label": "52 B"
     },
     {
       "id": "custom",
@@ -60,10 +100,10 @@
       "categories": [
         "22lik"
       ],
-      "thickness": 76,
+      "thickness": 70,
       "defaultMm": 22,
       "radius": 0,
-      "image": "/frames/22-beyaz.png",
+      "image": "/frames/22-lik-beyaz.png",
       "colors": [
         {
           "id": "beyaz",
@@ -81,7 +121,7 @@
       "categories": [
         "22lik"
       ],
-      "thickness": 87,
+      "thickness": 76,
       "defaultMm": 22,
       "radius": 0,
       "image": "/frames/22-lik-altin.png",
@@ -635,22 +675,464 @@
       ]
     },
     {
-      "id": "35 lik Yeşil",
-      "code": "35 lik",
-      "colorName": "Yeşil",
-      "label": "35 lik Yeşil",
+      "id": "34 L Platin",
+      "code": "34 L",
+      "colorName": "Platin",
+      "label": "34 L Platin",
       "categories": [
-        "35lik"
+        "34l"
       ],
-      "thickness": 103,
-      "defaultMm": 35,
+      "thickness": 111,
+      "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/35-lik-yesil.png",
+      "image": "/frames/34-l-platin.png",
       "colors": [
         {
-          "id": "yesil",
-          "label": "Yeşil",
-          "hex": "#2F5A3A"
+          "id": "platin",
+          "label": "Platin",
+          "hex": "#E5E4E2"
+        }
+      ]
+    },
+    {
+      "id": "34 L Siyah",
+      "code": "34 L",
+      "colorName": "Siyah",
+      "label": "34 L Siyah",
+      "categories": [
+        "34l"
+      ],
+      "thickness": 115,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/34-l-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "34 L Ceviz",
+      "code": "34 L",
+      "colorName": "Ceviz",
+      "label": "34 L Ceviz",
+      "categories": [
+        "34l"
+      ],
+      "thickness": 137,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/34-l-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "34 L Beyaz",
+      "code": "34 L",
+      "colorName": "Beyaz",
+      "label": "34 L Beyaz",
+      "categories": [
+        "34l"
+      ],
+      "thickness": 138,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/34-l-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "34 L Altın",
+      "code": "34 L",
+      "colorName": "Altın",
+      "label": "34 L Altın",
+      "categories": [
+        "34l"
+      ],
+      "thickness": 130,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/34-l-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "41 lik Siyah Silikonlu",
+      "code": "41 lik",
+      "colorName": "Siyah Silikonlu",
+      "label": "41 lik Siyah Silikonlu",
+      "categories": [
+        "41lik"
+      ],
+      "thickness": 168,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-lik-siyah-silikonlu.png?v=127",
+      "colors": [
+        {
+          "id": "siyah-silikonlu",
+          "label": "Siyah Silikonlu",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "41 lik Gümüş Silikonlu",
+      "code": "41 lik",
+      "colorName": "Gümüş Silikonlu",
+      "label": "41 lik Gümüş Silikonlu",
+      "categories": [
+        "41lik"
+      ],
+      "thickness": 164,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-lik-silikonlu-gumus.png?v=3",
+      "colors": [
+        {
+          "id": "gumus-silikonlu",
+          "label": "Gümüş Silikonlu",
+          "hex": "#C5C9CC"
+        }
+      ]
+    },
+    {
+      "id": "41 lik Altın Silikonlu",
+      "code": "41 lik",
+      "colorName": "Altın Silikonlu",
+      "label": "41 lik Altın Silikonlu",
+      "categories": [
+        "41lik"
+      ],
+      "thickness": 168,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-lik-silikonlu-altin.png",
+      "colors": [
+        {
+          "id": "altin-silikonlu",
+          "label": "Altın Silikonlu",
+          "hex": "#C8A84B"
+        }
+      ]
+    },
+    {
+      "id": "41 -545 Ceviz",
+      "code": "41 -545",
+      "colorName": "Ceviz",
+      "label": "41 -545 Ceviz",
+      "categories": [
+        "41545"
+      ],
+      "thickness": 172,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-545-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "41 -13 Ceviz",
+      "code": "41 -13",
+      "colorName": "Ceviz",
+      "label": "41 -13 Ceviz",
+      "categories": [
+        "4113"
+      ],
+      "thickness": 159,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-13-ceviz.png?v=3",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "41 -11 Oksit Altın",
+      "code": "41 -11",
+      "colorName": "Oksit Altın",
+      "label": "41 -11 Oksit Altın",
+      "categories": [
+        "4111"
+      ],
+      "thickness": 183,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-11-oksit-altin.png",
+      "colors": [
+        {
+          "id": "oksit-altin",
+          "label": "Oksit Altın",
+          "hex": "#B8956A"
+        }
+      ]
+    },
+    {
+      "id": "41 -07 Beyaz",
+      "code": "41 -07",
+      "colorName": "Beyaz",
+      "label": "41 -07 Beyaz",
+      "categories": [
+        "4107"
+      ],
+      "thickness": 160,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-07-beyaz.png?v=2",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ]
+    },
+    {
+      "id": "41 -03 Ceviz",
+      "code": "41 -03",
+      "colorName": "Ceviz",
+      "label": "41 -03 Ceviz",
+      "categories": [
+        "4103"
+      ],
+      "thickness": 172,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-03-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ]
+    },
+    {
+      "id": "41 -02 Platin",
+      "code": "41 -02",
+      "colorName": "Platin",
+      "label": "41 -02 Platin",
+      "categories": [
+        "4102"
+      ],
+      "thickness": 171,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-02-platin.png",
+      "colors": [
+        {
+          "id": "platin",
+          "label": "Platin",
+          "hex": "#E5E4E2"
+        }
+      ]
+    },
+    {
+      "id": "41 -01 Oksit Altın",
+      "code": "41 -01",
+      "colorName": "Oksit Altın",
+      "label": "41 -01 Oksit Altın",
+      "categories": [
+        "4101"
+      ],
+      "thickness": 158,
+      "defaultMm": 41,
+      "radius": 0,
+      "image": "/frames/41-01-oksit-altin.png",
+      "colors": [
+        {
+          "id": "oksit-altin",
+          "label": "Oksit Altın",
+          "hex": "#B8956A"
+        }
+      ]
+    },
+    {
+      "id": "52 B 64 Mavi",
+      "code": "52 B",
+      "colorName": "Mavi",
+      "label": "52 B 64 Mavi",
+      "categories": [
+        "52b"
+      ],
+      "thickness": 132,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/52-b-64-mavi.png?v=6",
+      "colors": [
+        {
+          "id": "mavi",
+          "label": "Mavi",
+          "hex": "#5B7FA6"
+        }
+      ]
+    },
+    {
+      "id": "52 B Siyah",
+      "code": "52 B",
+      "colorName": "Siyah",
+      "label": "52 B Siyah",
+      "categories": [
+        "52b"
+      ],
+      "thickness": 132,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/52-b-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ]
+    },
+    {
+      "id": "52 B Eskitme Gümüş",
+      "code": "52 B",
+      "colorName": "Eskitme Gümüş",
+      "label": "52 B Eskitme Gümüş",
+      "categories": [
+        "52b"
+      ],
+      "thickness": 170,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/52-b-eskitme-gumus.png?v=9",
+      "colors": [
+        {
+          "id": "eskitme-gumus",
+          "label": "Eskitme Gümüş",
+          "hex": "#B8B0A4"
+        }
+      ]
+    },
+    {
+      "id": "52 B Çizgili Gümüş",
+      "code": "52 B",
+      "colorName": "Çizgili Gümüş",
+      "label": "52 B Çizgili Gümüş",
+      "categories": [
+        "52b"
+      ],
+      "thickness": 159,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/52-b-cizgili-gumus.png",
+      "colors": [
+        {
+          "id": "cizgili-gumus",
+          "label": "Çizgili Gümüş",
+          "hex": "#C5C9CC"
+        }
+      ]
+    },
+    {
+      "id": "52 B Barok Altın",
+      "code": "52 B",
+      "colorName": "Barok Altın",
+      "label": "52 B Barok Altın",
+      "categories": [
+        "52b"
+      ],
+      "thickness": 155,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/52-b-barok-altin.png?v=2",
+      "colors": [
+        {
+          "id": "barok-altin",
+          "label": "Barok Altın",
+          "hex": "#8B6914"
+        }
+      ]
+    },
+    {
+      "id": "52 B 67",
+      "code": "52 B",
+      "colorName": "67",
+      "label": "52 B 67",
+      "categories": [
+        "52b"
+      ],
+      "thickness": 122,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/52-b-67.png",
+      "colors": [
+        {
+          "id": "67",
+          "label": "67",
+          "hex": "#6B4A2E"
+        }
+      ]
+    },
+    {
+      "id": "52 B 66",
+      "code": "52 B",
+      "colorName": "66",
+      "label": "52 B 66",
+      "categories": [
+        "52b"
+      ],
+      "thickness": 150,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/52-b-66.png",
+      "colors": [
+        {
+          "id": "66",
+          "label": "66",
+          "hex": "#5A3D28"
+        }
+      ]
+    },
+    {
+      "id": "48 L Eskitme Gümüş",
+      "code": "48 L",
+      "colorName": "Eskitme Gümüş",
+      "label": "48 L Eskitme Gümüş",
+      "categories": [
+        "48l"
+      ],
+      "thickness": 118,
+      "defaultMm": 48,
+      "radius": 0,
+      "image": "/frames/48-l-eskitme-gumus.png",
+      "colors": [
+        {
+          "id": "eskitme-gumus",
+          "label": "Eskitme Gümüş",
+          "hex": "#B8B0A4"
         }
       ]
     }
