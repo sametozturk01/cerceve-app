@@ -24,11 +24,11 @@ export default function FrameAddModal({ open, onClose, onSaved, categoryOptions,
   const [preview, setPreview] = useState(null);
   const [processed, setProcessed] = useState(null);
 
-  const [code, setCode] = useState("Yeni 20");
+  const [code, setCode] = useState("20 lik");
   const [colorName, setColorName] = useState("");
   const [label, setLabel] = useState("");
   const [defaultMm, setDefaultMm] = useState(20);
-  const [selectedCats, setSelectedCats] = useState(["yeni20"]);
+  const [selectedCats, setSelectedCats] = useState(["20lik"]);
 
   const [progressText, setProgressText] = useState("");
 
@@ -40,11 +40,11 @@ export default function FrameAddModal({ open, onClose, onSaved, categoryOptions,
     setPreview(null);
     setProcessed(null);
     setProgressText("");
-    setCode("Yeni 20");
+    setCode("20 lik");
     setColorName("");
     setLabel("");
     setDefaultMm(20);
-    setSelectedCats(["yeni20"]);
+    setSelectedCats(["20lik"]);
     if (fileRef.current) fileRef.current.value = "";
   };
 

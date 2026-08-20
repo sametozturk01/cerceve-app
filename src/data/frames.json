@@ -5,40 +5,12 @@
       "label": "Tümü"
     },
     {
-      "id": "20lik",
-      "label": "20 lik"
-    },
-    {
-      "id": "22lik",
-      "label": "22 lik"
-    },
-    {
-      "id": "29d",
-      "label": "29 D"
-    },
-    {
-      "id": "fa29kr",
-      "label": "29 KR"
-    },
-    {
-      "id": "29210",
-      "label": "29 -210"
-    },
-    {
-      "id": "30luk",
-      "label": "30 luk"
-    },
-    {
-      "id": "30d91",
-      "label": "30 d 91"
-    },
-    {
-      "id": "35lik",
-      "label": "35 lik"
-    },
-    {
       "id": "custom",
       "label": "Özel"
+    },
+    {
+      "id": "20lik",
+      "label": "20 lik"
     }
   ],
   "frames": [
@@ -53,65 +25,47 @@
       "colors": []
     },
     {
-      "id": "22 lik Beyaz",
-      "code": "22 lik",
-      "colorName": "Beyaz",
-      "label": "22 lik Beyaz",
-      "categories": [
-        "22lik"
-      ],
-      "thickness": 76,
-      "defaultMm": 22,
-      "radius": 0,
-      "image": "/frames/22-beyaz.png",
-      "colors": [
-        {
-          "id": "beyaz",
-          "label": "Beyaz",
-          "hex": "#f5f5f5",
-          "stroke": "#d4d4d4"
-        }
-      ]
-    },
-    {
-      "id": "22 lik Altın",
-      "code": "22 lik",
-      "colorName": "Altın",
-      "label": "22 lik Altın",
-      "categories": [
-        "22lik"
-      ],
-      "thickness": 87,
-      "defaultMm": 22,
-      "radius": 0,
-      "image": "/frames/22-lik-altin.png",
-      "colors": [
-        {
-          "id": "altin",
-          "label": "Altın",
-          "hex": "#C8A84B"
-        }
-      ]
-    },
-    {
-      "id": "20 lik Siyah",
+      "id": "20 lik Beyaz",
       "code": "20 lik",
-      "colorName": "Siyah",
-      "label": "20 lik Siyah",
+      "colorName": "Beyaz",
+      "label": "20 lik Beyaz",
       "categories": [
         "20lik"
       ],
       "thickness": 110,
       "defaultMm": 20,
       "radius": 0,
-      "image": "/frames/20-lik-siyah.png",
+      "image": "/frames/20-lik-beyaz.png",
       "colors": [
         {
-          "id": "siyah",
-          "label": "Siyah",
-          "hex": "#1a1a1a"
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
         }
-      ]
+      ],
+      "previewImage": "/frames/previews/20-lik-beyaz-preview.png"
+    },
+    {
+      "id": "20 lik Altın",
+      "code": "20 lik",
+      "colorName": "Altın",
+      "label": "20 lik Altın",
+      "categories": [
+        "20lik"
+      ],
+      "thickness": 124,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/20-lik-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/20-lik-altin-preview.png"
     },
     {
       "id": "20 lik Platin",
@@ -121,7 +75,7 @@
       "categories": [
         "20lik"
       ],
-      "thickness": 95,
+      "thickness": 123,
       "defaultMm": 20,
       "radius": 0,
       "image": "/frames/20-lik-platin.png",
@@ -131,7 +85,8 @@
           "label": "Platin",
           "hex": "#E5E4E2"
         }
-      ]
+      ],
+      "previewImage": "/frames/previews/20-lik-platin-preview.png"
     },
     {
       "id": "20 lik Ceviz",
@@ -141,7 +96,7 @@
       "categories": [
         "20lik"
       ],
-      "thickness": 124,
+      "thickness": 115,
       "defaultMm": 20,
       "radius": 0,
       "image": "/frames/20-lik-ceviz.png",
@@ -151,508 +106,8 @@
           "label": "Ceviz",
           "hex": "#5C4A3A"
         }
-      ]
-    },
-    {
-      "id": "22 lik Yeşil",
-      "code": "22 lik",
-      "colorName": "Yeşil",
-      "label": "22 lik Yeşil",
-      "categories": [
-        "22lik"
       ],
-      "thickness": 87,
-      "defaultMm": 22,
-      "radius": 0,
-      "image": "/frames/22-lik-yesil.png",
-      "colors": [
-        {
-          "id": "yesil",
-          "label": "Yeşil",
-          "hex": "#2F5A3A"
-        }
-      ]
-    },
-    {
-      "id": "22 lik Mavi",
-      "code": "22 lik",
-      "colorName": "Mavi",
-      "label": "22 lik Mavi",
-      "categories": [
-        "22lik"
-      ],
-      "thickness": 87,
-      "defaultMm": 22,
-      "radius": 0,
-      "image": "/frames/22-lik-mavi.png",
-      "colors": [
-        {
-          "id": "mavi",
-          "label": "Mavi",
-          "hex": "#5B7FA6"
-        }
-      ]
-    },
-    {
-      "id": "22 lik Lacivert",
-      "code": "22 lik",
-      "colorName": "Lacivert",
-      "label": "22 lik Lacivert",
-      "categories": [
-        "22lik"
-      ],
-      "thickness": 87,
-      "defaultMm": 22,
-      "radius": 0,
-      "image": "/frames/22-lik-lacivert.png",
-      "colors": [
-        {
-          "id": "lacivert",
-          "label": "Lacivert",
-          "hex": "#1E3A5F"
-        }
-      ]
-    },
-    {
-      "id": "22 lik Çizgili Gümüş",
-      "code": "22 lik",
-      "colorName": "Çizgili Gümüş",
-      "label": "22 lik Çizgili Gümüş",
-      "categories": [
-        "22lik"
-      ],
-      "thickness": 87,
-      "defaultMm": 22,
-      "radius": 0,
-      "image": "/frames/22-lik-cizgili-gumus.png",
-      "colors": [
-        {
-          "id": "cizgili-gumus",
-          "label": "Çizgili Gümüş",
-          "hex": "#C5C9CC"
-        }
-      ]
-    },
-    {
-      "id": "22 lik Ceviz",
-      "code": "22 lik",
-      "colorName": "Ceviz",
-      "label": "22 lik Ceviz",
-      "categories": [
-        "22lik"
-      ],
-      "thickness": 87,
-      "defaultMm": 22,
-      "radius": 0,
-      "image": "/frames/22-lik-ceviz.png",
-      "colors": [
-        {
-          "id": "ceviz",
-          "label": "Ceviz",
-          "hex": "#5C4A3A"
-        }
-      ]
-    },
-    {
-      "id": "29 D Siyah",
-      "code": "29 D",
-      "colorName": "Siyah",
-      "label": "29 D Siyah",
-      "categories": [
-        "29d"
-      ],
-      "thickness": 152,
-      "defaultMm": 29,
-      "radius": 0,
-      "image": "/frames/29d-siyah.png",
-      "colors": [
-        {
-          "id": "siyah",
-          "label": "Siyah",
-          "hex": "#1a1a1a"
-        }
-      ]
-    },
-    {
-      "id": "29 D Gümüş",
-      "code": "29 D",
-      "colorName": "Gümüş",
-      "label": "29 D Gümüş",
-      "categories": [
-        "29d"
-      ],
-      "thickness": 120,
-      "defaultMm": 29,
-      "radius": 0,
-      "image": "/frames/29d-gumus.png",
-      "colors": [
-        {
-          "id": "gumus",
-          "label": "Gümüş",
-          "hex": "#D8DCDC"
-        }
-      ]
-    },
-    {
-      "id": "29 D Ceviz",
-      "code": "29 D",
-      "colorName": "Ceviz",
-      "label": "29 D Ceviz",
-      "categories": [
-        "29d"
-      ],
-      "thickness": 135,
-      "defaultMm": 29,
-      "radius": 0,
-      "image": "/frames/29d-ceviz.png",
-      "colors": [
-        {
-          "id": "ceviz",
-          "label": "Ceviz",
-          "hex": "#5C4A3A"
-        }
-      ]
-    },
-    {
-      "id": "29 D Altın",
-      "code": "29 D",
-      "colorName": "Altın",
-      "label": "29 D Altın",
-      "categories": [
-        "29d"
-      ],
-      "thickness": 98,
-      "defaultMm": 29,
-      "radius": 0,
-      "image": "/frames/29d-altin.png",
-      "colors": [
-        {
-          "id": "altin",
-          "label": "Altın",
-          "hex": "#C8A84B"
-        }
-      ]
-    },
-    {
-      "id": "29 KR Düz Ceviz",
-      "code": "29 KR",
-      "colorName": "Düz Ceviz",
-      "label": "29 KR Düz Ceviz",
-      "categories": [
-        "fa29kr"
-      ],
-      "thickness": 106,
-      "defaultMm": 29,
-      "radius": 0,
-      "image": "/frames/29-kr-duz-ceviz.png",
-      "colors": [
-        {
-          "id": "duz-ceviz",
-          "label": "Düz Ceviz",
-          "hex": "#5C4A3A"
-        }
-      ]
-    },
-    {
-      "id": "29 KR Düz Altın",
-      "code": "29 KR",
-      "colorName": "Düz Altın",
-      "label": "29 KR Düz Altın",
-      "categories": [
-        "fa29kr"
-      ],
-      "thickness": 126,
-      "defaultMm": 29,
-      "radius": 0,
-      "image": "/frames/29-kr-duz-altin.png",
-      "colors": [
-        {
-          "id": "duz-altin",
-          "label": "Düz Altın",
-          "hex": "#C8A84B"
-        }
-      ]
-    },
-    {
-      "id": "29 -210 Gümüş",
-      "code": "29 -210",
-      "colorName": "Gümüş",
-      "label": "29 -210 Gümüş",
-      "categories": [
-        "29210"
-      ],
-      "thickness": 154,
-      "defaultMm": 29,
-      "radius": 0,
-      "image": "/frames/29-210-gumus.png",
-      "colors": [
-        {
-          "id": "gumus",
-          "label": "Gümüş",
-          "hex": "#D8DCDC"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Ağaç Kabuğu Beyaz",
-      "code": "30 luk",
-      "colorName": "Ağaç Kabuğu Beyaz",
-      "label": "30 luk Ağaç Kabuğu Beyaz",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 103,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-agac-kabugu-beyaz.png",
-      "colors": [
-        {
-          "id": "agac-kabugu-beyaz",
-          "label": "Ağaç Kabuğu Beyaz",
-          "hex": "#f5f5f5",
-          "stroke": "#d4d4d4"
-        }
-      ]
-    },
-    {
-      "id": "30 d 91 Turuncu",
-      "code": "30 d 91",
-      "colorName": "Turuncu",
-      "label": "30 d 91 Turuncu",
-      "categories": [
-        "30d91"
-      ],
-      "thickness": 100,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-d-91-turuncu.png",
-      "colors": [
-        {
-          "id": "turuncu",
-          "label": "Turuncu",
-          "hex": "#E86B1A"
-        }
-      ]
-    },
-    {
-      "id": "30 d 91 Sarı",
-      "code": "30 d 91",
-      "colorName": "Sarı",
-      "label": "30 d 91 Sarı",
-      "categories": [
-        "30d91"
-      ],
-      "thickness": 102,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-d-91-sari.png",
-      "colors": [
-        {
-          "id": "sari",
-          "label": "Sarı",
-          "hex": "#E8C91A"
-        }
-      ]
-    },
-    {
-      "id": "30 d 91 Mavi",
-      "code": "30 d 91",
-      "colorName": "Mavi",
-      "label": "30 d 91 Mavi",
-      "categories": [
-        "30d91"
-      ],
-      "thickness": 106,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-d-91-mavi.png",
-      "colors": [
-        {
-          "id": "mavi",
-          "label": "Mavi",
-          "hex": "#5B7FA6"
-        }
-      ]
-    },
-    {
-      "id": "30 d 91 Kırmızı",
-      "code": "30 d 91",
-      "colorName": "Kırmızı",
-      "label": "30 d 91 Kırmızı",
-      "categories": [
-        "30d91"
-      ],
-      "thickness": 107,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-d-91-kirmizi.png",
-      "colors": [
-        {
-          "id": "kirmizi",
-          "label": "Kırmızı",
-          "hex": "#C62828"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Ağaç Kabuğu Siyah",
-      "code": "30 luk",
-      "colorName": "Ağaç Kabuğu Siyah",
-      "label": "30 luk Ağaç Kabuğu Siyah",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 110,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-agac-kabugu-siyah.png",
-      "colors": [
-        {
-          "id": "agac-kabugu-siyah",
-          "label": "Ağaç Kabuğu Siyah",
-          "hex": "#1a1a1a"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Ağaç Kabuğu Platin",
-      "code": "30 luk",
-      "colorName": "Ağaç Kabuğu Platin",
-      "label": "30 luk Ağaç Kabuğu Platin",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 112,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-agac-kabugu-platin.png",
-      "colors": [
-        {
-          "id": "agac-kabugu-platin",
-          "label": "Ağaç Kabuğu Platin",
-          "hex": "#E5E4E2"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Ağaç Kabuğu Altın",
-      "code": "30 luk",
-      "colorName": "Ağaç Kabuğu Altın",
-      "label": "30 luk Ağaç Kabuğu Altın",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 111,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-agac-kabugu-altin.png",
-      "colors": [
-        {
-          "id": "agac-kabugu-altin",
-          "label": "Ağaç Kabuğu Altın",
-          "hex": "#C8A84B"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Ağaç Kabuğu Ceviz",
-      "code": "30 luk",
-      "colorName": "Ağaç Kabuğu Ceviz",
-      "label": "30 luk Ağaç Kabuğu Ceviz",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 126,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-agac-kabugu-ceviz.png",
-      "colors": [
-        {
-          "id": "agac-kabugu-ceviz",
-          "label": "Ağaç Kabuğu Ceviz",
-          "hex": "#5C4A3A"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Oksit Gümüş",
-      "code": "30 luk",
-      "colorName": "Oksit Gümüş",
-      "label": "30 luk Oksit Gümüş",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 154,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-oksit-gumus.png",
-      "colors": [
-        {
-          "id": "oksit-gumus",
-          "label": "Oksit Gümüş",
-          "hex": "#A39E94"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Oksit Altın",
-      "code": "30 luk",
-      "colorName": "Oksit Altın",
-      "label": "30 luk Oksit Altın",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 122,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-oksit-altin.png",
-      "colors": [
-        {
-          "id": "oksit-altin",
-          "label": "Oksit Altın",
-          "hex": "#B8956A"
-        }
-      ]
-    },
-    {
-      "id": "30 luk Altın",
-      "code": "30 luk",
-      "colorName": "Altın",
-      "label": "30 luk Altın",
-      "categories": [
-        "30luk"
-      ],
-      "thickness": 124,
-      "defaultMm": 30,
-      "radius": 0,
-      "image": "/frames/30-luk-altin.png",
-      "colors": [
-        {
-          "id": "altin",
-          "label": "Altın",
-          "hex": "#C8A84B"
-        }
-      ]
-    },
-    {
-      "id": "35 lik Yeşil",
-      "code": "35 lik",
-      "colorName": "Yeşil",
-      "label": "35 lik Yeşil",
-      "categories": [
-        "35lik"
-      ],
-      "thickness": 103,
-      "defaultMm": 35,
-      "radius": 0,
-      "image": "/frames/35-lik-yesil.png",
-      "colors": [
-        {
-          "id": "yesil",
-          "label": "Yeşil",
-          "hex": "#2F5A3A"
-        }
-      ]
+      "previewImage": "/frames/previews/20-lik-ceviz-preview.png"
     }
   ]
 }

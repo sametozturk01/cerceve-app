@@ -28,6 +28,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 FRAMES_JSON = ROOT / "src" / "data" / "frames.json"
 FRAMES_DIR = ROOT / "public" / "frames"
+PREVIEWS_DIR = FRAMES_DIR / "previews"
 
 COLOR_DEFAULTS: dict[str, dict] = {
     "gumus": {"id": "gumus", "label": "Gümüş", "hex": "#D8DCDC"},
@@ -214,14 +215,12 @@ def trim_photo_margin(
         xs = list(range(max(0, il - rail_w), il + 1)) + list(range(ir, min(w, ir + rail_w + 1)))
         return any(is_frame_pixel(*px[x, y]) for x in xs)
 
-    def row_rail_brightness(y: int) -> float:
-        xs = list(range(max(0, il - rail_w), il + 1)) + list(range(ir, min(w, ir + rail_w + 1)))
-        vals = [
-            (px[x, y][0] + px[x, y][1] + px[x, y][2]) / 3
-            for x in xs
-            if px[x, y][3] > 50 and is_frame_pixel(*px[x, y])
-        ]
-        return statistics.median(vals) if vals else 999.0
+    def row_bottom_rail_span(y: int) -> float:
+        span = ir - il + 1
+        if span <= 0:
+            return 0.0
+        n = sum(1 for x in range(il, ir + 1) if is_frame_pixel(*px[x, y]))
+        return n / span
 
     def col_has_rail(x: int) -> bool:
         ys = range(max(0, it - rail_w), min(h, ib + rail_w + 1))
@@ -232,7 +231,7 @@ def trim_photo_margin(
         top += 1
 
     bottom = h - 1
-    while bottom > ib and (not row_has_rail(bottom) or row_rail_brightness(bottom) > 195):
+    while bottom > ib and row_bottom_rail_span(bottom) < 0.2:
         bottom -= 1
 
     left = 0
@@ -577,6 +576,30 @@ def center_frame_hole(img: Image.Image, il: int, it: int, ir: int, ib: int) -> t
     return out, il + ox, it + oy, ir + ox, ib + oy
 
 
+TARGET_SLICE_B = 110
+
+
+def upscale_for_target_rail(
+    img: Image.Image, il: int, it: int, ir: int, ib: int, target_b: int = TARGET_SLICE_B
+) -> tuple[Image.Image, int, int, int, int]:
+    """Kaynak rayları hedef kalınlığa yaklaştır; köşe germesini önle."""
+    w, h = img.size
+    px = img.load()
+    bot0 = bottom_rail_start(px, w, h, il, ir, ib)
+    rails = [il, it, w - 1 - ir, h - bot0]
+    b_pre = statistics.median(rails)
+    if b_pre <= 0 or b_pre >= target_b * 0.85:
+        return img, il, it, ir, ib
+
+    scale = target_b / b_pre
+    new_w = max(1, int(round(w * scale)))
+    new_h = max(1, int(round(h * scale)))
+    scaled = img.resize((new_w, new_h), Image.LANCZOS)
+    px = scaled.load()
+    il, it, ir, ib = detect_hole_bounds(px, new_w, new_h)
+    return scaled, il, it, ir, ib
+
+
 def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
     raw = Image.open(src).convert("RGBA")
     raw = crop_to_frame_content(raw)
@@ -629,6 +652,32 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
     return B
 
 
+PREVIEW_SIDE = 320
+PREVIEW_FILL = 0.94
+
+
+def save_preview_image(src: Path, filename: str) -> str:
+    """Yüklenen görseli kare, belirgin küçük önizleme olarak kaydet."""
+    PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
+    preview_name = f"{Path(filename).stem}-preview.png"
+    preview_path = PREVIEWS_DIR / preview_name
+
+    img = crop_to_frame_content(Image.open(src).convert("RGBA"))
+    w, h = img.size
+    target = int(PREVIEW_SIDE * PREVIEW_FILL)
+    scale = target / max(w, h)
+    new_w = max(1, int(round(w * scale)))
+    new_h = max(1, int(round(h * scale)))
+    scaled = img.resize((new_w, new_h), Image.LANCZOS)
+
+    out = Image.new("RGBA", (PREVIEW_SIDE, PREVIEW_SIDE), (236, 236, 236, 255))
+    ox = (PREVIEW_SIDE - new_w) // 2
+    oy = (PREVIEW_SIDE - new_h) // 2
+    out.paste(scaled, (ox, oy), scaled)
+    out.save(preview_path, "PNG")
+    return f"/frames/previews/{preview_name}"
+
+
 def load_catalog() -> dict:
     with open(FRAMES_JSON, encoding="utf-8") as f:
         return json.load(f)
@@ -667,11 +716,12 @@ def build_frame_entry(
     thickness: int,
     default_mm: int,
     image_path: str,
+    preview_image_path: str | None = None,
 ) -> dict:
     if code and color_name:
         frame_id = f"{code} {color_name}"
         entry_label = label or frame_id
-        return {
+        entry = {
             "id": frame_id,
             "code": code,
             "colorName": color_name,
@@ -683,9 +733,12 @@ def build_frame_entry(
             "image": image_path,
             "colors": [color_entry(color_name)],
         }
+        if preview_image_path:
+            entry["previewImage"] = preview_image_path
+        return entry
 
     name = label or "YENİ ÇERÇEVE"
-    return {
+    entry = {
         "id": name,
         "label": name,
         "categories": categories,
@@ -695,6 +748,9 @@ def build_frame_entry(
         "image": image_path,
         "colors": [],
     }
+    if preview_image_path:
+        entry["previewImage"] = preview_image_path
+    return entry
 
 
 def main() -> None:
@@ -722,6 +778,7 @@ def main() -> None:
     dest = FRAMES_DIR / filename
     thickness = process_frame_png(src, dest, force_thickness=args.thickness)
     image_url = f"/frames/{filename}"
+    preview_url = save_preview_image(src, filename)
 
     catalog = load_catalog()
     categories = parse_categories(args.categories, args.code)
@@ -733,6 +790,7 @@ def main() -> None:
         thickness=thickness,
         default_mm=args.default_mm,
         image_path=image_url,
+        preview_image_path=preview_url,
     )
 
     frames = catalog.get("frames", [])
@@ -743,6 +801,7 @@ def main() -> None:
             raise SystemExit(f'Kayıt bulunamadı: {entry["id"]}')
         frames[existing_idx]["thickness"] = thickness
         frames[existing_idx]["image"] = image_url
+        frames[existing_idx]["previewImage"] = preview_url
         print(f"Güncellendi: {entry['id']} → thickness={thickness}")
     elif existing_idx is not None:
         frames[existing_idx] = entry
