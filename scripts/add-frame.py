@@ -36,14 +36,6 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "düz ceviz": {"id": "duz-ceviz", "label": "Düz Ceviz", "hex": "#5C4A3A"},
     "duz ceviz": {"id": "duz-ceviz", "label": "Düz Ceviz", "hex": "#5C4A3A"},
     "siyah": {"id": "siyah", "label": "Siyah", "hex": "#1a1a1a"},
-    "siyah silikonlu": {"id": "siyah-silikonlu", "label": "Siyah Silikonlu", "hex": "#1a1a1a"},
-    "gümüş silikonlu": {"id": "gumus-silikonlu", "label": "Gümüş Silikonlu", "hex": "#C5C9CC"},
-    "gumus silikonlu": {"id": "gumus-silikonlu", "label": "Gümüş Silikonlu", "hex": "#C5C9CC"},
-    "silikonlu gümüş": {"id": "gumus-silikonlu", "label": "Gümüş Silikonlu", "hex": "#C5C9CC"},
-    "altın silikonlu": {"id": "altin-silikonlu", "label": "Altın Silikonlu", "hex": "#C8A84B"},
-    "altin silikonlu": {"id": "altin-silikonlu", "label": "Altın Silikonlu", "hex": "#C8A84B"},
-    "silikonlu altın": {"id": "altin-silikonlu", "label": "Altın Silikonlu", "hex": "#C8A84B"},
-    "silikonlu altin": {"id": "altin-silikonlu", "label": "Altın Silikonlu", "hex": "#C8A84B"},
     "altin": {"id": "altin", "label": "Altın", "hex": "#C8A84B"},
     "altın": {"id": "altin", "label": "Altın", "hex": "#C8A84B"},
     "düz altın": {"id": "duz-altin", "label": "Düz Altın", "hex": "#C8A84B"},
@@ -72,14 +64,8 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "sampanya": {"id": "sampanya", "label": "Şampanya", "hex": "#D4C4A8"},
     "oksit gümüş": {"id": "oksit-gumus", "label": "Oksit Gümüş", "hex": "#A39E94"},
     "oksit gumus": {"id": "oksit-gumus", "label": "Oksit Gümüş", "hex": "#A39E94"},
-    "eskitme gümüş": {"id": "eskitme-gumus", "label": "Eskitme Gümüş", "hex": "#B8B0A4"},
-    "eskitme gumus": {"id": "eskitme-gumus", "label": "Eskitme Gümüş", "hex": "#B8B0A4"},
     "oksit altın": {"id": "oksit-altin", "label": "Oksit Altın", "hex": "#B8956A"},
     "oksit altin": {"id": "oksit-altin", "label": "Oksit Altın", "hex": "#B8956A"},
-    "barok altın": {"id": "barok-altin", "label": "Barok Altın", "hex": "#8B6914"},
-    "barok altin": {"id": "barok-altin", "label": "Barok Altın", "hex": "#8B6914"},
-    "67": {"id": "67", "label": "67", "hex": "#6B4A2E"},
-    "66": {"id": "66", "label": "66", "hex": "#5A3D28"},
     "turuncu": {"id": "turuncu", "label": "Turuncu", "hex": "#E86B1A"},
     "sarı": {"id": "sari", "label": "Sarı", "hex": "#E8C91A"},
     "sari": {"id": "sari", "label": "Sarı", "hex": "#E8C91A"},
@@ -105,22 +91,10 @@ SERIES_CATEGORY = {
     "R 21": "r21",
     "Yeni 20": "yeni20",
     "22 lik": "22lik",
-    "35 lik": "35lik",
     "20 lik": "20lik",
     "30 luk": "30luk",
     "30 d 91": "30d91",
-    "34 L": "34l",
-    "48 L": "48l",
-    "41 lik": "41lik",
-    "41 -545": "41545",
-    "41 -13": "4113",
-    "41 -11": "4111",
-    "41 -07": "4107",
-    "41 -03": "4103",
-    "41 -02": "4102",
-    "41 -01": "4101",
-    "52 B 64": "52b",
-    "52 B": "52b",
+    "35 lik": "35lik",
 }
 
 
@@ -180,10 +154,6 @@ def is_outer_void(r: int, g: int, b: int, a: int) -> bool:
     return is_solid_background(r, g, b, a) and brightness > 200
 
 
-def _side_rail_columns(w: int, il: int, ir: int, rail_w: int) -> list[int]:
-    return list(range(max(0, il - rail_w), il + 1)) + list(range(ir, min(w, ir + rail_w + 1)))
-
-
 def strip_outer_void_band(
     img: Image.Image, il: int, it: int, ir: int, ib: int
 ) -> tuple[Image.Image, int, int, int, int]:
@@ -201,10 +171,13 @@ def strip_outer_void_band(
         top += 1
 
     bottom = h - 1
-    side_cols = _side_rail_columns(w, il, ir, max(8, (ir - il + 1) // 4))
     while bottom > ib:
-        side_frame = sum(1 for x in side_cols if is_frame_pixel(*px[x, bottom]))
-        if side_frame >= 4:
+        voids = sum(
+            1
+            for x in range(il, ir + 1)
+            if is_outer_void(*px[x, bottom]) or is_hole_pixel(*px[x, bottom])
+        )
+        if voids < span_h * 0.5:
             break
         bottom -= 1
 
@@ -238,8 +211,17 @@ def trim_photo_margin(
     rail_w = max(8, (ir - il + 1) // 4)
 
     def row_has_rail(y: int) -> bool:
-        xs = _side_rail_columns(w, il, ir, rail_w)
+        xs = list(range(max(0, il - rail_w), il + 1)) + list(range(ir, min(w, ir + rail_w + 1)))
         return any(is_frame_pixel(*px[x, y]) for x in xs)
+
+    def row_rail_brightness(y: int) -> float:
+        xs = list(range(max(0, il - rail_w), il + 1)) + list(range(ir, min(w, ir + rail_w + 1)))
+        vals = [
+            (px[x, y][0] + px[x, y][1] + px[x, y][2]) / 3
+            for x in xs
+            if px[x, y][3] > 50 and is_frame_pixel(*px[x, y])
+        ]
+        return statistics.median(vals) if vals else 999.0
 
     def col_has_rail(x: int) -> bool:
         ys = range(max(0, it - rail_w), min(h, ib + rail_w + 1))
@@ -250,7 +232,7 @@ def trim_photo_margin(
         top += 1
 
     bottom = h - 1
-    while bottom > ib and not row_has_rail(bottom):
+    while bottom > ib and (not row_has_rail(bottom) or row_rail_brightness(bottom) > 195):
         bottom -= 1
 
     left = 0
@@ -312,59 +294,11 @@ def scan_hole_bounds(px, w: int, h: int, cx: int, cy: int) -> tuple[int, int, in
     return left, top, right, bottom
 
 
-def local_color_variance(px, w: int, h: int, x: int, y: int, rad: int = 4) -> float:
-    vals: list[float] = []
-    for dy in range(-rad, rad + 1):
-        for dx in range(-rad, rad + 1):
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < w and 0 <= ny < h:
-                r, g, b, a = px[nx, ny]
-                if a > 128:
-                    vals.append(r + g + b)
-    if len(vals) < 5:
-        return 9999.0
-    mean = sum(vals) / len(vals)
-    return sum((v - mean) ** 2 for v in vals) / len(vals)
-
-
-def is_smooth_inner_pixel(px, w: int, h: int, x: int, y: int, var_threshold: float = 20.0) -> bool:
-    """Dokulu çerçevede düz iç mat (siyah silikon vb.)."""
-    r, g, b, a = px[x, y]
-    if a < 128:
-        return False
-    if (r + g + b) / 3 > 85:
-        return False
-    return local_color_variance(px, w, h, x, y) < var_threshold
-
-
-def scan_smooth_inner_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
-    cx, cy = w // 2, h // 2
-    left = cx
-    while left > 0 and is_smooth_inner_pixel(px, w, h, left, cy):
-        left -= 1
-    left += 1
-    right = cx
-    while right < w - 1 and is_smooth_inner_pixel(px, w, h, right, cy):
-        right += 1
-    right -= 1
-    top = cy
-    while top > 0 and is_smooth_inner_pixel(px, w, h, cx, top):
-        top -= 1
-    top += 1
-    bottom = cy
-    while bottom < h - 1 and is_smooth_inner_pixel(px, w, h, cx, bottom):
-        bottom += 1
-    bottom -= 1
-    return left, top, right, bottom
-
-
 def detect_hole_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
     cx, cy = w // 2, h // 2
     if px[cx, cy][3] < 30:
         return flood_hole_transparent(px, w, h, cx, cy)
     left, top, right, bottom = scan_hole_bounds(px, w, h, cx, cy)
-    if right <= left or bottom <= top:
-        left, top, right, bottom = scan_smooth_inner_bounds(px, w, h)
     rails = [left, top, w - 1 - right, h - 1 - bottom]
     if right <= left or bottom <= top:
         return flood_hole_bounds(px, w, h, cx, cy)
@@ -504,59 +438,10 @@ def align_strip_outer_face(patch: Image.Image, axis: str) -> Image.Image:
     return patch.crop((0, 0, best_x + 1, ph)) if best_x + 1 < pw else patch
 
 
-def trim_corner_outer_void(patch: Image.Image) -> Image.Image:
-    """Köşe yamasındaki dış beyaz/siyah boşluğu at."""
-    if patch.width <= 0 or patch.height <= 0:
-        return patch
-    px = patch.load()
-    l, t, r, b = 0, 0, patch.width, patch.height
-
-    while t < b - 1:
-        solid = sum(1 for x in range(l, r) if not is_outer_void(*px[x, t]))
-        if solid >= (r - l) * 0.25:
-            break
-        t += 1
-
-    while l < r - 1:
-        solid = sum(1 for y in range(t, b) if not is_outer_void(*px[l, y]))
-        if solid >= (b - t) * 0.25:
-            break
-        l += 1
-
-    # Dış köşedeki açık gri fotoğraf arka planını at
-    while t < b - 1:
-        bright = sum(
-            1 for x in range(l, r)
-            if px[x, t][3] > 128 and (px[x, t][0] + px[x, t][1] + px[x, t][2]) / 3 > 90
-        )
-        if bright < (r - l) * 0.35:
-            break
-        t += 1
-
-    while l < r - 1:
-        bright = sum(
-            1 for y in range(t, b)
-            if px[l, y][3] > 128 and (px[l, y][0] + px[l, y][1] + px[l, y][2]) / 3 > 90
-        )
-        if bright < (b - t) * 0.35:
-            break
-        l += 1
-
-    if l == 0 and t == 0 and r == patch.width and b == patch.height:
-        return patch
-    return patch.crop((l, t, r, b))
-
-
-def prepare_rail_edge_strip(patch: Image.Image, axis: str) -> Image.Image:
-    """Üst/alt ray profili — trim_edge_strip iç mat satırına çökmez; dış yüz korunur."""
-    return align_strip_outer_face(patch, axis)
-
-
 def prepare_corner_patch(patch: Image.Image, axes: tuple[str, ...]) -> Image.Image:
-    out = trim_corner_outer_void(patch)
+    out = patch
     for axis in axes:
         out = trim_edge_strip(out, axis)
-        out = align_strip_outer_face(out, axis)
     return out
 
 
@@ -633,42 +518,6 @@ def outer_groove_center_offset(patch: Image.Image, outer_at: str) -> int | None:
     return best_center
 
 
-def mean_rail_brightness(edge: Image.Image) -> float:
-    px = edge.load()
-    w, h = edge.size
-    vals: list[float] = []
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = px[x, y]
-            if a > 128:
-                vals.append((r + g + b) / 3)
-    return statistics.mean(vals) if vals else 0.0
-
-
-def inner_edge_brightness(edge: Image.Image, row: int) -> float:
-    px = edge.load()
-    w, h = edge.size
-    y = row if row >= 0 else h + row
-    if y < 0 or y >= h:
-        return 0.0
-    vals = [(px[x, y][0] + px[x, y][1] + px[x, y][2]) / 3 for x in range(w) if px[x, y][3] > 128]
-    return statistics.mean(vals) if vals else 0.0
-
-
-def rails_brightness_mismatch(top_edge: Image.Image, bottom_edge: Image.Image, threshold: float = 25.0) -> bool:
-    top_inner = inner_edge_brightness(top_edge, -1)
-    bot_inner = inner_edge_brightness(bottom_edge, 0)
-    if top_inner < 15 or bot_inner < 15:
-        return False
-    if abs(top_inner - bot_inner) > threshold:
-        return True
-    top_b = mean_rail_brightness(top_edge)
-    bot_b = mean_rail_brightness(bottom_edge)
-    if top_b < 15 or bot_b < 15:
-        return False
-    return abs(top_b - bot_b) > 30.0
-
-
 def needs_bottom_profile_mirror(top_edge: Image.Image, bottom_edge: Image.Image) -> bool:
     """Alt kenarda dış oluk üsttekiyle aynı derinlikte değilse üst profili aynala."""
     top_center = outer_groove_center_offset(top_edge, "start")
@@ -676,16 +525,6 @@ def needs_bottom_profile_mirror(top_edge: Image.Image, bottom_edge: Image.Image)
     if top_center is None or bot_center is None:
         return False
     return bot_center < 8 and top_center >= 12
-
-
-def needs_bottom_rail_mirror(top_edge: Image.Image, bottom_edge: Image.Image) -> bool:
-    if bottom_edge.height < max(4, top_edge.height // 3):
-        return True
-    if top_edge.height > 0 and bottom_edge.height <= top_edge.height * 0.92:
-        return True
-    if rails_brightness_mismatch(top_edge, bottom_edge):
-        return True
-    return needs_bottom_profile_mirror(top_edge, bottom_edge)
 
 
 def mirror_bottom_from_top(
@@ -738,133 +577,6 @@ def center_frame_hole(img: Image.Image, il: int, it: int, ir: int, ib: int) -> t
     return out, il + ox, it + oy, ir + ox, ib + oy
 
 
-def is_colored_frame_pixel(r: int, g: int, b: int, a: int) -> bool:
-    """Altın/gümüş gibi renkli profil pikselleri (iç mat değil)."""
-    if a < 128:
-        return False
-    brightness = (r + g + b) / 3
-    spread = max(r, g, b) - min(r, g, b)
-    return brightness > 85 and spread > 8
-
-
-def is_inner_mat_pixel(r: int, g: int, b: int, a: int) -> bool:
-    """Siyah/kahverengi silikon mat (dokulu altın profilden ayrılır)."""
-    if a < 128:
-        return False
-    return (r + g + b) / 3 < 55
-
-
-def measure_outward_dark_band(
-    px, w: int, h: int, edge_x: int, edge_y: int, dx: int, dy: int
-) -> int:
-    """Delik kenarından dışarı: renkli profile kadar kalan ince siyah mat şeridi."""
-    x, y = edge_x + dx, edge_y + dy
-    band = 0
-    while 0 <= x < w and 0 <= y < h:
-        r, g, b, a = px[x, y]
-        if is_colored_frame_pixel(r, g, b, a):
-            break
-        if is_inner_mat_pixel(r, g, b, a) or is_hole_pixel(r, g, b, a):
-            band += 1
-            x += dx
-            y += dy
-            continue
-        break
-    return band
-
-
-def measure_outward_to_profile_edge(
-    px, w: int, h: int, edge_x: int, edge_y: int, dx: int, dy: int, bright_threshold: float = 140.0
-) -> int:
-    """Delik kenarından dışarı: parlak çerçeve profiline kadar koyu bölge derinliği."""
-    x, y = edge_x + dx, edge_y + dy
-    dist = 0
-    while 0 <= x < w and 0 <= y < h and dist < 80:
-        r, g, b, a = px[x, y]
-        if a < 128:
-            break
-        if (r + g + b) / 3 >= bright_threshold:
-            break
-        dist += 1
-        x += dx
-        y += dy
-    return dist
-
-
-def compute_inner_mat_inset(
-    px, w: int, h: int, il: int, it: int, ir: int, ib: int, target_mat_px: int = 22
-) -> int:
-    """Renkli silikonlu profillerde iç siyah mat bandını korumak için deliği küçült."""
-    cx, cy = w // 2, h // 2
-    bands = [
-        measure_outward_dark_band(px, w, h, il, cy, -1, 0),
-        measure_outward_dark_band(px, w, h, ir, cy, 1, 0),
-        measure_outward_dark_band(px, w, h, cx, it, 0, -1),
-        measure_outward_dark_band(px, w, h, cx, ib, 0, 1),
-    ]
-    insets = [max(0, target_mat_px - band) for band in bands if 0 < band < target_mat_px]
-    if insets:
-        return max(insets)
-
-    # Gümüş gibi profillerde ince mat doğrudan ölçülemezse parlak kenara kadar koyu bölge varsa sabit pay
-    profile_depths = [
-        measure_outward_to_profile_edge(px, w, h, il, cy, -1, 0),
-        measure_outward_to_profile_edge(px, w, h, ir, cy, 1, 0),
-        measure_outward_to_profile_edge(px, w, h, cx, it, 0, -1),
-        measure_outward_to_profile_edge(px, w, h, cx, ib, 0, 1),
-    ]
-    deep_sides = [d for d in profile_depths if d >= 8]
-    if len(deep_sides) >= 3:
-        return target_mat_px
-    return 0
-
-
-def inset_hole_bounds(
-    il: int, it: int, ir: int, ib: int, inset: int, w: int, h: int
-) -> tuple[int, int, int, int]:
-    inset = max(0, inset)
-    il += inset
-    it += inset
-    ir -= inset
-    ib -= inset
-    if ir <= il or ib <= it:
-        raise ValueError("İç mat payı delik sınırlarını aşıyor. PNG'yi kontrol edin.")
-    return il, it, ir, ib
-
-
-def punch_hole_transparent(img: Image.Image, il: int, it: int, ir: int, ib: int) -> Image.Image:
-    """İç boşluğu şeffaf yap; köşe profili bozulmasın (flat asset)."""
-    out = img.copy()
-    px = out.load()
-    for y in range(it, ib + 1):
-        for x in range(il, ir + 1):
-            px[x, y] = (0, 0, 0, 0)
-    return out
-
-
-def process_frame_flat(src: Path, dest: Path) -> int:
-    """Kaynak çerçeveyi nine-slice parçalamadan düz PNG olarak kaydet."""
-    raw = Image.open(src).convert("RGBA")
-    raw = crop_to_frame_content(raw)
-    w, h = raw.size
-    px = raw.load()
-    il, it, ir, ib = detect_hole_bounds(px, w, h)
-    if ir <= il or ib <= it:
-        raise ValueError("Çerçeve kenarı tespit edilemedi. PNG'yi kontrol edin.")
-
-    raw, il, it, ir, ib = strip_outer_void_band(raw, il, it, ir, ib)
-    raw, il, it, ir, ib = trim_photo_margin(raw, il, it, ir, ib)
-
-    punched = punch_hole_transparent(raw, il, it, ir, ib)
-    img, il, it, ir, ib = center_frame_hole(punched, il, it, ir, ib)
-    w, h = img.size
-    B = int(round(statistics.median([il, it, w - 1 - ir, h - 1 - ib])))
-
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    img.save(dest, "PNG")
-    return B
-
-
 def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
     raw = Image.open(src).convert("RGBA")
     raw = crop_to_frame_content(raw)
@@ -877,14 +589,14 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
     raw, il, it, ir, ib = strip_outer_void_band(raw, il, it, ir, ib)
     raw, il, it, ir, ib = trim_photo_margin(raw, il, it, ir, ib)
     raw_w, raw_h = raw.size
-    rail_sizes = [il, it, raw_w - 1 - ir, raw_h - 1 - ib]
-    B = force_thickness if force_thickness is not None else int(round(statistics.median(rail_sizes)))
-    B = min(B, *rail_sizes)
+    raw_px = raw.load()
 
     img, il, it, ir, ib = center_frame_hole(raw, il, it, ir, ib)
     w, h = img.size
     px = img.load()
     bot0 = bottom_rail_start(px, w, h, il, ir, ib)
+    raw_rails = [il, it, w - 1 - ir, h - bot0]
+    B = force_thickness if force_thickness is not None else int(round(statistics.median(raw_rails)))
 
     hole_size = max(ir - il + 1, ib - it + 1)
     out_size = hole_size + 2 * B
@@ -892,9 +604,9 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
 
     tl = prepare_corner_patch(crop_clamped(img, (il - B, it - B, il, it)), ("top", "left"))
     tr = prepare_corner_patch(crop_clamped(img, (ir + 1, it - B, ir + 1 + B, it)), ("top", "right"))
-    top_e = prepare_rail_edge_strip(crop_clamped(img, (il, it - B, ir + 1, it)), "top")
-    bot_src = prepare_rail_edge_strip(crop_clamped(img, (il, bot0, ir + 1, bot0 + B)), "bottom")
-    if needs_bottom_rail_mirror(top_e, bot_src):
+    top_e = trim_edge_strip(crop_clamped(img, (il, it - B, ir + 1, it)), "top")
+    bot_src = trim_edge_strip(crop_clamped(img, (il, bot0, ir + 1, bot0 + B)), "bottom")
+    if needs_bottom_profile_mirror(top_e, bot_src):
         bot_e, bl, br = mirror_bottom_from_top(top_e, tl, tr)
     else:
         bot_e = bot_src
@@ -996,11 +708,6 @@ def main() -> None:
     parser.add_argument("--output-name", help="Dosya adı (örn. fa-20-gumus.png)")
     parser.add_argument("--thickness", type=int, help="Nine-slice kalınlığı (px); verilmezse otomatik tespit")
     parser.add_argument("--update-only", action="store_true", help="Sadece mevcut kaydın PNG/thickness güncelle")
-    parser.add_argument(
-        "--flat",
-        action="store_true",
-        help="Nine-slice parçalama yok; kaynak profili düz PNG olarak kaydet (41 lik vb.)",
-    )
     args = parser.parse_args()
 
     src = Path(args.input).resolve()
@@ -1013,10 +720,7 @@ def main() -> None:
         filename = output_filename(args.code, args.color, src.stem)
 
     dest = FRAMES_DIR / filename
-    if args.flat:
-        thickness = process_frame_flat(src, dest)
-    else:
-        thickness = process_frame_png(src, dest, force_thickness=args.thickness)
+    thickness = process_frame_png(src, dest, force_thickness=args.thickness)
     image_url = f"/frames/{filename}"
 
     catalog = load_catalog()

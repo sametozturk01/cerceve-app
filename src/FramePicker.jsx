@@ -260,9 +260,9 @@ function drawFrameShadow(ctx, x, y, w, h, strong = false) {
 
   ctx.save();
   ctx.shadowColor = strong ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = strong ? 18 : 14;
-  ctx.shadowOffsetX = 5;
-  ctx.shadowOffsetY = 8;
+  ctx.shadowBlur = strong ? 22 : 18;
+  ctx.shadowOffsetX = 6;
+  ctx.shadowOffsetY = 12;
   ctx.fillStyle = "rgba(0,0,0,0.01)";
   ctx.fillRect(rx, ry, rw, rh);
   ctx.restore();
@@ -292,31 +292,6 @@ function drawLightFrameOutline(ctx, x, y, w, h) {
   ctx.restore();
 }
 
-/** Düz asset (41 lik): tüm şablonu ölçekle — köşe birleşimi bozulmaz. */
-function drawScaledAssetFrame(ctx, frameImg, x, y, w, h) {
-  const smooth = ctx.imageSmoothingEnabled;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(frameImg, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
-  ctx.imageSmoothingEnabled = smooth;
-}
-
-function isFlatProfileFrame(frameType) {
-  return is41LikFrame(frameType) || isFlatDecorFrame(frameType);
-}
-
-function drawAssetFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx, frameType) {
-  if (isFlatAssetFrame(frameType) && slicePx > 0) {
-    drawScaledAssetFrame(ctx, frameImg, x, y, w, h);
-    return;
-  }
-  if (slicePx > 0) {
-    drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx);
-    return;
-  }
-  ctx.drawImage(frameImg, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
-}
-
 function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
   const sw = frameImg.width;
   const sh = frameImg.height;
@@ -326,10 +301,10 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
   const fy = Math.round(y);
   const fw = Math.round(w);
   const fh = Math.round(h);
+  const bleed = 2;
 
   const smooth = ctx.imageSmoothingEnabled;
   const downscale = slicePx > thickPx * 1.25;
-  const bleed = 2;
   ctx.imageSmoothingEnabled = downscale;
   if (downscale) ctx.imageSmoothingQuality = "high";
 
@@ -338,6 +313,7 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
     ctx.drawImage(frameImg, sx, sy, sW, sH, dx, dy, dW, dH);
   };
 
+  // Köşeler önce; kenarlar üstte bindirme ile mitre boşluğu kalmaz
   blit(0, 0, s, s, fx, fy, t, t);
   blit(sw - s, 0, s, s, fx + fw - t, fy, t, t);
   blit(0, sh - s, s, s, fx, fy + fh - t, t, t);
@@ -355,12 +331,6 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
 
 const CANVAS_SIZE = 640;
 const FULLSCREEN_MARGIN = 28;
-/** Önizleme tuvalinde çerçeve + gölge için üst/alt güvenlik payı */
-const PREVIEW_CANVAS_PAD = 22;
-/** drawFrameShadow blur+offset için ek alt pay */
-const PREVIEW_SHADOW_PAD = 12;
-/** Gölge/clip için çerçeveyi hafif aşağı kaydır */
-const PREVIEW_FRAME_TOP_BIAS = 4;
 
 function getFullscreenCanvasSize(frameRatio, viewportW, viewportH) {
   const maxW = viewportW * 0.96;
@@ -460,10 +430,7 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
     }
   } else {
     const sizeMultiplier = 0.6 + (maxDimCm / 80) * 0.4;
-    const pad = PREVIEW_CANVAS_PAD;
-    const maxDrawW = W - pad * 2;
-    const maxDrawH = H - pad * 2 - PREVIEW_SHADOW_PAD;
-    let maxDrawSize = Math.min(W * 0.85 * sizeMultiplier, maxDrawW, maxDrawH);
+    const maxDrawSize = W * 0.85 * sizeMultiplier;
     tW = maxDrawSize;
     tH = maxDrawSize;
 
@@ -472,21 +439,10 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
     } else if (frameRatio < 1) {
       tW = tH * frameRatio;
     }
-
-    if (tW > maxDrawW || tH > maxDrawH) {
-      const fit = Math.min(maxDrawW / tW, maxDrawH / tH);
-      tW *= fit;
-      tH *= fit;
-    }
   }
 
   const tX = (W - tW) / 2;
-  const frameTopBias =
-    !fullscreen && activeView !== "dekor" ? PREVIEW_FRAME_TOP_BIAS : 0;
-  const tY =
-    activeView === "dekor" && !fullscreen
-      ? H * 0.15
-      : (H - tH) / 2 + frameTopBias;
+  const tY = activeView === "dekor" && !fullscreen ? H * 0.15 : (H - tH) / 2;
 
   const pxPerMm = tW / (sizeW * 10);
   const rawThickPx = customThickness * pxPerMm;
@@ -498,322 +454,6 @@ function computeFrameLayout(W, H, sizeW, sizeH, activeView, fullscreen, customTh
   const ih = Math.round(tH - 2 * targetThickPx);
 
   return { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih };
-}
-
-const ASSET_SLICE_CATEGORIES = new Set(["34l", "48l", "35lik", "41lik", "41545", "4113", "4111", "4107", "4103", "4102", "4101", "52b"]);
-const ASSET_PROFILE_DRAW_ON_TOP = new Set(["34l", "41lik", "41545", "4113", "4111", "4107", "4103", "4102", "4101"]);
-const FLAT_DECOR_SERIES = new Set(["41 -545", "41 -13", "41 -11", "41 -07", "41 -03", "41 -02", "41 -01"]);
-const FLAT_DECOR_CATEGORIES = new Set(["41545", "4113", "4111", "4107", "4103", "4102", "4101"]);
-
-function usesAssetSliceLayout(frameType) {
-  return frameType?.categories?.some((c) => ASSET_SLICE_CATEGORIES.has(c)) ?? false;
-}
-
-function usesAssetProfileDrawOnTop(frameType) {
-  return frameType?.categories?.some((c) => ASSET_PROFILE_DRAW_ON_TOP.has(c)) ?? false;
-}
-
-function is41LikFrame(frameType) {
-  return frameType?.code === "41 lik" || frameType?.categories?.includes("41lik");
-}
-
-function isFlatDecorFrame(frameType) {
-  return (
-    FLAT_DECOR_SERIES.has(frameType?.code ?? "")
-    || frameType?.categories?.some((c) => FLAT_DECOR_CATEGORIES.has(c))
-  );
-}
-
-const FLAT_ASSET_CATEGORIES = new Set(["52b", "48l", "35lik"]);
-
-function getAssetHoleRails(frameType, frameImg) {
-  if (frameType?.rails) return frameType.rails;
-  return measureFrameHoleRails(frameImg);
-}
-
-function usesAssetHoleRails(frameType, frameColor) {
-  if (frameType?.rails) return true;
-  if (isSilikonlu41(frameType, frameColor) || isFlatDecorFrame(frameType)) return true;
-  return frameType?.categories?.some((c) => FLAT_ASSET_CATEGORIES.has(c)) ?? false;
-}
-
-function isFlatAssetFrame(frameType) {
-  return isFlatProfileFrame(frameType)
-    || (frameType?.categories?.some((c) => FLAT_ASSET_CATEGORIES.has(c)) ?? false);
-}
-
-function getPhotoPad(frameType, frameColor) {
-  if (isFlatProfileFrame(frameType)) return 0;
-  if (frameType?.categories?.some((c) => FLAT_ASSET_CATEGORIES.has(c))) return 0;
-  if (frameColor?.id === "siyah" && !usesAssetProfileDrawOnTop(frameType)) return 4;
-  return 0;
-}
-
-const frameHoleRailsCache = new WeakMap();
-const frameMatCoverCache = new WeakMap();
-
-function getFrameImageData(frameImg) {
-  const w = frameImg.width;
-  const h = frameImg.height;
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(frameImg, 0, 0);
-  return { data: ctx.getImageData(0, 0, w, h).data, w, h };
-}
-
-function isGoldAccentPixel(r, g, b, a) {
-  if (a < 128) return false;
-  const brightness = (r + g + b) / 3;
-  return brightness > 105 && r > g * 1.05 && r > b && g > 60;
-}
-
-function isProfileAccentPixel(r, g, b, a) {
-  if (a < 128) return false;
-  if (isGoldAccentPixel(r, g, b, a)) return true;
-  const brightness = (r + g + b) / 3;
-  const spread = Math.max(r, g, b) - Math.min(r, g, b);
-  return brightness > 175 && spread < 40;
-}
-
-function isDarkMatPixel(r, g, b, a) {
-  if (a < 128) return false;
-  return (r + g + b) / 3 < 75;
-}
-
-function measureInnerMatCoverPx(frameImg, rails) {
-  if (!frameImg?.width || !rails) return null;
-  const cacheKey = `${rails.left},${rails.top},${rails.right},${rails.bottom}`;
-  const cached = frameMatCoverCache.get(frameImg);
-  if (cached?.key === cacheKey) return cached.value;
-
-  const { data, w, h } = getFrameImageData(frameImg);
-  const pixelAt = (x, y) => {
-    const i = (y * w + x) * 4;
-    return [data[i], data[i + 1], data[i + 2], data[i + 3]];
-  };
-
-  const measureSide = (edgeX, edgeY, dx, dy) => {
-    let x = edgeX + dx;
-    let y = edgeY + dy;
-    let cover = 0;
-    while (x >= 0 && y >= 0 && x < w && y < h && cover < 80) {
-      const [r, g, b, a] = pixelAt(x, y);
-      if (isProfileAccentPixel(r, g, b, a)) break;
-      if (isDarkMatPixel(r, g, b, a)) {
-        cover += 1;
-        x += dx;
-        y += dy;
-        continue;
-      }
-      break;
-    }
-    return cover;
-  };
-
-  const covers = [
-    measureSide(rails.left, Math.floor(h / 2), -1, 0),
-    measureSide(w - 1 - rails.right, Math.floor(h / 2), 1, 0),
-    measureSide(Math.floor(w / 2), rails.top, 0, -1),
-    measureSide(Math.floor(w / 2), h - 1 - rails.bottom, 0, 1),
-  ].filter((n) => n > 0);
-
-  const value = covers.length ? Math.max(...covers) : null;
-  frameMatCoverCache.set(frameImg, { key: cacheKey, value });
-  return value;
-}
-
-function getDecorMatLip(targetThickPx, matCoverPx, holeRails) {
-  if (!matCoverPx || !holeRails) {
-    return Math.max(4, Math.round(targetThickPx * 0.15));
-  }
-  const rail = Math.min(holeRails.left, holeRails.top, holeRails.right, holeRails.bottom);
-  if (!rail) return Math.max(4, Math.round(targetThickPx * 0.15));
-  return Math.max(4, Math.round(targetThickPx * (matCoverPx / rail)));
-}
-
-function measureFrameHoleRails(frameImg) {
-  if (!frameImg?.width || !frameImg?.height) return null;
-  if (frameHoleRailsCache.has(frameImg)) {
-    return frameHoleRailsCache.get(frameImg);
-  }
-
-  const w = frameImg.width;
-  const h = frameImg.height;
-  const { data } = getFrameImageData(frameImg);
-  const cx = Math.floor(w / 2);
-  const cy = Math.floor(h / 2);
-  const alphaAt = (x, y) => data[(y * w + x) * 4 + 3];
-
-  if (alphaAt(cx, cy) > 0) {
-    frameHoleRailsCache.set(frameImg, null);
-    return null;
-  }
-
-  let minX = cx;
-  let minY = cy;
-  let maxX = cx;
-  let maxY = cy;
-  const stack = [[cx, cy]];
-  const seen = new Uint8Array(w * h);
-  seen[cy * w + cx] = 1;
-
-  while (stack.length) {
-    const [x, y] = stack.pop();
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-    if (x > maxX) maxX = x;
-    if (y > maxY) maxY = y;
-    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-      const i = ny * w + nx;
-      if (seen[i] || alphaAt(nx, ny) > 0) continue;
-      seen[i] = 1;
-      stack.push([nx, ny]);
-    }
-  }
-
-  const rails = {
-    left: minX,
-    top: minY,
-    right: w - 1 - maxX,
-    bottom: h - 1 - maxY,
-  };
-  frameHoleRailsCache.set(frameImg, rails);
-  return rails;
-}
-
-function isSilikonlu41(frameType, frameColor) {
-  if (!is41LikFrame(frameType)) return false;
-  const label = `${frameType?.id ?? ""} ${frameType?.colorName ?? ""}`.toLowerCase();
-  const color = frameColor ?? frameType?.colors?.[0];
-  const id = (color?.id ?? "").toLowerCase();
-  return label.includes("silikonlu") || id.includes("silikonlu");
-}
-
-function getPhotoLip(frameType, targetThickPx, photoPad, frameColor = null) {
-  if (isSilikonlu41(frameType, frameColor)) {
-    // İç siyah silikon bandının üstünü kapla
-    return Math.max(photoPad + 4, Math.round(targetThickPx * 0.18));
-  }
-  if (isFlatProfileFrame(frameType)) {
-    return Math.max(photoPad + 4, Math.round(targetThickPx * 0.14));
-  }
-  if (frameType?.categories?.some((c) => FLAT_ASSET_CATEGORIES.has(c))) {
-    return Math.max(photoPad + 4, Math.round(targetThickPx * 0.12));
-  }
-  return Math.max(photoPad + 2, Math.round(targetThickPx * 0.06));
-}
-
-/** Kalın profil şablonunda dilim oranına göre iç boşluğu PNG ile hizala. */
-function applyAssetSliceLayout(layout, sliceSize, imgW, imgH, sliceScale = 1, rails = null) {
-  if (rails && imgW && imgH) {
-    const insetL = Math.round((rails.left / imgW) * layout.tW);
-    const insetR = Math.round((rails.right / imgW) * layout.tW);
-    const insetT = Math.round((rails.top / imgH) * layout.tH);
-    const insetB = Math.round((rails.bottom / imgH) * layout.tH);
-    const targetThickPx = Math.max(
-      1,
-      Math.min(insetL, insetT, insetR, insetB, Math.floor(layout.tW / 2) - 1, Math.floor(layout.tH / 2) - 1),
-    );
-
-    return {
-      ...layout,
-      targetThickPx,
-      ix: Math.round(layout.tX + insetL),
-      iy: Math.round(layout.tY + insetT),
-      iw: Math.max(1, Math.round(layout.tW - insetL - insetR)),
-      ih: Math.max(1, Math.round(layout.tH - insetT - insetB)),
-    };
-  }
-
-  if (!sliceSize || !imgW || !imgH) return layout;
-
-  const scaledSlice = sliceSize * sliceScale;
-  const insetX = Math.round((scaledSlice / imgW) * layout.tW);
-  const insetY = Math.round((scaledSlice / imgH) * layout.tH);
-  const targetThickPx = Math.max(
-    1,
-    Math.min(insetX, insetY, Math.floor(layout.tW / 2) - 1, Math.floor(layout.tH / 2) - 1),
-  );
-
-  return {
-    ...layout,
-    targetThickPx,
-    ix: Math.round(layout.tX + targetThickPx),
-    iy: Math.round(layout.tY + targetThickPx),
-    iw: Math.max(1, Math.round(layout.tW - 2 * targetThickPx)),
-    ih: Math.max(1, Math.round(layout.tH - 2 * targetThickPx)),
-  };
-}
-
-/** Fotoğraf yerleşimi. Kalın profillerde çerçeveden sonra çizilir. */
-function computePhotoLayout(
-  layout,
-  frameType,
-  frameRender,
-  hasFrameImage,
-  photoPad = 0,
-  frameColor = null,
-  photoMetrics = null,
-) {
-  const { ix, iy, iw, ih, targetThickPx } = layout;
-  const isFlatAsset = frameType?.categories?.some((c) => FLAT_ASSET_CATEGORIES.has(c)) ?? false;
-  const overscan = isFlatAsset ? 4 : 2;
-
-  if (
-    usesAssetProfileDrawOnTop(frameType) &&
-    hasFrameImage &&
-    frameRender !== "flatMetal"
-  ) {
-    let lip;
-    let drawOnTop = true;
-
-    if (isFlatDecorFrame(frameType)) {
-      const { matCoverPx, holeRails } = photoMetrics ?? {};
-      lip = getDecorMatLip(targetThickPx, matCoverPx, holeRails);
-    } else {
-      lip = getPhotoLip(frameType, targetThickPx, photoPad, frameColor);
-    }
-
-    return {
-      clipX: ix - lip,
-      clipY: iy - lip,
-      clipW: iw + 2 * lip,
-      clipH: ih + 2 * lip,
-      pX: ix - lip - overscan,
-      pY: iy - lip - overscan,
-      pW: iw + 2 * lip + 2 * overscan,
-      pH: ih + 2 * lip + 2 * overscan,
-      drawOnTop,
-    };
-  }
-
-  const behindPad = isFlatAsset ? 2 : 0;
-  return {
-    clipX: ix - photoPad,
-    clipY: iy - photoPad,
-    clipW: iw + 2 * photoPad,
-    clipH: ih + 2 * photoPad,
-    pX: ix - photoPad - behindPad,
-    pY: iy - photoPad - behindPad,
-    pW: iw + 2 * photoPad + 2 * behindPad,
-    pH: ih + 2 * photoPad + 2 * behindPad,
-    drawOnTop: false,
-  };
-}
-
-function drawPhotoInLayout(ctx, photo, photoSrc, photoLayout) {
-  const { sx, sy, sWidth, sHeight } = photoSrc;
-  const { clipX, clipY, clipW, clipH, pX, pY, pW, pH } = photoLayout;
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(clipX, clipY, clipW, clipH);
-  ctx.clip();
-  ctx.drawImage(photo, sx, sy, sWidth, sHeight, pX, pY, pW, pH);
-  ctx.restore();
 }
 
 function renderPreviewScene(ctx, scene) {
@@ -833,8 +473,8 @@ function renderPreviewScene(ctx, scene) {
     sliceSize,
   } = scene;
 
-  const { tX, tY, tW, tH, targetThickPx } = layout;
-  const { drawOnTop } = scene.photoLayout;
+  const { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih } = layout;
+  const { sx, sy, sWidth, sHeight } = photoSrc;
 
   ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#e8eaed";
   ctx.fillRect(0, 0, W, H);
@@ -847,27 +487,30 @@ function renderPreviewScene(ctx, scene) {
     drawFrameShadow(ctx, tX, tY, tW, tH, isLightFrameColor(frameColor));
   }
 
-  if (!drawOnTop) {
-    drawPhotoInLayout(ctx, photo, photoSrc, scene.photoLayout);
-  }
+  const pX = ix - photoPad;
+  const pY = iy - photoPad;
+  const pW = iw + 2 * photoPad;
+  const pH = ih + 2 * photoPad;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(pX, pY, pW, pH);
+  ctx.clip();
+  ctx.drawImage(photo, sx, sy, sWidth, sHeight, pX, pY, pW, pH);
+  ctx.restore();
 
   if (frameRender === "flatMetal") {
     drawFlatMetalFrame(ctx, tX, tY, tW, tH, targetThickPx);
   } else if (frameImg) {
     const s = sliceSize;
-    drawAssetFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx, scene.frameType);
-    if (
-      s > 0
-      && isLightFrameColor(frameColor)
-      && !isSilikonlu41(scene.frameType, frameColor)
-      && !isFlatDecorFrame(scene.frameType)
-    ) {
-      drawLightFrameOutline(ctx, tX, tY, tW, tH);
+    if (s > 0) {
+      drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx);
+      if (isLightFrameColor(frameColor)) {
+        drawLightFrameOutline(ctx, tX, tY, tW, tH);
+      }
+    } else {
+      ctx.drawImage(frameImg, Math.round(tX), Math.round(tY), Math.round(tW), Math.round(tH));
     }
-  }
-
-  if (drawOnTop) {
-    drawPhotoInLayout(ctx, photo, photoSrc, scene.photoLayout);
   }
 }
 
@@ -984,7 +627,7 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
     ctx.imageSmoothingQuality = "high";
 
     async function draw() {
-      const photoPad = getPhotoPad(frameType, frameColor);
+      const photoPad = frameColor?.id === "siyah" ? 4 : 0;
 
       let decorSample = null;
       let decorImg = null;
@@ -997,13 +640,7 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
       const photo = await loadImage(imageUrl).catch(() => null);
       if (cancelled || !photo) return;
 
-      let frameImg = null;
-      if (frameRender !== "flatMetal" && frameImage) {
-        frameImg = await loadImage(frameImage).catch(() => null);
-        if (cancelled) return;
-      }
-
-      let layout = computeFrameLayout(
+      const layout = computeFrameLayout(
         W,
         H,
         sizeW,
@@ -1014,36 +651,8 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
         decorSample?.layout,
       );
 
-      let holeRails = null;
-      let matCoverPx = null;
-      if (frameImg && usesAssetSliceLayout(frameType)) {
-        if (usesAssetHoleRails(frameType, frameColor)) {
-          holeRails = getAssetHoleRails(frameType, frameImg);
-          if (isFlatDecorFrame(frameType) && holeRails) {
-            matCoverPx = measureInnerMatCoverPx(frameImg, holeRails);
-          }
-        }
-        layout = applyAssetSliceLayout(
-          layout,
-          sliceSize,
-          frameImg.width,
-          frameImg.height,
-          1,
-          holeRails,
-        );
-      }
-
-      const photoLayout = computePhotoLayout(
-        layout,
-        frameType,
-        frameRender,
-        Boolean(frameImage),
-        photoPad,
-        frameColor,
-        { matCoverPx, holeRails },
-      );
       const imgRatio = photo.width / photo.height;
-      const targetRatio = photoLayout.pW / photoLayout.pH;
+      const targetRatio = layout.iw / layout.ih;
 
       let sx = 0;
       let sy = 0;
@@ -1058,18 +667,22 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
         sy = (photo.height - sHeight) / 2;
       }
 
+      let frameImg = null;
+      if (frameRender !== "flatMetal" && frameImage) {
+        frameImg = await loadImage(frameImage).catch(() => null);
+        if (cancelled) return;
+      }
+
       const scene = {
         W,
         H,
         activeView,
         fullscreen,
         frameColor,
-        frameType,
         decorImg,
         photo,
         layout,
         photoSrc: { sx, sy, sWidth, sHeight },
-        photoLayout,
         photoPad,
         frameRender,
         frameImg,
@@ -1090,7 +703,6 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
   }, [
     imageUrl,
     frameId,
-    frameType,
     frameImage,
     frameRender,
     sliceSize,
@@ -1107,8 +719,8 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
   return (
     <canvas
       ref={canvasRef}
-      className={fullscreen ? "fp-canvas-fullscreen" : "fp-preview-canvas"}
-      style={fullscreen ? { width: "100%", height: "auto", display: "block" } : undefined}
+      className={fullscreen ? "fp-canvas-fullscreen" : undefined}
+      style={{ width: "100%", height: "auto", display: "block" }}
     />
   );
 });
@@ -1669,9 +1281,7 @@ export default function FramePicker() {
       {/* ══ Sol: Önizleme ══ */}
       <div className="fp-left">
         <div className="fp-preview-box">
-          <div className="fp-preview-canvas-wrap">
-            <PreviewCanvas key={previewProps.frameType.id} {...previewProps} />
-          </div>
+          <PreviewCanvas key={previewProps.frameType.id} {...previewProps} />
           <button
             type="button"
             className="fp-preview-fullscreen-btn"
