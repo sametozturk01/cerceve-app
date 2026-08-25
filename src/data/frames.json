@@ -11,6 +11,22 @@
     {
       "id": "20lik",
       "label": "20 lik"
+    },
+    {
+      "id": "22lik",
+      "label": "22 lik"
+    },
+    {
+      "id": "29d",
+      "label": "29 D"
+    },
+    {
+      "id": "f30d91",
+      "label": "F30 D91"
+    },
+    {
+      "id": "f30duz",
+      "label": "F30 Düz"
     }
   ],
   "frames": [
@@ -108,6 +124,449 @@
         }
       ],
       "previewImage": "/frames/previews/20-lik-ceviz-preview.png"
+    },
+    {
+      "id": "22 lik Beyaz",
+      "code": "22 lik",
+      "colorName": "Beyaz",
+      "label": "22 lik Beyaz",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 60,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-beyaz-preview.png"
+    },
+    {
+      "id": "22 lik Altın",
+      "code": "22 lik",
+      "colorName": "Altın",
+      "label": "22 lik Altın",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 57,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-altin-preview.png"
+    },
+    {
+      "id": "22 lik Yeşil",
+      "code": "22 lik",
+      "colorName": "Yeşil",
+      "label": "22 lik Yeşil",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 54,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-yesil.png",
+      "colors": [
+        {
+          "id": "yesil",
+          "label": "Yeşil",
+          "hex": "#2F5A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-yesil-preview.png"
+    },
+    {
+      "id": "22 lik Mavi",
+      "code": "22 lik",
+      "colorName": "Mavi",
+      "label": "22 lik Mavi",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 66,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-mavi.png",
+      "colors": [
+        {
+          "id": "mavi",
+          "label": "Mavi",
+          "hex": "#5B7FA6"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-mavi-preview.png"
+    },
+    {
+      "id": "22 lik Lacivert",
+      "code": "22 lik",
+      "colorName": "Lacivert",
+      "label": "22 lik Lacivert",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 56,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-lacivert.png",
+      "colors": [
+        {
+          "id": "lacivert",
+          "label": "Lacivert",
+          "hex": "#1E3A5F"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-lacivert-preview.png"
+    },
+    {
+      "id": "22 lik Çizgili Gümüş",
+      "code": "22 lik",
+      "colorName": "Çizgili Gümüş",
+      "label": "22 lik Çizgili Gümüş",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 57,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-cizgili-gumus.png",
+      "colors": [
+        {
+          "id": "cizgili-gumus",
+          "label": "Çizgili Gümüş",
+          "hex": "#C5C9CC"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-cizgili-gumus-preview.png"
+    },
+    {
+      "id": "22 lik Ceviz",
+      "code": "22 lik",
+      "colorName": "Ceviz",
+      "label": "22 lik Ceviz",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 54,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-ceviz-preview.png"
+    },
+    {
+      "id": "29 D Ceviz",
+      "code": "29 D",
+      "colorName": "Ceviz",
+      "label": "29 D Ceviz",
+      "categories": [
+        "29d"
+      ],
+      "thickness": 70,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/29-d-ceviz-preview.png"
+    },
+    {
+      "id": "29 D Siyah",
+      "code": "29 D",
+      "colorName": "Siyah",
+      "label": "29 D Siyah",
+      "categories": [
+        "29d"
+      ],
+      "thickness": 104,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/29-d-siyah-preview.png"
+    },
+    {
+      "id": "29 D Altın",
+      "code": "29 D",
+      "colorName": "Altın",
+      "label": "29 D Altın",
+      "categories": [
+        "29d"
+      ],
+      "thickness": 92,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/29-d-altin-preview.png"
+    },
+    {
+      "id": "29 D Platin",
+      "code": "29 D",
+      "colorName": "Platin",
+      "label": "29 D Platin",
+      "categories": [
+        "29d"
+      ],
+      "thickness": 97,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-d-platin.png",
+      "colors": [
+        {
+          "id": "platin",
+          "label": "Platin",
+          "hex": "#E5E4E2"
+        }
+      ],
+      "previewImage": "/frames/previews/29-d-platin-preview.png"
+    },
+    {
+      "id": "F30 D91 Beyaz",
+      "code": "F30 D91",
+      "colorName": "Beyaz",
+      "label": "F30 D91 Beyaz",
+      "categories": [
+        "f30d91"
+      ],
+      "thickness": 61,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-d91-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-d91-beyaz-preview.png"
+    },
+    {
+      "id": "F30 D91 Mavi",
+      "code": "F30 D91",
+      "colorName": "Mavi",
+      "label": "F30 D91 Mavi",
+      "categories": [
+        "f30d91"
+      ],
+      "thickness": 65,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-d91-mavi.png",
+      "colors": [
+        {
+          "id": "mavi",
+          "label": "Mavi",
+          "hex": "#5B7FA6"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-d91-mavi-preview.png"
+    },
+    {
+      "id": "F30 D91 Kırmızı",
+      "code": "F30 D91",
+      "colorName": "Kırmızı",
+      "label": "F30 D91 Kırmızı",
+      "categories": [
+        "f30d91"
+      ],
+      "thickness": 66,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-d91-kirmizi.png",
+      "colors": [
+        {
+          "id": "kirmizi",
+          "label": "Kırmızı",
+          "hex": "#C62828"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-d91-kirmizi-preview.png"
+    },
+    {
+      "id": "F30 D91 Turuncu",
+      "code": "F30 D91",
+      "colorName": "Turuncu",
+      "label": "F30 D91 Turuncu",
+      "categories": [
+        "f30d91"
+      ],
+      "thickness": 64,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-d91-turuncu.png",
+      "colors": [
+        {
+          "id": "turuncu",
+          "label": "Turuncu",
+          "hex": "#E86B1A"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-d91-turuncu-preview.png"
+    },
+    {
+      "id": "F30 D91 Sarı",
+      "code": "F30 D91",
+      "colorName": "Sarı",
+      "label": "F30 D91 Sarı",
+      "categories": [
+        "f30d91"
+      ],
+      "thickness": 65,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-d91-sari.png",
+      "colors": [
+        {
+          "id": "sari",
+          "label": "Sarı",
+          "hex": "#E8C91A"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-d91-sari-preview.png"
+    },
+    {
+      "id": "F30 Düz Gümüş",
+      "code": "F30 Düz",
+      "colorName": "Gümüş",
+      "label": "F30 Düz Gümüş",
+      "categories": [
+        "f30duz"
+      ],
+      "thickness": 74,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-duz-gumus.png",
+      "colors": [
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#D8DCDC"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-duz-gumus-preview.png"
+    },
+    {
+      "id": "F30 Düz Bej",
+      "code": "F30 Düz",
+      "colorName": "Bej",
+      "label": "F30 Düz Bej",
+      "categories": [
+        "f30duz"
+      ],
+      "thickness": 77,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-duz-bej.png",
+      "colors": [
+        {
+          "id": "bej",
+          "label": "Bej",
+          "hex": "#C4A882"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-duz-bej-preview.png"
+    },
+    {
+      "id": "F30 Düz Ceviz",
+      "code": "F30 Düz",
+      "colorName": "Ceviz",
+      "label": "F30 Düz Ceviz",
+      "categories": [
+        "f30duz"
+      ],
+      "thickness": 72,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-duz-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-duz-ceviz-preview.png"
+    },
+    {
+      "id": "F30 Düz Kahve",
+      "code": "F30 Düz",
+      "colorName": "Kahve",
+      "label": "F30 Düz Kahve",
+      "categories": [
+        "f30duz"
+      ],
+      "thickness": 71,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-duz-kahve.png",
+      "colors": [
+        {
+          "id": "kahve",
+          "label": "Kahve",
+          "hex": "#5C3D1E"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-duz-kahve-preview.png"
+    },
+    {
+      "id": "F30 Düz Altın",
+      "code": "F30 Düz",
+      "colorName": "Altın",
+      "label": "F30 Düz Altın",
+      "categories": [
+        "f30duz"
+      ],
+      "thickness": 67,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/f30-duz-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/f30-duz-altin-preview.png"
     }
   ]
 }

@@ -1,6 +1,12 @@
-export const SERIES_OPTIONS = ["20 lik", ""];
+export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "F30 D91", "F30 Düz", ""];
 
-export const BASE_CATEGORY_OPTIONS = [{ id: "20lik", label: "20 lik" }];
+export const BASE_CATEGORY_OPTIONS = [
+  { id: "20lik", label: "20 lik" },
+  { id: "22lik", label: "22 lik" },
+  { id: "29d", label: "29 D" },
+  { id: "f30d91", label: "F30 D91" },
+  { id: "f30duz", label: "F30 Düz" },
+];
 
 export const EDITABLE_CATEGORY_OPTIONS = BASE_CATEGORY_OPTIONS;
 

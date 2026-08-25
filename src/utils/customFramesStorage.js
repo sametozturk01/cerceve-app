@@ -28,6 +28,8 @@ const SERIES_CATEGORY = {
   "FA 30": "fa30",
   "FA 40": "fa40",
   "29 D": "29d",
+  "F30 D91": "f30d91",
+  "F30 Düz": "f30duz",
   "FA 29 KR": "fa29kr",
   "A 25": "a25",
   "B 26": "b26",

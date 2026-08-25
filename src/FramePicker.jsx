@@ -259,10 +259,10 @@ function drawFrameShadow(ctx, x, y, w, h, strong = false) {
   const rh = Math.round(h);
 
   ctx.save();
-  ctx.shadowColor = strong ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = strong ? 22 : 18;
-  ctx.shadowOffsetX = 6;
-  ctx.shadowOffsetY = 12;
+  ctx.shadowColor = strong ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = strong ? 14 : 18;
+  ctx.shadowOffsetX = strong ? 3 : 6;
+  ctx.shadowOffsetY = strong ? 5 : 12;
   ctx.fillStyle = "rgba(0,0,0,0.01)";
   ctx.fillRect(rx, ry, rw, rh);
   ctx.restore();
@@ -292,10 +292,36 @@ function drawLightFrameOutline(ctx, x, y, w, h) {
   ctx.restore();
 }
 
-function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
+function measureFrameRails(frameImg) {
+  const w = frameImg.width;
+  const h = frameImg.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const c = canvas.getContext("2d", { willReadFrequently: true });
+  c.drawImage(frameImg, 0, 0);
+  const { data } = c.getImageData(0, 0, w, h);
+  const cx = w >> 1;
+  const cy = h >> 1;
+  const isHole = (x, y) => data[(y * w + x) * 4 + 3] < 30;
+
+  let il = 0;
+  while (il < w && !isHole(il, cy)) il += 1;
+  let ir = w - 1;
+  while (ir >= 0 && !isHole(ir, cy)) ir -= 1;
+  let it = 0;
+  while (it < h && !isHole(cx, it)) it += 1;
+  let ib = h - 1;
+  while (ib >= 0 && !isHole(cx, ib)) ib -= 1;
+
+  return { left: il, top: it, right: w - 1 - ir, bottom: h - 1 - ib };
+}
+
+/** Kaynak rayları farklı olsa da canvas'ta dört kenar aynı kalınlıkta. */
+function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx, rails = null) {
   const sw = frameImg.width;
   const sh = frameImg.height;
-  const s = slicePx;
+  const r = rails ?? measureFrameRails(frameImg);
   const t = Math.max(1, Math.round(thickPx));
   const fx = Math.round(x);
   const fy = Math.round(y);
@@ -304,7 +330,7 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
   const bleed = 2;
 
   const smooth = ctx.imageSmoothingEnabled;
-  const downscale = slicePx > thickPx * 1.25;
+  const downscale = Math.min(r.left, r.top, r.right, r.bottom) > thickPx * 1.25;
   ctx.imageSmoothingEnabled = downscale;
   if (downscale) ctx.imageSmoothingQuality = "high";
 
@@ -313,16 +339,33 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx) {
     ctx.drawImage(frameImg, sx, sy, sW, sH, dx, dy, dW, dH);
   };
 
-  // Köşeler önce; kenarlar üstte bindirme ile mitre boşluğu kalmaz
-  blit(0, 0, s, s, fx, fy, t, t);
-  blit(sw - s, 0, s, s, fx + fw - t, fy, t, t);
-  blit(0, sh - s, s, s, fx, fy + fh - t, t, t);
-  blit(sw - s, sh - s, s, s, fx + fw - t, fy + fh - t, t, t);
+  blit(0, 0, r.left, r.top, fx, fy, t, t);
+  blit(sw - r.right, 0, r.right, r.top, fx + fw - t, fy, t, t);
+  blit(0, sh - r.bottom, r.left, r.bottom, fx, fy + fh - t, t, t);
+  blit(sw - r.right, sh - r.bottom, r.right, r.bottom, fx + fw - t, fy + fh - t, t, t);
 
-  blit(s, 0, sw - 2 * s, s, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
-  blit(s, sh - s, sw - 2 * s, s, fx + t - bleed, fy + fh - t, fw - 2 * t + 2 * bleed, t);
-  blit(0, s, s, sh - 2 * s, fx, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
-  blit(sw - s, s, s, sh - 2 * s, fx + fw - t, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
+  blit(r.left, 0, sw - r.left - r.right, r.top, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
+  blit(
+    r.left,
+    sh - r.bottom,
+    sw - r.left - r.right,
+    r.bottom,
+    fx + t - bleed,
+    fy + fh - t,
+    fw - 2 * t + 2 * bleed,
+    t,
+  );
+  blit(0, r.top, r.left, sh - r.top - r.bottom, fx, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
+  blit(
+    sw - r.right,
+    r.top,
+    r.right,
+    sh - r.top - r.bottom,
+    fx + fw - t,
+    fy + t - bleed,
+    t,
+    fh - 2 * t + 2 * bleed,
+  );
 
   ctx.imageSmoothingEnabled = smooth;
 }
@@ -487,10 +530,14 @@ function renderPreviewScene(ctx, scene) {
     drawFrameShadow(ctx, tX, tY, tW, tH, isLightFrameColor(frameColor));
   }
 
-  const pX = ix - photoPad;
-  const pY = iy - photoPad;
-  const pW = iw + 2 * photoPad;
-  const pH = ih + 2 * photoPad;
+  const innerBleed =
+    frameImg && sliceSize > 0
+      ? Math.max(photoPad, Math.round(targetThickPx * 0.45))
+      : photoPad;
+  const pX = ix - innerBleed;
+  const pY = iy - innerBleed;
+  const pW = iw + 2 * innerBleed;
+  const pH = ih + 2 * innerBleed;
 
   ctx.save();
   ctx.beginPath();
@@ -504,7 +551,8 @@ function renderPreviewScene(ctx, scene) {
   } else if (frameImg) {
     const s = sliceSize;
     if (s > 0) {
-      drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx);
+      const frameRails = measureFrameRails(frameImg);
+      drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx, frameRails);
       if (isLightFrameColor(frameColor)) {
         drawLightFrameOutline(ctx, tX, tY, tW, tH);
       }
@@ -728,6 +776,50 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
 // ─── Çerçeve Swatch ───────────────────────────────────────────────────────────
 
 function FrameSwatch({ frame }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !frame.image) return undefined;
+
+    let cancelled = false;
+    const color = frame.colors?.[0];
+    const light = isLightFrameColor(color);
+    const slice = frame.thickness ?? 0;
+    const W = 144;
+    const H = 144;
+    canvas.width = W;
+    canvas.height = H;
+
+    loadImage(frame.image)
+      .then((frameImg) => {
+        if (cancelled) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, W, H);
+
+        const pad = 6;
+        const fx = pad;
+        const fy = pad;
+        const fw = W - pad * 2;
+        const fh = H - pad * 2;
+        const thick = Math.max(7, Math.round(fw * 0.14));
+
+        if (slice > 0) {
+          drawNineSliceFrame(ctx, frameImg, fx, fy, fw, fh, slice, thick);
+          if (light) drawLightFrameOutline(ctx, fx, fy, fw, fh);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [frame.id, frame.image, frame.thickness, frame.colors]);
+
   if (frame.id === "none") {
     return (
       <div className="fp-swatch" style={{ background: "#f0f0f0" }}>
@@ -754,12 +846,11 @@ function FrameSwatch({ frame }) {
 
   if (frame.image) {
     return (
-      <div className="fp-swatch">
-        <img
-          key={`${frame.id}:${frame.image}`}
-          src={frame.image}
-          alt={getFrameDisplayLabel(frame)}
-          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 2 }}
+      <div className="fp-swatch" style={{ background: "#ffffff" }}>
+        <canvas
+          ref={canvasRef}
+          className="fp-swatch-canvas"
+          aria-hidden="true"
         />
       </div>
     );

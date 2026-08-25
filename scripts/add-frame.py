@@ -53,6 +53,7 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "ağaç kabuğu ceviz": {"id": "agac-kabugu-ceviz", "label": "Ağaç Kabuğu Ceviz", "hex": "#5C4A3A"},
     "agac kabugu ceviz": {"id": "agac-kabugu-ceviz", "label": "Ağaç Kabuğu Ceviz", "hex": "#5C4A3A"},
     "kahve": {"id": "kahve", "label": "Kahve", "hex": "#5C3D1E"},
+    "bej": {"id": "bej", "label": "Bej", "hex": "#C4A882"},
     "kinder mavi": {"id": "kinder-mavi", "label": "Kinder Mavi", "hex": "#8BAEC8"},
     "mavi": {"id": "mavi", "label": "Mavi", "hex": "#5B7FA6"},
     "yeşil": {"id": "yesil", "label": "Yeşil", "hex": "#2F5A3A"},
@@ -95,6 +96,11 @@ SERIES_CATEGORY = {
     "20 lik": "20lik",
     "30 luk": "30luk",
     "30 d 91": "30d91",
+    "F30 D91": "f30d91",
+    "f30 d91": "f30d91",
+    "F30 Düz": "f30duz",
+    "f30 düz": "f30duz",
+    "f30 duz": "f30duz",
     "35 lik": "35lik",
 }
 
@@ -143,6 +149,23 @@ def is_hole_pixel(r: int, g: int, b: int, a: int) -> bool:
 
 def is_frame_pixel(r: int, g: int, b: int, a: int) -> bool:
     return a > 50 and not is_hole_pixel(r, g, b, a)
+
+
+def is_solid_outer_rim(r: int, g: int, b: int, a: int) -> bool:
+    """Dış kenardaki nötr açık gri/beyaz şerit — çerçeve yüzeyi değil."""
+    if a < 50:
+        return True
+    if is_outer_void(r, g, b, a):
+        return True
+    br = (r + g + b) / 3
+    spread = max(r, g, b) - min(r, g, b)
+    if br > 225 and spread < 20:
+        return True
+    return False
+
+
+def is_outer_face_pixel(r: int, g: int, b: int, a: int) -> bool:
+    return is_frame_pixel(r, g, b, a) and not is_solid_outer_rim(r, g, b, a)
 
 
 def is_outer_void(r: int, g: int, b: int, a: int) -> bool:
@@ -293,6 +316,163 @@ def scan_hole_bounds(px, w: int, h: int, cx: int, cy: int) -> tuple[int, int, in
     return left, top, right, bottom
 
 
+def sample_frame_rail_brightness(
+    px, w: int, h: int, il: int, it: int, ir: int, ib: int
+) -> float:
+    """Çerçeve gövdesinin tipik parlaklığı — mat şeridini ayırmak için."""
+    samples: list[float] = []
+    cy = (it + ib) // 2
+    cx = (il + ir) // 2
+    depth = max(4, min(il, it, w - 1 - ir, h - 1 - ib) // 3)
+    for x in range(max(0, il - depth), il):
+        if is_frame_pixel(*px[x, cy]):
+            samples.append((px[x, cy][0] + px[x, cy][1] + px[x, cy][2]) / 3)
+    for y in range(max(0, it - depth), it):
+        if is_frame_pixel(*px[cx, y]):
+            samples.append((px[cx, y][0] + px[cx, y][1] + px[cx, y][2]) / 3)
+    for x in range(ir + 1, min(w, ir + 1 + depth)):
+        if is_frame_pixel(*px[x, cy]):
+            samples.append((px[x, cy][0] + px[x, cy][1] + px[x, cy][2]) / 3)
+    for y in range(ib + 1, min(h, ib + 1 + depth)):
+        if is_frame_pixel(*px[cx, y]):
+            samples.append((px[cx, y][0] + px[cx, y][1] + px[cx, y][2]) / 3)
+    return statistics.median(samples) if samples else 128.0
+
+
+def is_mat_lip_pixel(
+    r: int, g: int, b: int, a: int, frame_brightness: float | None = None
+) -> bool:
+    """İç kenardaki düz beyaz/gri mat karton — çerçeve iç beveli değil."""
+    if a < 50:
+        return False
+    br = (r + g + b) / 3
+    spread = max(r, g, b) - min(r, g, b)
+    if spread >= 30:
+        return False
+    # Yalnızca neredeyse beyaz mat karton; çerçeve iç beveli korunsun
+    return br > 242
+
+
+def sample_outer_chroma(px, w: int, h: int, cx: int, it: int, ib: int) -> float:
+    """Dış ray örneklerindeki renk doygunluğu — beyaz çerçeveyi ayırt etmek için."""
+    spreads: list[float] = []
+    for y in list(range(8, min(it - 20, 35))) + list(range(ib + 5, min(h, ib + 25))):
+        if 0 <= y < h and px[cx, y][3] >= 30:
+            r, g, b = px[cx, y][:3]
+            spreads.append(float(max(r, g, b) - min(r, g, b)))
+    return statistics.median(spreads) if spreads else 0.0
+
+
+def expand_inner_neutral_bevel(
+    px, w: int, h: int, il: int, it: int, ir: int, ib: int, max_scan: int = 18
+) -> tuple[int, int, int, int]:
+    """Renkli çerçevelerde delik kenarındaki gri-beyaz iç beveli delik say."""
+    cx = (il + ir) // 2
+    cy = (it + ib) // 2
+    if sample_outer_chroma(px, w, h, cx, it, ib) < 25:
+        return il, it, ir, ib
+
+    def is_neutral_bevel(r: int, g: int, b: int, a: int) -> bool:
+        if a < 50:
+            return False
+        spread = max(r, g, b) - min(r, g, b)
+        br = (r + g + b) / 3
+        return spread < 18 and br > 80
+
+    y = it - 1
+    scanned = 0
+    while y >= 0 and scanned < max_scan:
+        if is_neutral_bevel(*px[cx, y]):
+            it = y
+            y -= 1
+            scanned += 1
+        else:
+            break
+
+    y = ib + 1
+    scanned = 0
+    while y < h and scanned < max_scan:
+        if is_neutral_bevel(*px[cx, y]):
+            ib = y
+            y += 1
+            scanned += 1
+        else:
+            break
+
+    x = il - 1
+    scanned = 0
+    while x >= 0 and scanned < max_scan:
+        if is_neutral_bevel(*px[x, cy]):
+            il = x
+            x -= 1
+            scanned += 1
+        else:
+            break
+
+    x = ir + 1
+    scanned = 0
+    while x < w and scanned < max_scan:
+        if is_neutral_bevel(*px[x, cy]):
+            ir = x
+            x += 1
+            scanned += 1
+        else:
+            break
+
+    return il, it, ir, ib
+
+
+def expand_hole_past_mat_lip(
+    px, w: int, h: int, il: int, it: int, ir: int, ib: int, max_scan: int = 16
+) -> tuple[int, int, int, int]:
+    """Mat şeridini delik say; önizlemede iç boşluk kalmasın."""
+    cx = (il + ir) // 2
+    cy = (it + ib) // 2
+    frame_br = sample_frame_rail_brightness(px, w, h, il, it, ir, ib)
+
+    y = it - 1
+    scanned = 0
+    while y >= 0 and scanned < max_scan:
+        if is_mat_lip_pixel(*px[cx, y], frame_br):
+            it = y
+            y -= 1
+            scanned += 1
+        else:
+            break
+
+    y = ib + 1
+    scanned = 0
+    while y < h and scanned < max_scan:
+        if is_mat_lip_pixel(*px[cx, y], frame_br):
+            ib = y
+            y += 1
+            scanned += 1
+        else:
+            break
+
+    x = il - 1
+    scanned = 0
+    while x >= 0 and scanned < max_scan:
+        if is_mat_lip_pixel(*px[x, cy], frame_br):
+            il = x
+            x -= 1
+            scanned += 1
+        else:
+            break
+
+    x = ir + 1
+    scanned = 0
+    while x < w and scanned < max_scan:
+        if is_mat_lip_pixel(*px[x, cy], frame_br):
+            ir = x
+            x += 1
+            scanned += 1
+        else:
+            break
+
+    return il, it, ir, ib
+
+
 def detect_hole_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
     cx, cy = w // 2, h // 2
     if px[cx, cy][3] < 30:
@@ -437,10 +617,292 @@ def align_strip_outer_face(patch: Image.Image, axis: str) -> Image.Image:
     return patch.crop((0, 0, best_x + 1, ph)) if best_x + 1 < pw else patch
 
 
+def trim_outer_shadow_from_edge(patch: Image.Image, axis: str, max_trim: int = 5) -> Image.Image:
+    """Dış kenardaki koyu gölge satır/sütunlarını at (en fazla birkaç piksel)."""
+    out = patch
+    for _ in range(max_trim):
+        pw, ph = out.size
+        if pw <= 1 or ph <= 1:
+            break
+        px = out.load()
+
+        def row_avg(y: int) -> float:
+            vals = [
+                (px[x, y][0] + px[x, y][1] + px[x, y][2]) / 3
+                for x in range(pw)
+                if px[x, y][3] > 50
+            ]
+            return sum(vals) / len(vals) if vals else 255.0
+
+        def col_avg(x: int) -> float:
+            vals = [
+                (px[x, y][0] + px[x, y][1] + px[x, y][2]) / 3
+                for y in range(ph)
+                if px[x, y][3] > 50
+            ]
+            return sum(vals) / len(vals) if vals else 255.0
+
+        if axis == "bottom" and ph > 2:
+            if row_avg(ph - 1) >= row_avg(ph - 2) - 1.5:
+                break
+            out = out.crop((0, 0, pw, ph - 1))
+        elif axis == "top" and ph > 2:
+            if row_avg(0) >= row_avg(1) - 1.5:
+                break
+            out = out.crop((0, 1, pw, ph))
+        elif axis == "right" and pw > 2:
+            if col_avg(pw - 1) >= col_avg(pw - 2) - 1.5:
+                break
+            out = out.crop((0, 0, pw - 1, ph))
+        elif axis == "left" and pw > 2:
+            if col_avg(0) >= col_avg(1) - 1.5:
+                break
+            out = out.crop((1, 0, pw, ph))
+        else:
+            break
+    return out
+
+
+def strip_output_outer_shadow(img: Image.Image, max_trim: int = 10) -> Image.Image:
+    """Son PNG'den alt/sağdaki düşük gölge şeridini kırp."""
+    out = img
+    for _ in range(max_trim):
+        pw, ph = out.size
+        if pw <= 2 or ph <= 2:
+            break
+        px = out.load()
+        trimmed = False
+
+        def row_avg(y: int) -> float | None:
+            vals = [
+                (px[x, y][0] + px[x, y][1] + px[x, y][2]) / 3
+                for x in range(pw)
+                if px[x, y][3] > 50
+            ]
+            return sum(vals) / len(vals) if vals else None
+
+        def col_avg(x: int) -> float | None:
+            vals = [
+                (px[x, y][0] + px[x, y][1] + px[x, y][2]) / 3
+                for y in range(ph)
+                if px[x, y][3] > 50
+            ]
+            return sum(vals) / len(vals) if vals else None
+
+        ra, rb = row_avg(ph - 1), row_avg(ph - 2)
+        if ra is not None and rb is not None and (
+            ra < rb - 2 or (ra > rb + 1 and ra > 200)
+        ):
+            out = out.crop((0, 0, pw, ph - 1))
+            trimmed = True
+
+        pw, ph = out.size
+        px = out.load()
+        ca, cb = col_avg(pw - 1), col_avg(pw - 2)
+        if ca is not None and cb is not None and (
+            ca < cb - 2 or (ca > cb + 1 and ca > 200)
+        ):
+            out = out.crop((0, 0, pw - 1, ph))
+            trimmed = True
+
+        pw, ph = out.size
+        px = out.load()
+        ta, tb = row_avg(0), row_avg(1)
+        if ta is not None and tb is not None and (
+            ta < tb - 2 or (ta > tb + 1 and ta > 200)
+        ):
+            out = out.crop((0, 1, pw, ph))
+            trimmed = True
+
+        pw, ph = out.size
+        px = out.load()
+        la, lb = col_avg(0), col_avg(1)
+        if la is not None and lb is not None and (
+            la < lb - 2 or (la > lb + 1 and la > 200)
+        ):
+            out = out.crop((1, 0, pw, ph))
+            trimmed = True
+
+        if not trimmed:
+            break
+    return out
+
+
+def strip_outer_corner_void(img: Image.Image, max_trim: int = 8) -> Image.Image:
+    """Köşe uçlarındaki boş/gölge piksellerini kırp."""
+    out = img
+    for _ in range(max_trim):
+        pw, ph = out.size
+        if pw <= 2 or ph <= 2:
+            break
+        px = out.load()
+        tips = [(0, 0), (pw - 1, 0), (0, ph - 1), (pw - 1, ph - 1)]
+        if all(is_frame_pixel(*px[x, y]) for x, y in tips):
+            break
+        if not is_frame_pixel(*px[0, 0]) or not is_frame_pixel(*px[pw - 1, 0]):
+            out = out.crop((0, 1, pw, ph))
+            continue
+        if not is_frame_pixel(*px[0, ph - 1]) or not is_frame_pixel(*px[pw - 1, ph - 1]):
+            out = out.crop((0, 0, pw, ph - 1))
+            continue
+        if not is_frame_pixel(*px[0, 0]) or not is_frame_pixel(*px[0, ph - 1]):
+            out = out.crop((1, 0, pw, ph))
+            continue
+        if not is_frame_pixel(*px[pw - 1, 0]) or not is_frame_pixel(*px[pw - 1, ph - 1]):
+            out = out.crop((0, 0, pw - 1, ph))
+    return out
+
+
+def clear_inner_mat_lip_band(img: Image.Image, max_depth: int = 16) -> Image.Image:
+    """Delik kenarındaki mat şeridini şeffaf yap."""
+    out = img.copy()
+    px = out.load()
+    w, h = out.size
+    cx, cy = w // 2, h // 2
+
+    il = 0
+    while il < w and px[il, cy][3] >= 30:
+        il += 1
+    ir = w - 1
+    while ir >= 0 and px[ir, cy][3] >= 30:
+        ir -= 1
+    it = 0
+    while it < h and px[cx, it][3] >= 30:
+        it += 1
+    ib = h - 1
+    while ib >= 0 and px[cx, ib][3] >= 30:
+        ib -= 1
+
+    frame_br = sample_frame_rail_brightness(px, w, h, il, it, ir, ib)
+
+    # Açık/beyaz çerçevede mat temizliği rayları yer — koyu renklerde uygula
+    if frame_br > 175:
+        return out
+
+    for y in range(it, ib + 1):
+        for x in range(max(0, il - max_depth), il):
+            if is_mat_lip_pixel(*px[x, y], frame_br):
+                px[x, y] = (0, 0, 0, 0)
+        for x in range(ir + 1, min(w, ir + 1 + max_depth)):
+            if is_mat_lip_pixel(*px[x, y], frame_br):
+                px[x, y] = (0, 0, 0, 0)
+    for x in range(il, ir + 1):
+        for y in range(max(0, it - max_depth), it):
+            if is_mat_lip_pixel(*px[x, y], frame_br):
+                px[x, y] = (0, 0, 0, 0)
+        for y in range(ib + 1, min(h, ib + 1 + max_depth)):
+            if is_mat_lip_pixel(*px[x, y], frame_br):
+                px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def ensure_square_centered(img: Image.Image) -> Image.Image:
+    """Nine-slice için kare ve ortalı çıktı."""
+    w, h = img.size
+    if w == h:
+        return img
+    side = min(w, h)
+    left = (w - side) // 2
+    top = (h - side) // 2
+    return img.crop((left, top, left + side, top + side))
+
+
+def measure_output_thickness(img: Image.Image) -> int:
+    px = img.load()
+    w, h = img.size
+    cx, cy = w // 2, h // 2
+
+    def is_output_hole(r: int, g: int, b: int, a: int) -> bool:
+        return a < 30
+
+    il = 0
+    while il < w and not is_output_hole(*px[il, cy]):
+        il += 1
+    ir = w - 1
+    while ir >= 0 and not is_output_hole(*px[ir, cy]):
+        ir -= 1
+    it = 0
+    while it < h and not is_output_hole(*px[cx, it]):
+        it += 1
+    ib = h - 1
+    while ib >= 0 and not is_output_hole(*px[cx, ib]):
+        ib -= 1
+    rails = [il, it, w - 1 - ir, h - 1 - ib]
+    return int(min(rails))
+
+
+def trim_corner_tip_to_frame(patch: Image.Image, axes: tuple[str, ...]) -> Image.Image:
+    """Köşe ucundaki boş veya beyaz arka plan piksellerini at."""
+    out = patch
+    for _ in range(max(out.width, out.height)):
+        pw, ph = out.size
+        if pw <= 1 or ph <= 1:
+            break
+        px = out.load()
+        tx = 0 if "left" in axes else pw - 1
+        ty = 0 if "top" in axes else ph - 1
+        tip = px[tx, ty]
+        if is_frame_pixel(*tip) and not is_solid_background(*tip):
+            break
+        if "top" in axes and ph > 1:
+            out = out.crop((0, 1, pw, ph))
+        elif "bottom" in axes and ph > 1:
+            out = out.crop((0, 0, pw, ph - 1))
+        pw, ph = out.size
+        if pw <= 1 or ph <= 1:
+            break
+        px = out.load()
+        tx = 0 if "left" in axes else pw - 1
+        ty = 0 if "top" in axes else ph - 1
+        tip = px[tx, ty]
+        if is_frame_pixel(*tip) and not is_solid_background(*tip):
+            break
+        if "left" in axes and pw > 1:
+            out = out.crop((1, 0, pw, ph))
+        elif "right" in axes and pw > 1:
+            out = out.crop((0, 0, pw - 1, ph))
+    return out
+
+
+def fix_assembly_corner_tips(img: Image.Image, max_search: int = 16) -> Image.Image:
+    """Köşe ucundaki beyaz arka plan sızıntısını komşu çerçeve pikseliyle düzelt."""
+    out = img.copy()
+    px = out.load()
+    w, h = out.size
+    tips = [
+        (0, 0, 1, 1),
+        (w - 1, 0, -1, 1),
+        (0, h - 1, 1, -1),
+        (w - 1, h - 1, -1, -1),
+    ]
+    for tx, ty, dx, dy in tips:
+        if is_frame_pixel(*px[tx, ty]) and not is_solid_background(*px[tx, ty]):
+            continue
+        for step in range(1, max_search + 1):
+            sx, sy = tx + dx * step, ty + dy * step
+            if not (0 <= sx < w and 0 <= sy < h):
+                break
+            sample = px[sx, sy]
+            if is_frame_pixel(*sample) and not is_solid_background(*sample):
+                px[tx, ty] = sample
+                break
+    return out
+
+
 def prepare_corner_patch(patch: Image.Image, axes: tuple[str, ...]) -> Image.Image:
     out = patch
     for axis in axes:
         out = trim_edge_strip(out, axis)
+    out = trim_corner_tip_to_frame(out, axes)
+    for axis in axes:
+        out = trim_outer_shadow_from_edge(out, axis, max_trim=8)
+    return out
+
+
+def prepare_edge_strip(patch: Image.Image, axis: str) -> Image.Image:
+    out = trim_edge_strip(patch, axis)
+    if axis in ("bottom", "right"):
+        out = trim_outer_shadow_from_edge(out, axis, max_trim=8)
     return out
 
 
@@ -600,7 +1062,103 @@ def upscale_for_target_rail(
     return scaled, il, it, ir, ib
 
 
+def clear_hole_interior(
+    img: Image.Image, il: int, it: int, ir: int, ib: int
+) -> Image.Image:
+    """İç boşluğu tamamen şeffaf yap."""
+    out = img.copy()
+    px = out.load()
+    w, h = out.size
+    for y in range(max(0, it), min(h, ib + 1)):
+        for x in range(max(0, il), min(w, ir + 1)):
+            px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def strip_outer_shadow_rim(img: Image.Image, max_trim: int = 6) -> Image.Image:
+    """Dış kenardaki yumuşak gölge şeridini kırp (montaj yapmadan)."""
+    out = img
+    for _ in range(max_trim):
+        pw, ph = out.size
+        if pw <= 4 or ph <= 4:
+            break
+        px = out.load()
+        trimmed = False
+
+        def row_frame_ratio(y: int) -> float:
+            n = sum(1 for x in range(pw) if is_frame_pixel(*px[x, y]))
+            return n / pw
+
+        def col_frame_ratio(x: int) -> float:
+            n = sum(1 for y in range(ph) if is_frame_pixel(*px[x, y]))
+            return n / ph
+
+        if row_frame_ratio(ph - 1) < 0.35:
+            out = out.crop((0, 0, pw, ph - 1))
+            trimmed = True
+        pw, ph = out.size
+        px = out.load()
+        if col_frame_ratio(pw - 1) < 0.35:
+            out = out.crop((0, 0, pw - 1, ph))
+            trimmed = True
+        if not trimmed:
+            break
+    return out
+
+
+def trim_asymmetric_rails(
+    img: Image.Image, il: int, it: int, ir: int, ib: int
+) -> tuple[Image.Image, int, int, int, int]:
+    """Sol-sağ ve üst-alt ray farkını dış kırpım ile gider; dört kenarı eşitle."""
+    out = img
+    w, h = out.size
+    left, right = il, w - 1 - ir
+    top, bottom = it, h - 1 - ib
+
+    if right > left:
+        out = out.crop((0, 0, w - (right - left), h))
+        w = out.width
+        right = left
+    elif left > right:
+        d = left - right
+        out = out.crop((d, 0, w, h))
+        il -= d
+        ir -= d
+        w = out.width
+        left = right
+
+    top, bottom = it, h - 1 - ib
+    if bottom > top:
+        out = out.crop((0, 0, w, h - (bottom - top)))
+        h = out.height
+        bottom = top
+    elif top > bottom:
+        d = top - bottom
+        out = out.crop((0, d, w, h))
+        it -= d
+        ib -= d
+        h = out.height
+        top = bottom
+
+    left, right = il, w - 1 - ir
+    top, bottom = it, h - 1 - ib
+    m = min(left, right, top, bottom)
+    crop_l = left - m
+    crop_t = top - m
+    crop_r = right - m
+    crop_b = bottom - m
+    if crop_l or crop_t or crop_r or crop_b:
+        out = out.crop((crop_l, crop_t, w - crop_r, h - crop_b))
+        il -= crop_l
+        ir -= crop_l
+        it -= crop_t
+        ib -= crop_t
+
+    return out, il, it, ir, ib
+
+
 def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
+    """Kaynak fotoğraftaki doğal mitre köşeleri korunur — parça birleştirme yok."""
     raw = Image.open(src).convert("RGBA")
     raw = crop_to_frame_content(raw)
     raw_w, raw_h = raw.size
@@ -613,68 +1171,85 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
     raw, il, it, ir, ib = trim_photo_margin(raw, il, it, ir, ib)
     raw_w, raw_h = raw.size
     raw_px = raw.load()
+    il, it, ir, ib = expand_hole_past_mat_lip(raw_px, raw_w, raw_h, il, it, ir, ib)
+    il, it, ir, ib = expand_inner_neutral_bevel(raw_px, raw_w, raw_h, il, it, ir, ib)
+    raw, il, it, ir, ib = trim_asymmetric_rails(raw, il, it, ir, ib)
 
-    img, il, it, ir, ib = center_frame_hole(raw, il, it, ir, ib)
-    w, h = img.size
-    px = img.load()
-    bot0 = bottom_rail_start(px, w, h, il, ir, ib)
-    raw_rails = [il, it, w - 1 - ir, h - bot0]
-    B = force_thickness if force_thickness is not None else int(round(statistics.median(raw_rails)))
-
-    hole_size = max(ir - il + 1, ib - it + 1)
-    out_size = hole_size + 2 * B
-    out = Image.new("RGBA", (out_size, out_size), (0, 0, 0, 0))
-
-    tl = prepare_corner_patch(crop_clamped(img, (il - B, it - B, il, it)), ("top", "left"))
-    tr = prepare_corner_patch(crop_clamped(img, (ir + 1, it - B, ir + 1 + B, it)), ("top", "right"))
-    top_e = trim_edge_strip(crop_clamped(img, (il, it - B, ir + 1, it)), "top")
-    bot_src = trim_edge_strip(crop_clamped(img, (il, bot0, ir + 1, bot0 + B)), "bottom")
-    if needs_bottom_profile_mirror(top_e, bot_src):
-        bot_e, bl, br = mirror_bottom_from_top(top_e, tl, tr)
-    else:
-        bot_e = bot_src
-        bl = prepare_corner_patch(crop_clamped(img, (il - B, bot0, il, bot0 + B)), ("bottom", "left"))
-        br = prepare_corner_patch(crop_clamped(img, (ir + 1, bot0, ir + 1 + B, bot0 + B)), ("bottom", "right"))
-    lef_e = trim_edge_strip(crop_clamped(img, (il - B, it, il, ib + 1)), "left")
-    rig_e = trim_edge_strip(crop_clamped(img, (ir + 1, it, ir + 1 + B, ib + 1)), "right")
-
-    paste_resized(out, tl, (0, 0, B, B))
-    paste_resized(out, tr, (out_size - B, 0, out_size, B))
-    paste_resized(out, bl, (0, out_size - B, B, out_size))
-    paste_resized(out, br, (out_size - B, out_size - B, out_size, out_size))
-    paste_resized(out, top_e, (B, 0, B + hole_size, B))
-    paste_resized(out, bot_e, (B, out_size - B, B + hole_size, out_size))
-    paste_resized(out, lef_e, (0, B, B, B + hole_size))
-    paste_resized(out, rig_e, (out_size - B, B, out_size, B + hole_size))
+    out = clear_hole_interior(raw, il, it, ir, ib)
+    out = clear_inner_mat_lip_band(out)
+    out = strip_outer_shadow_rim(out)
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     out.save(dest, "PNG")
-    return B
+    if force_thickness is not None:
+        return force_thickness
+    return measure_output_thickness(out)
 
 
 PREVIEW_SIDE = 320
-PREVIEW_FILL = 0.94
+PREVIEW_RAIL_RATIO = 0.22
+
+
+def _measure_rails(img: Image.Image) -> tuple[int, int, int, int]:
+    px = img.load()
+    w, h = img.size
+    cx, cy = w // 2, h // 2
+
+    def is_hole(r: int, g: int, b: int, a: int) -> bool:
+        return a < 30
+
+    il = 0
+    while il < w and not is_hole(*px[il, cy]):
+        il += 1
+    ir = w - 1
+    while ir >= 0 and not is_hole(*px[ir, cy]):
+        ir -= 1
+    it = 0
+    while it < h and not is_hole(*px[cx, it]):
+        it += 1
+    ib = h - 1
+    while ib >= 0 and not is_hole(*px[cx, ib]):
+        ib -= 1
+    return il, it, w - 1 - ir, h - 1 - ib
+
+
+def compose_square_preview(frame_img: Image.Image, side: int = PREVIEW_SIDE) -> Image.Image:
+    """İşlenmiş çerçeveden 20 lik gibi kare, dört kenarlı swatch üretir."""
+    sw, sh = frame_img.size
+    left, top, right, bottom = _measure_rails(frame_img)
+    if min(left, top, right, bottom) <= 0:
+        cropped = crop_to_frame_content(frame_img)
+        square = pad_to_square(cropped)
+        return square.resize((side, side), Image.LANCZOS)
+
+    t = max(12, round(side * PREVIEW_RAIL_RATIO))
+    out = Image.new("RGBA", (side, side), (26, 26, 26, 255))
+
+    def blit(sx: int, sy: int, sW: int, sH: int, dx: int, dy: int, dW: int, dH: int) -> None:
+        if sW <= 0 or sH <= 0 or dW <= 0 or dH <= 0:
+            return
+        patch = frame_img.crop((sx, sy, sx + sW, sy + sH)).resize((dW, dH), Image.LANCZOS)
+        out.paste(patch, (dx, dy), patch)
+
+    blit(0, 0, left, top, 0, 0, t, t)
+    blit(sw - right, 0, right, top, side - t, 0, t, t)
+    blit(0, sh - bottom, left, bottom, 0, side - t, t, t)
+    blit(sw - right, sh - bottom, right, bottom, side - t, side - t, t, t)
+    blit(left, 0, sw - left - right, top, t, 0, side - 2 * t, t)
+    blit(left, sh - bottom, sw - left - right, bottom, t, side - t, side - 2 * t, t)
+    blit(0, top, left, sh - top - bottom, 0, t, t, side - 2 * t)
+    blit(sw - right, top, right, sh - top - bottom, side - t, t, t, side - 2 * t)
+    return out
 
 
 def save_preview_image(src: Path, filename: str) -> str:
-    """Yüklenen görseli kare, belirgin küçük önizleme olarak kaydet."""
+    """İşlenmiş çerçeveden kare, belirgin swatch önizlemesi."""
     PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
     preview_name = f"{Path(filename).stem}-preview.png"
     preview_path = PREVIEWS_DIR / preview_name
 
-    img = crop_to_frame_content(Image.open(src).convert("RGBA"))
-    w, h = img.size
-    target = int(PREVIEW_SIDE * PREVIEW_FILL)
-    scale = target / max(w, h)
-    new_w = max(1, int(round(w * scale)))
-    new_h = max(1, int(round(h * scale)))
-    scaled = img.resize((new_w, new_h), Image.LANCZOS)
-
-    out = Image.new("RGBA", (PREVIEW_SIDE, PREVIEW_SIDE), (236, 236, 236, 255))
-    ox = (PREVIEW_SIDE - new_w) // 2
-    oy = (PREVIEW_SIDE - new_h) // 2
-    out.paste(scaled, (ox, oy), scaled)
-    out.save(preview_path, "PNG")
+    img = Image.open(src).convert("RGBA")
+    compose_square_preview(img).save(preview_path, "PNG")
     return f"/frames/previews/{preview_name}"
 
 
@@ -778,7 +1353,7 @@ def main() -> None:
     dest = FRAMES_DIR / filename
     thickness = process_frame_png(src, dest, force_thickness=args.thickness)
     image_url = f"/frames/{filename}"
-    preview_url = save_preview_image(src, filename)
+    preview_url = save_preview_image(dest, filename)
 
     catalog = load_catalog()
     categories = parse_categories(args.categories, args.code)
