@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { processFrameImage } from "../utils/frameProcessor";
-import { EDITABLE_CATEGORY_OPTIONS, buildSeriesOptions } from "../data/frameFormOptions";
+import { EDITABLE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "../data/frameFormOptions";
 import { buildFrameEntry, saveCustomFrame } from "../utils/customFramesStorage";
+import SeriesCreateField from "./SeriesCreateField";
 
 // fallback; overridden by prop when passed from parent
 const DEFAULT_CATEGORY_OPTIONS = EDITABLE_CATEGORY_OPTIONS;
@@ -15,22 +16,53 @@ const STEPS = {
   error: "error",
 };
 
-export default function FrameAddModal({ open, onClose, onSaved, categoryOptions, seriesOptions }) {
+export default function FrameAddModal({
+  open,
+  onClose,
+  onSaved,
+  categoryOptions,
+  seriesOptions,
+  defaultCode = "20 lik",
+  defaultCategoryId = "20lik",
+  defaultThicknessMm = 20,
+  onAddSeries,
+}) {
   const CATEGORY_OPTIONS = categoryOptions ?? DEFAULT_CATEGORY_OPTIONS;
   const effectiveSeriesOptions = seriesOptions ?? buildSeriesOptions();
   const fileRef = useRef(null);
+  const sessionInitRef = useRef(false);
   const [step, setStep] = useState(STEPS.idle);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(null);
   const [processed, setProcessed] = useState(null);
 
-  const [code, setCode] = useState("20 lik");
+  const [code, setCode] = useState(defaultCode);
   const [colorName, setColorName] = useState("");
   const [label, setLabel] = useState("");
-  const [defaultMm, setDefaultMm] = useState(20);
-  const [selectedCats, setSelectedCats] = useState(["20lik"]);
+  const [defaultMm, setDefaultMm] = useState(defaultThicknessMm);
+  const [selectedCats, setSelectedCats] = useState(defaultCategoryId ? [defaultCategoryId] : []);
 
   const [progressText, setProgressText] = useState("");
+
+  const applySeries = (seriesLabel, options = CATEGORY_OPTIONS) => {
+    const trimmed = (seriesLabel ?? "").trim();
+    setCode(trimmed);
+    const cat = options.find((c) => c.label === trimmed);
+    setSelectedCats(cat ? [cat.id] : []);
+    if (trimmed) setDefaultMm(defaultMmFromSeriesLabel(trimmed));
+  };
+
+  useEffect(() => {
+    if (!open) {
+      sessionInitRef.current = false;
+      return;
+    }
+    if (sessionInitRef.current) return;
+    sessionInitRef.current = true;
+    applySeries(defaultCode);
+    if (defaultCategoryId) setSelectedCats([defaultCategoryId]);
+    setDefaultMm(defaultThicknessMm);
+  }, [open, defaultCode, defaultCategoryId, defaultThicknessMm]);
 
   if (!open) return null;
 
@@ -40,11 +72,10 @@ export default function FrameAddModal({ open, onClose, onSaved, categoryOptions,
     setPreview(null);
     setProcessed(null);
     setProgressText("");
-    setCode("20 lik");
     setColorName("");
     setLabel("");
-    setDefaultMm(20);
-    setSelectedCats(["20lik"]);
+    applySeries(defaultCode);
+    setDefaultMm(defaultThicknessMm);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -88,6 +119,10 @@ export default function FrameAddModal({ open, onClose, onSaved, categoryOptions,
       setError("Renk adı veya etiket girin.");
       return;
     }
+    if (!code.trim()) {
+      setError("Bir seri seçin veya yeni seri ekleyin.");
+      return;
+    }
 
     setStep(STEPS.saving);
     setError("");
@@ -102,7 +137,6 @@ export default function FrameAddModal({ open, onClose, onSaved, categoryOptions,
         }
       }
 
-      const imageUrl = URL.createObjectURL(processed.blob);
       const entry = buildFrameEntry({
         code: codeTrim,
         colorName: colorName.trim() || null,
@@ -110,15 +144,11 @@ export default function FrameAddModal({ open, onClose, onSaved, categoryOptions,
         categories,
         thickness: processed.thickness,
         defaultMm,
-        imageUrl,
+        imageUrl: "",
       });
 
-      await saveCustomFrame(
-        { ...entry, image: imageUrl },
-        processed.blob
-      );
-
-      onSaved(entry);
+      const saved = await saveCustomFrame(entry, processed.blob);
+      onSaved(saved);
       handleClose();
     } catch (err) {
       console.error(err);
@@ -185,24 +215,31 @@ export default function FrameAddModal({ open, onClose, onSaved, categoryOptions,
             <div className="fp-modal-field">
               <label>Seri</label>
               <div className="fp-category-row fp-modal-series-row">
-                <button
-                  type="button"
-                  className={`fp-category-chip${!code ? " active" : ""}`}
-                  onClick={() => setCode("")}
-                >
-                  Seri yok
-                </button>
-                {effectiveSeriesOptions.filter(Boolean).map((s) => (
+                {(code && !effectiveSeriesOptions.includes(code)
+                  ? [...effectiveSeriesOptions.filter(Boolean), code]
+                  : effectiveSeriesOptions.filter(Boolean)
+                ).map((s) => (
                   <button
                     key={s}
                     type="button"
                     className={`fp-category-chip${code === s ? " active" : ""}`}
-                    onClick={() => setCode(s)}
+                    onClick={() => applySeries(s)}
                   >
                     {s}
                   </button>
                 ))}
               </div>
+              {onAddSeries && (
+                <SeriesCreateField
+                  onAdd={(name) => {
+                    const entry = onAddSeries(name);
+                    if (!entry) return;
+                    setCode(entry.label);
+                    setSelectedCats([entry.id]);
+                    setDefaultMm(defaultMmFromSeriesLabel(entry.label));
+                  }}
+                />
+              )}
             </div>
 
             <div className="fp-modal-field">

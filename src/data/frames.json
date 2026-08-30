@@ -5,10 +5,6 @@
       "label": "Tümü"
     },
     {
-      "id": "custom",
-      "label": "Özel"
-    },
-    {
       "id": "20lik",
       "label": "20 lik"
     },
@@ -27,6 +23,14 @@
     {
       "id": "f30duz",
       "label": "F30 Düz"
+    },
+    {
+      "id": "30luk-agac-kabugu",
+      "label": "30 luk Ağaç Kabuğu"
+    },
+    {
+      "id": "46d",
+      "label": "46 d"
     }
   ],
   "frames": [
@@ -567,6 +571,260 @@
         }
       ],
       "previewImage": "/frames/previews/f30-duz-altin-preview.png"
+    },
+    {
+      "id": "30 luk Ağaç Kabuğu Ceviz",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Ceviz",
+      "label": "30 luk Ağaç Kabuğu Ceviz",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 74,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-ceviz-preview.png"
+    },
+    {
+      "id": "30 luk Ağaç Kabuğu Beyaz",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Beyaz",
+      "label": "30 luk Ağaç Kabuğu Beyaz",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 68,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-beyaz-preview.png"
+    },
+    {
+      "id": "30 luk Ağaç Kabuğu Şampanya",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Şampanya",
+      "label": "30 luk Ağaç Kabuğu Şampanya",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 68,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-sampanya.png",
+      "colors": [
+        {
+          "id": "sampanya",
+          "label": "Şampanya",
+          "hex": "#D4C4A8"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-sampanya-preview.png"
+    },
+    {
+      "id": "30 luk Ağaç Kabuğu Siyah",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Siyah",
+      "label": "30 luk Ağaç Kabuğu Siyah",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 78,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-siyah-preview.png"
+    },
+    {
+      "id": "30 luk Ağaç Kabuğu Altın",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Altın",
+      "label": "30 luk Ağaç Kabuğu Altın",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 83,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-altin-preview.png"
+    },
+    {
+      "id": "30 luk Ağaç Kabuğu Platin",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Platin",
+      "label": "30 luk Ağaç Kabuğu Platin",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 79,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-platin.png",
+      "colors": [
+        {
+          "id": "platin",
+          "label": "Platin",
+          "hex": "#E5E4E2"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-platin-preview.png"
+    },
+    {
+      "id": "30 luk Ağaç Kabuğu Mavi",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Mavi",
+      "label": "30 luk Ağaç Kabuğu Mavi",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 74,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-mavi.png",
+      "colors": [
+        {
+          "id": "mavi",
+          "label": "Mavi",
+          "hex": "#5B7FA6"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-mavi-preview.png"
+    },
+    {
+      "id": "46 d Beyaz",
+      "code": "46 d",
+      "colorName": "Beyaz",
+      "label": "46 d Beyaz",
+      "categories": [
+        "46d"
+      ],
+      "thickness": 80,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/46-d-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/46-d-beyaz-preview.png"
+    },
+    {
+      "id": "46 d Siyah",
+      "code": "46 d",
+      "colorName": "Siyah",
+      "label": "46 d Siyah",
+      "categories": [
+        "46d"
+      ],
+      "thickness": 92,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/46-d-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/46-d-siyah-preview.png"
+    },
+    {
+      "id": "46 d Altın",
+      "code": "46 d",
+      "colorName": "Altın",
+      "label": "46 d Altın",
+      "categories": [
+        "46d"
+      ],
+      "thickness": 104,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/46-d-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/46-d-altin-preview.png"
+    },
+    {
+      "id": "46 d Şampanya",
+      "code": "46 d",
+      "colorName": "Şampanya",
+      "label": "46 d Şampanya",
+      "categories": [
+        "46d"
+      ],
+      "thickness": 96,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/46-d-sampanya.png",
+      "colors": [
+        {
+          "id": "sampanya",
+          "label": "Şampanya",
+          "hex": "#D4C4A8"
+        }
+      ],
+      "previewImage": "/frames/previews/46-d-sampanya-preview.png"
+    },
+    {
+      "id": "46 d Ceviz",
+      "code": "46 d",
+      "colorName": "Ceviz",
+      "label": "46 d Ceviz",
+      "categories": [
+        "46d"
+      ],
+      "thickness": 77,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/46-d-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/46-d-ceviz-preview.png"
     }
   ]
 }

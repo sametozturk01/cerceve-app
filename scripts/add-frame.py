@@ -23,7 +23,7 @@ import unicodedata
 from collections import deque
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 ROOT = Path(__file__).resolve().parent.parent
 FRAMES_JSON = ROOT / "src" / "data" / "frames.json"
@@ -95,6 +95,10 @@ SERIES_CATEGORY = {
     "22 lik": "22lik",
     "20 lik": "20lik",
     "30 luk": "30luk",
+    "30 luk Ağaç Kabuğu": "30luk-agac-kabugu",
+    "30 luk ağaç kabuğu": "30luk-agac-kabugu",
+    "46 d": "46d",
+    "46 D": "46d",
     "30 d 91": "30d91",
     "F30 D91": "f30d91",
     "f30 d91": "f30d91",
@@ -126,7 +130,7 @@ def is_solid_background(r: int, g: int, b: int, a: int) -> bool:
     spread = max(r, g, b) - min(r, g, b)
     brightness = (r + g + b) / 3
     if spread < 14:
-        if brightness > 235:
+        if brightness > 250:
             return True
         # Yarı saydam koyu arka plan — opak koyu çerçeve rayını delik sanma
         if brightness < 40 and a < 90:
@@ -371,6 +375,8 @@ def expand_inner_neutral_bevel(
     cy = (it + ib) // 2
     if sample_outer_chroma(px, w, h, cx, it, ib) < 25:
         return il, it, ir, ib
+    if sample_frame_rail_brightness(px, w, h, il, it, ir, ib) > 170:
+        return il, it, ir, ib
 
     def is_neutral_bevel(r: int, g: int, b: int, a: int) -> bool:
         if a < 50:
@@ -419,6 +425,42 @@ def expand_inner_neutral_bevel(
         else:
             break
 
+    return il, it, ir, ib
+
+
+def _expand_side_to_groove(get_pixel, start: int, step: int, limit: int, max_scan: int) -> int:
+    """Soluk iç dubayı deliğe kat; koyu oluk ilk görünür kenar kalsın."""
+    coord = start + step
+    eaten = 0
+    last = start
+    while eaten < max_scan:
+        if (step < 0 and coord < limit) or (step > 0 and coord > limit):
+            break
+        r, g, b, a = get_pixel(coord)
+        if a < 50:
+            break
+        br = (r + g + b) / 3
+        if br <= 150:
+            break
+        last = coord
+        coord += step
+        eaten += 1
+    return last
+
+
+def expand_light_inner_lip(
+    px, w: int, h: int, il: int, it: int, ir: int, ib: int, max_scan: int = 5
+) -> tuple[int, int, int, int]:
+    """Açık çerçevede fotoğrafın oturmadığı soluk dubayı delik say; 3D oluk kalsın."""
+    if sample_frame_rail_brightness(px, w, h, il, it, ir, ib) <= 170:
+        return il, it, ir, ib
+
+    cx = (il + ir) // 2
+    cy = (it + ib) // 2
+    it = _expand_side_to_groove(lambda y: px[cx, y], it, -1, 0, max_scan)
+    ib = _expand_side_to_groove(lambda y: px[cx, y], ib, 1, h - 1, max_scan)
+    il = _expand_side_to_groove(lambda x: px[x, cy], il, -1, 0, max_scan)
+    ir = _expand_side_to_groove(lambda x: px[x, cy], ir, 1, w - 1, max_scan)
     return il, it, ir, ib
 
 
@@ -1106,6 +1148,32 @@ def strip_outer_shadow_rim(img: Image.Image, max_trim: int = 6) -> Image.Image:
     return out
 
 
+def enhance_light_frame_grain(img: Image.Image) -> Image.Image:
+    """Açık çerçevede kaynak rengi ve damarı koru; yalnızca hafif netlik."""
+    px = img.load()
+    w, h = img.size
+    brs: list[float] = []
+    for y in range(0, h, 4):
+        for x in range(0, w, 4):
+            r, g, b, a = px[x, y]
+            if a > 200:
+                brs.append((r + g + b) / 3)
+    if not brs or statistics.median(brs) <= 170:
+        return img
+
+    fill_br = int(statistics.median(brs))
+    filled = img.copy()
+    fpx = filled.load()
+    for y in range(h):
+        for x in range(w):
+            if fpx[x, y][3] < 30:
+                fpx[x, y] = (fill_br, fill_br, fill_br, 255)
+    rgb = ImageEnhance.Sharpness(filled.convert("RGB")).enhance(1.12)
+    final = rgb.convert("RGBA")
+    final.putalpha(img.getchannel("A"))
+    return final
+
+
 def trim_asymmetric_rails(
     img: Image.Image, il: int, it: int, ir: int, ib: int
 ) -> tuple[Image.Image, int, int, int, int]:
@@ -1173,11 +1241,13 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
     raw_px = raw.load()
     il, it, ir, ib = expand_hole_past_mat_lip(raw_px, raw_w, raw_h, il, it, ir, ib)
     il, it, ir, ib = expand_inner_neutral_bevel(raw_px, raw_w, raw_h, il, it, ir, ib)
+    il, it, ir, ib = expand_light_inner_lip(raw_px, raw_w, raw_h, il, it, ir, ib)
     raw, il, it, ir, ib = trim_asymmetric_rails(raw, il, it, ir, ib)
 
     out = clear_hole_interior(raw, il, it, ir, ib)
     out = clear_inner_mat_lip_band(out)
     out = strip_outer_shadow_rim(out)
+    out = enhance_light_frame_grain(out)
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     out.save(dest, "PNG")
@@ -1225,20 +1295,20 @@ def compose_square_preview(frame_img: Image.Image, side: int = PREVIEW_SIDE) -> 
     t = max(12, round(side * PREVIEW_RAIL_RATIO))
     out = Image.new("RGBA", (side, side), (26, 26, 26, 255))
 
-    def blit(sx: int, sy: int, sW: int, sH: int, dx: int, dy: int, dW: int, dH: int) -> None:
+    def blit(sx: int, sy: int, sW: int, sH: int, dx: int, dy: int, dW: int, dH: int, resample=Image.LANCZOS) -> None:
         if sW <= 0 or sH <= 0 or dW <= 0 or dH <= 0:
             return
-        patch = frame_img.crop((sx, sy, sx + sW, sy + sH)).resize((dW, dH), Image.LANCZOS)
+        patch = frame_img.crop((sx, sy, sx + sW, sy + sH)).resize((dW, dH), resample)
         out.paste(patch, (dx, dy), patch)
 
-    blit(0, 0, left, top, 0, 0, t, t)
-    blit(sw - right, 0, right, top, side - t, 0, t, t)
-    blit(0, sh - bottom, left, bottom, 0, side - t, t, t)
-    blit(sw - right, sh - bottom, right, bottom, side - t, side - t, t, t)
     blit(left, 0, sw - left - right, top, t, 0, side - 2 * t, t)
     blit(left, sh - bottom, sw - left - right, bottom, t, side - t, side - 2 * t, t)
     blit(0, top, left, sh - top - bottom, 0, t, t, side - 2 * t)
     blit(sw - right, top, right, sh - top - bottom, side - t, t, t, side - 2 * t)
+    blit(0, 0, left, top, 0, 0, t, t, Image.NEAREST)
+    blit(sw - right, 0, right, top, side - t, 0, t, t, Image.NEAREST)
+    blit(0, sh - bottom, left, bottom, 0, side - t, t, t, Image.NEAREST)
+    blit(sw - right, sh - bottom, right, bottom, side - t, side - t, t, t, Image.NEAREST)
     return out
 
 

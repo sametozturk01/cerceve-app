@@ -1,3 +1,12 @@
+import {
+  blobToDataUrl,
+  deleteSharedFrame,
+  fetchSharedCatalog,
+  patchSharedFrame,
+  postSharedFrame,
+} from "./sharedCatalogClient";
+import { markFrameRemoved, mergeCustomFrames } from "./catalogSync";
+
 const DB_NAME = "cerceve-custom-frames";
 const DB_VERSION = 1;
 const STORE = "frames";
@@ -23,6 +32,8 @@ const COLOR_DEFAULTS = {
 };
 
 const SERIES_CATEGORY = {
+  "20 lik": "20lik",
+  "22 lik": "22lik",
   "FA 20": "fa20",
   "FA 22": "fa22",
   "FA 30": "fa30",
@@ -30,6 +41,9 @@ const SERIES_CATEGORY = {
   "29 D": "29d",
   "F30 D91": "f30d91",
   "F30 Düz": "f30duz",
+  "30 luk Ağaç Kabuğu": "30luk-agac-kabugu",
+  "46 d": "46d",
+  "46 D": "46d",
   "FA 29 KR": "fa29kr",
   "A 25": "a25",
   "B 26": "b26",
@@ -67,10 +81,9 @@ export function buildFrameEntry({ code, colorName, label, categories, thickness,
   if (code && SERIES_CATEGORY[code] && !cats.includes(SERIES_CATEGORY[code])) {
     cats.unshift(SERIES_CATEGORY[code]);
   }
-  if (!cats.includes("custom")) cats.push("custom");
 
   if (code && colorName) {
-    const id = `custom:${code} ${colorName}`;
+    const id = `custom:${code} ${colorName}:${Date.now().toString(36)}`;
     return {
       id,
       code,
@@ -83,6 +96,7 @@ export function buildFrameEntry({ code, colorName, label, categories, thickness,
       image: imageUrl,
       colors: [colorEntry(colorName)],
       custom: true,
+      updatedAt: Date.now(),
     };
   }
 
@@ -97,28 +111,31 @@ export function buildFrameEntry({ code, colorName, label, categories, thickness,
     image: imageUrl,
     colors: [],
     custom: true,
+    updatedAt: Date.now(),
   };
 }
 
-export async function loadCustomFrames() {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, "readonly");
-    const req = tx.objectStore(STORE).getAll();
-    req.onsuccess = () => {
-      const rows = req.result ?? [];
-      const frames = rows.map((row) => {
-        const imageUrl = URL.createObjectURL(row.imageBlob);
-        const { imageBlob, ...meta } = row;
-        return { ...meta, image: imageUrl };
-      });
-      resolve(frames);
-    };
-    req.onerror = () => reject(req.error);
+function loadIdbRows() {
+  return openDb().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, "readonly");
+        const req = tx.objectStore(STORE).getAll();
+        req.onsuccess = () => resolve(req.result ?? []);
+        req.onerror = () => reject(req.error);
+      })
+  );
+}
+
+function framesFromIdbRows(rows) {
+  return rows.map((row) => {
+    const imageUrl = row.imageBlob ? URL.createObjectURL(row.imageBlob) : row.image;
+    const { imageBlob, ...meta } = row;
+    return { ...meta, image: imageUrl, custom: true };
   });
 }
 
-export async function saveCustomFrame(frameMeta, imageBlob) {
+async function saveToIdb(frameMeta, imageBlob) {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
@@ -126,6 +143,68 @@ export async function saveCustomFrame(frameMeta, imageBlob) {
     tx.oncomplete = () => resolve(frameMeta);
     tx.onerror = () => reject(tx.error);
   });
+}
+
+async function deleteFromIdb(id) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function migrateIdbToShared() {
+  const rows = await loadIdbRows();
+  for (const row of rows) {
+    if (!row?.id || !row.imageBlob) continue;
+    try {
+      const { imageBlob, ...meta } = row;
+      const dataUrl = await blobToDataUrl(imageBlob);
+      await postSharedFrame({ ...meta, custom: true }, dataUrl);
+      await deleteFromIdb(row.id);
+    } catch (err) {
+      console.error("Yerel çerçeve paylaşılamadı:", row.id, err);
+    }
+  }
+}
+
+export async function loadCustomFrames() {
+  const rows = await loadIdbRows();
+  const local = framesFromIdbRows(rows);
+  const shared = await fetchSharedCatalog();
+  if (shared) {
+    await migrateIdbToShared();
+    const fresh = await fetchSharedCatalog();
+    const remote = (fresh ?? shared).frames.map((f) => ({ ...f, custom: true }));
+    return mergeCustomFrames(local, remote);
+  }
+  return local;
+}
+
+export async function saveCustomFrame(frameMeta, imageBlob) {
+  const dataUrl = imageBlob ? await blobToDataUrl(imageBlob) : null;
+  if (dataUrl) {
+    try {
+      const saved = await postSharedFrame({ ...frameMeta, custom: true }, dataUrl);
+      try {
+        await deleteFromIdb(frameMeta.id);
+      } catch {
+        /* yerel kopya yoksa sorun değil */
+      }
+      return saved;
+    } catch (err) {
+      console.warn("Paylaşılan kayıta yazılamadı, bu cihazda tutuluyor.", err);
+    }
+  }
+
+  const local = { ...frameMeta, custom: true };
+  if (imageBlob) {
+    local.image = URL.createObjectURL(imageBlob);
+    await saveToIdb({ ...local, image: local.image }, imageBlob);
+  }
+  return local;
 }
 
 export function mergeFrameMeta(
@@ -158,6 +237,7 @@ export function mergeFrameMeta(
     ...base,
     categories: cats,
     defaultMm: defaultMm ?? base.defaultMm,
+    updatedAt: Date.now(),
   };
 
   if (seriesCode) next.code = seriesCode;
@@ -296,6 +376,14 @@ export function applyCatalogOverride(base, patch) {
 }
 
 export async function updateCustomFrame(id, updates) {
+  const shared = await fetchSharedCatalog();
+  if (shared?.frames.some((f) => f.id === id)) {
+    const current = shared.frames.find((f) => f.id === id);
+    const merged = mergeFrameMeta({ ...current, custom: true }, updates);
+    const { image: _image, ...patch } = merged;
+    return patchSharedFrame(id, patch);
+  }
+
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
@@ -323,13 +411,16 @@ export async function updateCustomFrame(id, updates) {
 }
 
 export async function deleteCustomFrame(id) {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+  markFrameRemoved(id);
+  const shared = await fetchSharedCatalog();
+  if (shared?.frames.some((f) => f.id === id)) {
+    await deleteSharedFrame(id);
+  }
+  try {
+    await deleteFromIdb(id);
+  } catch {
+    /* yoksa sorun değil */
+  }
 }
 
 export function revokeFrameUrls(frames) {

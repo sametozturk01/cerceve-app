@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { EDITABLE_CATEGORY_OPTIONS, buildSeriesOptions } from "../data/frameFormOptions";
+import { EDITABLE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "../data/frameFormOptions";
 import { mergeFrameMeta, updateCustomFrame } from "../utils/customFramesStorage";
 import { saveFrameOverride, overridePatchFromSavedFrame } from "../utils/frameOverridesStorage";
 import { getFrameDisplayLabel } from "../utils/frameDisplay";
+import SeriesCreateField from "./SeriesCreateField";
 
 function parsePriceString(value) {
   if (value === "" || value === null || value === undefined) return "";
@@ -26,7 +27,7 @@ function parsePriceInput(raw) {
   return Math.max(0, Math.round(Number(raw) || 0));
 }
 
-export default function FrameEditModal({ open, frame, onClose, onSaved, categoryOptions, seriesOptions }) {
+export default function FrameEditModal({ open, frame, onClose, onSaved, categoryOptions, seriesOptions, onAddSeries }) {
   const effectiveCategoryOptions = categoryOptions ?? EDITABLE_CATEGORY_OPTIONS;
   const effectiveSeriesOptions = seriesOptions ?? buildSeriesOptions();
   const [code, setCode] = useState("");
@@ -49,7 +50,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
     setSelectedCats(form.categories);
     setError("");
     setSaving(false);
-  }, [open, frame]);
+  }, [open, frame?.id]);
 
   if (!open || !frame) return null;
 
@@ -88,7 +89,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
       code: codeTrim || null,
       colorName: colorName.trim() || null,
       label: label.trim() || null,
-      categories: frame.custom ? [...categories, "custom"] : categories,
+      categories,
       defaultMm,
       price: priceValue,
       pricePerCm: null,
@@ -149,7 +150,7 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
           <div className="fp-modal-edit-preview-info">
             <strong>{displayLabel}</strong>
             <p className="fp-modal-meta">
-              Kenar: {frame.thickness}px · {frame.custom ? "Özel çerçeve" : "Katalog çerçevesi"}
+              Kenar: {frame.thickness}px · {frame.custom ? "Yüklenen çerçeve" : "Katalog çerçevesi"}
             </p>
             <div className="fp-modal-edit-price-badges">
               <span className="fp-modal-edit-price-badge">
@@ -165,13 +166,36 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
             <div className="fp-modal-form">
               <div className="fp-modal-field">
                 <label>Seri</label>
-                <select value={code} onChange={(e) => setCode(e.target.value)}>
-                  {effectiveSeriesOptions.map((s) => (
+                <select
+                  value={code}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setCode(next);
+                    const cat = effectiveCategoryOptions.find((c) => c.label === next);
+                    if (cat) setSelectedCats([cat.id]);
+                    if (next) setDefaultMm(defaultMmFromSeriesLabel(next));
+                  }}
+                >
+                  {(code && !effectiveSeriesOptions.includes(code)
+                    ? [...effectiveSeriesOptions, code]
+                    : effectiveSeriesOptions
+                  ).map((s) => (
                     <option key={s || "none"} value={s}>
                       {s || "— Seri yok —"}
                     </option>
                   ))}
                 </select>
+                {onAddSeries && (
+                  <SeriesCreateField
+                    onAdd={(name) => {
+                      const entry = onAddSeries(name);
+                      if (!entry) return;
+                      setCode(entry.label);
+                      setSelectedCats([entry.id]);
+                      setDefaultMm(defaultMmFromSeriesLabel(entry.label));
+                    }}
+                  />
+                )}
               </div>
 
               {hasSeries && (

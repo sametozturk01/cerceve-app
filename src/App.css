@@ -1457,6 +1457,58 @@ body {
   margin-top: 4px;
 }
 
+.fp-modal-series-create {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.fp-modal-series-create-input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.fp-modal-series-create-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.fp-modal-series-create-input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+
+.fp-modal-series-create-btn {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fp-modal-series-create-btn:hover:not(:disabled) {
+  background: #0f172a;
+}
+
+.fp-modal-series-create-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .fp-category-add-wrap {
   display: inline-flex;
   align-items: center;
@@ -2532,6 +2584,22 @@ body {
 
 .fp-frame-card {
   position: relative;
+}
+
+.fp-frame-card-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #1e3a5f;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
 .fp-frame-card-tools {

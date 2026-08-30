@@ -1,3 +1,6 @@
+import { fetchSharedCatalog, putSharedCatalog } from "./sharedCatalogClient";
+import { mergeObjectMaps } from "./catalogSync";
+
 const STORAGE_KEY = "cerceve-frame-overrides";
 
 const PRICE_KEYS = [
@@ -21,12 +24,37 @@ function readAll() {
   }
 }
 
-function writeAll(data) {
+function writeLocalOnly(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function writeAll(data) {
+  writeLocalOnly(data);
+  putSharedCatalog({ overrides: data }).catch((err) => {
+    console.warn("Fiyat/ad düzenlemeleri paylaşılamadı.", err);
+  });
 }
 
 export function loadFrameOverrides() {
   return readAll();
+}
+
+export function rememberFrameOverrides(data) {
+  writeLocalOnly(data ?? {});
+  return data ?? {};
+}
+
+export async function hydrateFrameOverridesFromShared() {
+  const shared = await fetchSharedCatalog();
+  if (!shared) return readAll();
+  const local = readAll();
+  const merged = mergeObjectMaps(local, shared.overrides);
+  rememberFrameOverrides(merged);
+  const sharedKeys = Object.keys(shared.overrides ?? {});
+  if (Object.keys(merged).some((k) => !sharedKeys.includes(k))) {
+    writeAll(merged);
+  }
+  return merged;
 }
 
 /** undefined atlanır; null ilgili anahtarı siler */

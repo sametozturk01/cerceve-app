@@ -18,12 +18,16 @@ import {
   loadFrameOverrides,
   saveFrameOverride,
   overridePatchFromSavedFrame,
+  hydrateFrameOverridesFromShared,
+  rememberFrameOverrides,
 } from "./utils/frameOverridesStorage";
 import { formatTurkishPrice, linePriceForSize } from "./utils/framePricing";
 import { getFrameDisplayLabel } from "./utils/frameDisplay";
-import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride } from "./utils/categoriesStorage";
+import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride, hydrateCustomCategoriesFromShared, hydrateSeriesLabelsFromShared, isUserSeries, rememberCategories, rememberSeriesLabels } from "./utils/categoriesStorage";
 import { loadHiddenSeriesIds, hideSeriesCategory } from "./utils/hiddenSeriesStorage";
-import { BASE_CATEGORY_OPTIONS, buildSeriesOptions } from "./data/frameFormOptions";
+import { fetchSharedCatalog } from "./utils/sharedCatalogClient";
+import { mergeCustomFrames, mergeCategories, mergeObjectMaps } from "./utils/catalogSync";
+import { BASE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "./data/frameFormOptions";
 import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
 import { BACKING_OPTIONS } from "./data/backingOptions";
 
@@ -252,17 +256,17 @@ function drawFlatMetalFrame(ctx, x, y, w, h, t) {
   ctx.restore();
 }
 
-function drawFrameShadow(ctx, x, y, w, h, strong = false) {
+function drawFrameShadow(ctx, x, y, w, h, light = false) {
   const rx = Math.round(x);
   const ry = Math.round(y);
   const rw = Math.round(w);
   const rh = Math.round(h);
 
   ctx.save();
-  ctx.shadowColor = strong ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = strong ? 14 : 18;
-  ctx.shadowOffsetX = strong ? 3 : 6;
-  ctx.shadowOffsetY = strong ? 5 : 12;
+  ctx.shadowColor = light ? "rgba(0,0,0,0.28)" : "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = light ? 10 : 18;
+  ctx.shadowOffsetX = light ? 4 : 6;
+  ctx.shadowOffsetY = light ? 6 : 12;
   ctx.fillStyle = "rgba(0,0,0,0.01)";
   ctx.fillRect(rx, ry, rw, rh);
   ctx.restore();
@@ -286,7 +290,7 @@ function drawLightFrameOutline(ctx, x, y, w, h) {
   const rh = Math.round(h) - 1;
 
   ctx.save();
-  ctx.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx.strokeStyle = "rgba(0,0,0,0.16)";
   ctx.lineWidth = 1;
   ctx.strokeRect(rx, ry, rw, rh);
   ctx.restore();
@@ -327,7 +331,7 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx, rails =
   const fy = Math.round(y);
   const fw = Math.round(w);
   const fh = Math.round(h);
-  const bleed = 2;
+  const bleed = 1;
 
   const smooth = ctx.imageSmoothingEnabled;
   const downscale = Math.min(r.left, r.top, r.right, r.bottom) > thickPx * 1.25;
@@ -338,11 +342,6 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx, rails =
     if (sW <= 0 || sH <= 0 || dW <= 0 || dH <= 0) return;
     ctx.drawImage(frameImg, sx, sy, sW, sH, dx, dy, dW, dH);
   };
-
-  blit(0, 0, r.left, r.top, fx, fy, t, t);
-  blit(sw - r.right, 0, r.right, r.top, fx + fw - t, fy, t, t);
-  blit(0, sh - r.bottom, r.left, r.bottom, fx, fy + fh - t, t, t);
-  blit(sw - r.right, sh - r.bottom, r.right, r.bottom, fx + fw - t, fy + fh - t, t, t);
 
   blit(r.left, 0, sw - r.left - r.right, r.top, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
   blit(
@@ -366,6 +365,11 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx, rails =
     t,
     fh - 2 * t + 2 * bleed,
   );
+
+  blit(0, 0, r.left, r.top, fx, fy, t, t);
+  blit(sw - r.right, 0, r.right, r.top, fx + fw - t, fy, t, t);
+  blit(0, sh - r.bottom, r.left, r.bottom, fx, fy + fh - t, t, t);
+  blit(sw - r.right, sh - r.bottom, r.right, r.bottom, fx + fw - t, fy + fh - t, t, t);
 
   ctx.imageSmoothingEnabled = smooth;
 }
@@ -516,7 +520,7 @@ function renderPreviewScene(ctx, scene) {
     sliceSize,
   } = scene;
 
-  const { tX, tY, tW, tH, targetThickPx, ix, iy, iw, ih } = layout;
+  const { tX, tY, tW, tH, targetThickPx } = layout;
   const { sx, sy, sWidth, sHeight } = photoSrc;
 
   ctx.fillStyle = activeView === "dekor" ? "#f8fafc" : "#e8eaed";
@@ -526,18 +530,27 @@ function renderPreviewScene(ctx, scene) {
     drawDecorBackground(ctx, decorImg, W, H);
   }
 
+  const fx = Math.round(tX);
+  const fy = Math.round(tY);
+  const fw = Math.round(tW);
+  const fh = Math.round(tH);
+  const t = Math.max(1, Math.round(targetThickPx));
+
   if (!fullscreen && (activeView === "dekor" || activeView === "tablo")) {
-    drawFrameShadow(ctx, tX, tY, tW, tH, isLightFrameColor(frameColor));
+    drawFrameShadow(ctx, fx, fy, fw, fh, isLightFrameColor(frameColor));
   }
 
   const innerBleed =
     frameImg && sliceSize > 0
-      ? Math.max(photoPad, Math.round(targetThickPx * 0.45))
+      ? Math.max(
+          photoPad,
+          Math.round(t * (isLightFrameColor(frameColor) ? 0.72 : 0.45)),
+        )
       : photoPad;
-  const pX = ix - innerBleed;
-  const pY = iy - innerBleed;
-  const pW = iw + 2 * innerBleed;
-  const pH = ih + 2 * innerBleed;
+  const pX = fx + t - innerBleed;
+  const pY = fy + t - innerBleed;
+  const pW = fw - 2 * t + 2 * innerBleed;
+  const pH = fh - 2 * t + 2 * innerBleed;
 
   ctx.save();
   ctx.beginPath();
@@ -547,17 +560,17 @@ function renderPreviewScene(ctx, scene) {
   ctx.restore();
 
   if (frameRender === "flatMetal") {
-    drawFlatMetalFrame(ctx, tX, tY, tW, tH, targetThickPx);
+    drawFlatMetalFrame(ctx, fx, fy, fw, fh, t);
   } else if (frameImg) {
     const s = sliceSize;
     if (s > 0) {
       const frameRails = measureFrameRails(frameImg);
-      drawNineSliceFrame(ctx, frameImg, tX, tY, tW, tH, s, targetThickPx, frameRails);
-      if (isLightFrameColor(frameColor)) {
-        drawLightFrameOutline(ctx, tX, tY, tW, tH);
+      drawNineSliceFrame(ctx, frameImg, fx, fy, fw, fh, s, t, frameRails);
+      if (frameColor?.id === "beyaz") {
+        drawLightFrameOutline(ctx, fx, fy, fw, fh);
       }
     } else {
-      ctx.drawImage(frameImg, Math.round(tX), Math.round(tY), Math.round(tW), Math.round(tH));
+      ctx.drawImage(frameImg, fx, fy, fw, fh);
     }
   }
 }
@@ -927,15 +940,63 @@ export default function FramePicker() {
   const [toast,         setToast]         = useState(null);
   const toastTimerRef = useRef(null);
 
+  const customFramesRef = useRef(customFrames);
+  customFramesRef.current = customFrames;
+  const addModalOpenRef = useRef(false);
+  addModalOpenRef.current = showAddModal;
+  const editModalOpenRef = useRef(false);
+  editModalOpenRef.current = showEditModal;
+
   useEffect(() => {
     let active = true;
-    loadCustomFrames().then((frames) => {
-      if (active) setCustomFrames(frames);
-    });
-    return () => { active = false; };
+
+    const refresh = async (migrate) => {
+      if (addModalOpenRef.current || editModalOpenRef.current) return;
+      if (migrate) {
+        const frames = await loadCustomFrames();
+        if (!active) {
+          revokeFrameUrls(frames);
+          return;
+        }
+        setCustomFrames(frames);
+        const [cats, labels, overrides] = await Promise.all([
+          hydrateCustomCategoriesFromShared(),
+          hydrateSeriesLabelsFromShared(),
+          hydrateFrameOverridesFromShared(),
+        ]);
+        if (!active) return;
+        setUserCategories(cats);
+        setSeriesLabelOverrides(labels);
+        setFrameOverrides(overrides);
+        return;
+      }
+
+      const shared = await fetchSharedCatalog();
+      if (!shared || !active) return;
+      setCustomFrames((prev) => mergeCustomFrames(prev, shared.frames));
+      setUserCategories((prev) => rememberCategories(mergeCategories(prev, shared.categories)));
+      setSeriesLabelOverrides((prev) => rememberSeriesLabels(mergeObjectMaps(prev, shared.seriesLabels)));
+      setFrameOverrides((prev) => rememberFrameOverrides(mergeObjectMaps(prev, shared.overrides)));
+    };
+
+    refresh(true).catch((err) => console.error(err));
+
+    const poll = window.setInterval(() => {
+      refresh(false).catch((err) => console.error(err));
+    }, 8000);
+    const onVis = () => {
+      if (!document.hidden) refresh(false).catch((err) => console.error(err));
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      active = false;
+      window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
-  useEffect(() => () => revokeFrameUrls(customFrames), [customFrames]);
+  useEffect(() => () => revokeFrameUrls(customFramesRef.current), []);
 
   const allFrames = useMemo(
     () => {
@@ -946,7 +1007,7 @@ export default function FramePicker() {
           if (!patch) return f;
           return applyCatalogOverride(f, patch);
         });
-      return [...catalog, ...customFrames];
+      return [...customFrames, ...catalog];
     },
     [customFrames, hiddenFrameIds, frameOverrides]
   );
@@ -1041,8 +1102,10 @@ export default function FramePicker() {
   const visibleCategories = useMemo(
     () =>
       allCategories.filter((cat) => {
+        if (cat.id === "custom") return false;
+        if (cat.id === "all") return true;
         if (hiddenSeriesIds.has(cat.id)) return false;
-        return cat.id === "all" || countFramesInCategory(allFrames, cat.id) > 0 || cat.custom;
+        return countFramesInCategory(allFrames, cat.id) > 0 || isUserSeries(cat);
       }),
     [allCategories, allFrames, hiddenSeriesIds]
   );
@@ -1070,10 +1133,25 @@ export default function FramePicker() {
   const selectableFrameCount = filteredFrames.filter((f) => f.id !== "none").length;
 
   const handleFrameAdded = (entry) => {
-    setCustomFrames((prev) => [...prev, entry]);
+    setCustomFrames((prev) => [entry, ...prev.filter((f) => f.id !== entry.id)]);
     setSelectedFrameId(entry.id);
     setSelectedColorId(entry.colors?.[0]?.id ?? null);
-    setFrameCategory("custom");
+    const seriesCat = (entry.categories ?? []).find((id) => id && id !== "custom");
+    setFrameCategory(seriesCat || "all");
+    setFrameSearch("");
+    const seriesLabel = seriesCat
+      ? allCategories.find((c) => c.id === seriesCat)?.label ?? "Tümü"
+      : "Tümü";
+    const shared = Boolean(entry.image) && !String(entry.image).startsWith("blob:");
+    showToast(
+      {
+        type: shared ? "success" : "error",
+        message: shared
+          ? `"${getFrameDisplayLabel(entry)}" eklendi. ${seriesLabel} listesinde, tüm cihazlarda görünür.`
+          : `"${getFrameDisplayLabel(entry)}" kaydedildi ama sunucuya yazılamadı. Yalnızca bu tarayıcıda duruyor.`,
+      },
+      4000
+    );
   };
 
   const handleFrameEdited = (updated) => {
@@ -1185,7 +1263,7 @@ export default function FramePicker() {
   };
 
   const requestDeleteSeries = (cat) => {
-    const hint = cat.custom
+    const hint = isUserSeries(cat)
       ? "Bu seri kalıcı olarak silinir."
       : "Çerçeveler silinmez; seri yalnızca listeden gizlenir.";
     showToast({
@@ -1197,9 +1275,15 @@ export default function FramePicker() {
     });
   };
 
+  const createUserSeries = (label) => {
+    const entry = addCustomCategory(label, [...FRAME_CATEGORIES, ...userCategories]);
+    if (entry) setUserCategories(loadCustomCategories());
+    return entry;
+  };
+
   const handleAddSeries = (label) => {
-    const entry = addCustomCategory(label);
-    setUserCategories(loadCustomCategories());
+    const entry = createUserSeries(label);
+    if (!entry) return;
     setFrameCategory(entry.id);
     setFrameSearch("");
     showToast({ type: "success", message: `"${entry.label}" serisi eklendi.` }, 2200);
@@ -1208,7 +1292,7 @@ export default function FramePicker() {
   const handleRenameSeries = (cat, newLabel) => {
     const trimmed = newLabel.trim();
     if (!trimmed) return;
-    if (cat.custom) {
+    if (isUserSeries(cat)) {
       setUserCategories(renameCustomCategory(cat.id, trimmed));
       if (seriesLabelOverrides[cat.id]) {
         setSeriesLabelOverrides(saveSeriesLabelOverride(cat.id, ""));
@@ -1224,7 +1308,7 @@ export default function FramePicker() {
     if (!cat) return;
 
     if (frameCategory === cat.id) setFrameCategory(null);
-    if (cat.custom) {
+    if (isUserSeries(cat)) {
       setUserCategories(deleteCustomCategory(cat.id));
     } else {
       setHiddenSeriesIds(hideSeriesCategory(cat.id));
@@ -1541,7 +1625,7 @@ export default function FramePicker() {
               <button
                 key={cat.id}
                 type="button"
-                className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}${cat.custom ? " user-cat" : ""}`}
+                className={`fp-category-chip${frameCategory === cat.id ? " active" : ""}`}
                 onClick={() => {
                   setFrameCategory(cat.id);
                   setFrameSearch("");
@@ -2026,6 +2110,22 @@ export default function FramePicker() {
         onSaved={handleFrameAdded}
         categoryOptions={[...BASE_CATEGORY_OPTIONS, ...userCategories]}
         seriesOptions={seriesOptions}
+        defaultCode={
+          frameCategory && frameCategory !== "all"
+            ? allCategories.find((c) => c.id === frameCategory)?.label ?? "20 lik"
+            : "20 lik"
+        }
+        defaultCategoryId={
+          frameCategory && frameCategory !== "all"
+            ? frameCategory
+            : "20lik"
+        }
+        defaultThicknessMm={
+          frameCategory && frameCategory !== "all"
+            ? defaultMmFromSeriesLabel(allCategories.find((c) => c.id === frameCategory)?.label)
+            : 20
+        }
+        onAddSeries={createUserSeries}
       />
 
       <FrameEditModal
@@ -2035,6 +2135,7 @@ export default function FramePicker() {
         onSaved={handleFrameEdited}
         categoryOptions={[...BASE_CATEGORY_OPTIONS, ...userCategories]}
         seriesOptions={seriesOptions}
+        onAddSeries={createUserSeries}
       />
 
       <SeriesManageModal
