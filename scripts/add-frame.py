@@ -73,6 +73,13 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "sari": {"id": "sari", "label": "Sarı", "hex": "#E8C91A"},
     "kırmızı": {"id": "kirmizi", "label": "Kırmızı", "hex": "#C62828"},
     "kirmizi": {"id": "kirmizi", "label": "Kırmızı", "hex": "#C62828"},
+    "gri": {"id": "gri", "label": "Gri", "hex": "#6B7280"},
+    "bronz": {"id": "bronz", "label": "Bronz", "hex": "#8C6A3F"},
+    "bakır": {"id": "bakir", "label": "Bakır", "hex": "#B87333"},
+    "bakir": {"id": "bakir", "label": "Bakır", "hex": "#B87333"},
+    "eskitme altın": {"id": "eskitme-altin", "label": "Eskitme Altın", "hex": "#A67C52"},
+    "eskitme altin": {"id": "eskitme-altin", "label": "Eskitme Altın", "hex": "#A67C52"},
+    "antik bronz": {"id": "antik-bronz", "label": "Antik Bronz", "hex": "#6E4E32"},
 }
 
 SERIES_CATEGORY = {
@@ -99,6 +106,8 @@ SERIES_CATEGORY = {
     "30 luk ağaç kabuğu": "30luk-agac-kabugu",
     "46 d": "46d",
     "46 D": "46d",
+    "46 Ağaç Kabuğu": "46-agac-kabugu",
+    "46 ağaç kabuğu": "46-agac-kabugu",
     "30 d 91": "30d91",
     "F30 D91": "f30d91",
     "f30 d91": "f30d91",
@@ -106,10 +115,27 @@ SERIES_CATEGORY = {
     "f30 düz": "f30duz",
     "f30 duz": "f30duz",
     "35 lik": "35lik",
+    "34 L": "34l",
+    "34 l": "34l",
 }
 
 
 def slugify(text: str) -> str:
+    text = (
+        str(text)
+        .replace("ı", "i")
+        .replace("İ", "i")
+        .replace("ş", "s")
+        .replace("Ş", "s")
+        .replace("ğ", "g")
+        .replace("Ğ", "g")
+        .replace("ü", "u")
+        .replace("Ü", "u")
+        .replace("ö", "o")
+        .replace("Ö", "o")
+        .replace("ç", "c")
+        .replace("Ç", "c")
+    )
     text = unicodedata.normalize("NFKD", text)
     text = text.encode("ascii", "ignore").decode("ascii")
     text = text.lower().strip()
@@ -130,7 +156,7 @@ def is_solid_background(r: int, g: int, b: int, a: int) -> bool:
     spread = max(r, g, b) - min(r, g, b)
     brightness = (r + g + b) / 3
     if spread < 14:
-        if brightness > 250:
+        if brightness > 248:
             return True
         # Yarı saydam koyu arka plan — opak koyu çerçeve rayını delik sanma
         if brightness < 40 and a < 90:
@@ -522,8 +548,10 @@ def detect_hole_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
     left, top, right, bottom = scan_hole_bounds(px, w, h, cx, cy)
     rails = [left, top, w - 1 - right, h - 1 - bottom]
     if right <= left or bottom <= top:
-        return flood_hole_bounds(px, w, h, cx, cy)
-    if max(rails) - min(rails) > 12:
+        if is_true_hole_seed(*px[cx, cy]):
+            return flood_hole_bounds(px, w, h, cx, cy)
+        return left, top, right, bottom
+    if max(rails) - min(rails) > 12 and is_true_hole_seed(*px[cx, cy]):
         return flood_hole_bounds(px, w, h, cx, cy)
     return left, top, right, bottom
 
@@ -857,20 +885,29 @@ def measure_output_thickness(img: Image.Image) -> int:
     def is_output_hole(r: int, g: int, b: int, a: int) -> bool:
         return a < 30
 
-    il = 0
-    while il < w and not is_output_hole(*px[il, cy]):
-        il += 1
-    ir = w - 1
-    while ir >= 0 and not is_output_hole(*px[ir, cy]):
-        ir -= 1
-    it = 0
-    while it < h and not is_output_hole(*px[cx, it]):
-        it += 1
-    ib = h - 1
-    while ib >= 0 and not is_output_hole(*px[cx, ib]):
-        ib -= 1
-    rails = [il, it, w - 1 - ir, h - 1 - ib]
-    return int(min(rails))
+    def rail_width(start: int, end: int, step: int, sample) -> int:
+        i = start
+        while (step > 0 and i < end) or (step < 0 and i > end):
+            if not is_output_hole(*sample(i)):
+                break
+            i += step
+        begin = i
+        while (step > 0 and i < end) or (step < 0 and i > end):
+            if is_output_hole(*sample(i)):
+                break
+            i += step
+        return abs(i - begin)
+
+    rails = [
+        rail_width(0, w, 1, lambda x: px[x, cy]),
+        rail_width(w - 1, -1, -1, lambda x: px[x, cy]),
+        rail_width(0, h, 1, lambda y: px[cx, y]),
+        rail_width(h - 1, -1, -1, lambda y: px[cx, y]),
+    ]
+    usable = [r for r in rails if r >= 8]
+    if not usable:
+        return int(min(rails)) if rails else 0
+    return int(min(usable))
 
 
 def trim_corner_tip_to_frame(patch: Image.Image, axes: tuple[str, ...]) -> Image.Image:
@@ -1068,6 +1105,542 @@ def crop_to_frame_content(img: Image.Image) -> Image.Image:
     return img.crop((left, top, right + 1, bottom + 1))
 
 
+def _color_dist(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:
+    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
+
+
+def _median_i(values: list[int]) -> int:
+    s = sorted(values)
+    return s[(len(s) - 1) // 2]
+
+
+def _px_br(p: tuple[int, int, int]) -> float:
+    return (p[0] + p[1] + p[2]) / 3.0
+
+
+def _px_spread(p: tuple[int, int, int]) -> int:
+    return max(p[0], p[1], p[2]) - min(p[0], p[1], p[2])
+
+
+def _px_warmth(p: tuple[int, int, int]) -> int:
+    return p[0] + p[1] - 2 * p[2]
+
+
+def _is_studio_frame_body(p: tuple[int, int, int], center: tuple[int, int, int]) -> bool:
+    """Koyu iç oluk, boyalı/ahşap yüz veya krem (sıcak) açık çerçeve."""
+    br = _px_br(p)
+    spread = _px_spread(p)
+    if br < 135:
+        return True
+    if spread > 22:
+        return True
+    warmth = _px_warmth(p)
+    center_w = _px_warmth(center)
+    return br > 165 and warmth > center_w + 12 and spread >= 8
+
+
+def _is_studio_insert(p: tuple[int, int, int], center: tuple[int, int, int]) -> bool:
+    """İç karton/duvar: nötr gri-beyaz. Krem çerçeve yüzünü insert sayma."""
+    if _is_studio_frame_body(p, center):
+        return False
+    spread = _px_spread(p)
+    if spread > 16:
+        return False
+    br, cbr = _px_br(p), _px_br(center)
+    if _color_dist(p, center) < 22:
+        return True
+    return br >= 155 and spread < 14 and abs(br - cbr) < 60
+
+
+def _is_studio_wall_pixel(p: tuple[int, int, int], wall: tuple[int, int, int], center: tuple[int, int, int]) -> bool:
+    if _is_studio_frame_body(p, center):
+        return False
+    if _px_spread(p) > 14 or _px_warmth(p) > _px_warmth(center) + 8:
+        return False
+    if _color_dist(p, wall) < 14:
+        return True
+    return _px_spread(p) < 10 and abs(_px_br(p) - _px_br(wall)) < 18
+
+
+def _is_studio_drop_shadow(p: tuple[int, int, int], wall: tuple[int, int, int], center: tuple[int, int, int]) -> bool:
+    if _is_studio_frame_body(p, center):
+        return False
+    if _px_spread(p) > 10 or _px_warmth(p) > _px_warmth(center) + 4:
+        return False
+    br, wbr = _px_br(p), _px_br(wall)
+    return wbr - 60 <= br <= wbr - 20 and abs(p[0] - p[1]) < 8 and abs(p[1] - p[2]) < 10
+
+
+def _sample_centerish_wall(px, w: int, h: int, side: str, center: tuple[int, int, int]):
+    samples: list[tuple[int, int, int]] = []
+    if side == "left":
+        coords = ((x, y) for y in range(2, h - 2, 2) for x in range(1, min(9, w // 25 + 2)))
+    elif side == "right":
+        coords = ((x, y) for y in range(2, h - 2, 2) for x in range(w - 2, max(w - 10, w * 19 // 20), -1))
+    elif side == "top":
+        coords = ((x, y) for x in range(2, w - 2, 2) for y in range(1, min(9, h // 25 + 2)))
+    else:
+        coords = ((x, y) for x in range(2, w - 2, 2) for y in range(h - 2, max(h - 10, h * 19 // 20), -1))
+    for x, y in coords:
+        p = px[x, y][:3]
+        if _is_studio_frame_body(p, center):
+            continue
+        if _color_dist(p, center) < 42 and _px_spread(p) < 18:
+            samples.append(p)
+    if len(samples) < 6:
+        return None
+    return _median_rgb(samples)
+
+
+def _scan_studio_inner(px, x: int, y: int, dx: int, dy: int, w: int, h: int, center: tuple[int, int, int]) -> int | None:
+    """İç kartonu atla; fotoğrafın oturacağı koyu iç dudağı (yoksa çerçeve yüzünü) bul."""
+    while 0 < x < w - 1 and 0 < y < h - 1:
+        x += dx
+        y += dy
+        p = px[x, y][:3]
+        if _is_studio_insert(p, center):
+            continue
+        break
+    else:
+        return None
+
+    first_body: int | None = None
+    sx, sy = x, y
+    for _ in range(42):
+        if not (1 <= sx < w - 1 and 1 <= sy < h - 1):
+            break
+        q = px[sx, sy][:3]
+        coord = sx if dx else sy
+        if _px_br(q) < 125:
+            return coord
+        if first_body is None and _is_studio_frame_body(q, center):
+            first_body = coord
+        sx += dx
+        sy += dy
+    if first_body is not None:
+        return first_body
+    return x if dx else y
+
+
+def _scan_studio_outer(px, x: int, y: int, dx: int, dy: int, w: int, h: int, wall, center: tuple[int, int, int]) -> int | None:
+    if wall is None:
+        return None
+    last = x if dx else y
+    wall_run = 0
+    shadow_run = 0
+    while 0 < x < w - 1 and 0 < y < h - 1:
+        x += dx
+        y += dy
+        coord = x if dx else y
+        p = px[x, y][:3]
+        if _is_studio_wall_pixel(p, wall, center):
+            wall_run += 1
+            shadow_run = 0
+            if wall_run >= 3:
+                return last
+        elif _is_studio_drop_shadow(p, wall, center):
+            shadow_run += 1
+            wall_run = 0
+            if shadow_run >= 3:
+                return last
+        else:
+            wall_run = 0
+            shadow_run = 0
+            last = coord
+    return None
+
+
+def _pick_studio_rail(raw: list[int]) -> int | None:
+    valid = [r for r in raw if r >= 24]
+    if not valid:
+        return None
+    valid = sorted(valid)
+    lo = valid[(len(valid) - 1) // 2]
+    tight = [r for r in valid if r <= lo * 1.18]
+    if len(tight) >= 2:
+        return tight[(len(tight) - 1) // 2]
+    return lo
+
+
+def _looks_like_insert_or_wall(p: tuple[int, int, int], center: tuple[int, int, int]) -> bool:
+    if _is_studio_frame_body(p, center):
+        return False
+    return _is_studio_insert(p, center)
+
+
+def peel_outer_studio_wall(img: Image.Image, center: tuple[int, int, int], max_peel: int = 12) -> Image.Image:
+    """Kenarın ortası duvar ise o satırı/sütunu kırp; krem çerçeve yüzüne girme."""
+    out = img
+    for _ in range(max_peel):
+        px = out.load()
+        w, h = out.size
+        if w < 40 or h < 40:
+            break
+
+        def mid_edge_wall(side: str) -> bool:
+            if side == "top":
+                samples = [px[x, 0] for x in range(w // 4, (3 * w) // 4, 2)]
+            elif side == "bottom":
+                samples = [px[x, h - 1] for x in range(w // 4, (3 * w) // 4, 2)]
+            elif side == "left":
+                samples = [px[0, y] for y in range(h // 4, (3 * h) // 4, 2)]
+            else:
+                samples = [px[w - 1, y] for y in range(h // 4, (3 * h) // 4, 2)]
+            n = len(samples)
+            if n < 6:
+                return False
+            wallish = 0
+            body = 0
+            for r, g, b, a in samples:
+                if a < 30:
+                    wallish += 1
+                    continue
+                p = (r, g, b)
+                if _is_studio_frame_body(p, center):
+                    body += 1
+                elif _is_studio_insert(p, center):
+                    wallish += 1
+            return wallish >= n * 0.75 and body <= n * 0.08
+
+        cropped = False
+        if mid_edge_wall("top"):
+            out = out.crop((0, 1, w, h))
+            cropped = True
+        elif mid_edge_wall("bottom"):
+            out = out.crop((0, 0, w, h - 1))
+            cropped = True
+        elif mid_edge_wall("left"):
+            out = out.crop((1, 0, w, h))
+            cropped = True
+        elif mid_edge_wall("right"):
+            out = out.crop((0, 0, w - 1, h))
+            cropped = True
+        if not cropped:
+            break
+    return out
+
+
+def clear_corner_studio_wall(img: Image.Image, center: tuple[int, int, int], max_depth: int = 22) -> Image.Image:
+    """Köşede kalan duvar üçgenini sil; çerçeve gövdesinde dur."""
+    w, h = img.size
+    px = img.load()
+    corners = ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1))
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int, int, int]] = deque()
+    for cx0, cy0 in corners:
+        r, g, b, a = px[cx0, cy0]
+        if a < 30:
+            continue
+        p = (r, g, b)
+        if _is_studio_frame_body(p, center) or not _is_studio_insert(p, center):
+            continue
+        vis[cy0 * w + cx0] = 1
+        q.append((cx0, cy0, cx0, cy0))
+    if not q:
+        return img
+    out = img.copy()
+    opx = out.load()
+    while q:
+        x, y, ox, oy = q.popleft()
+        if abs(x - ox) + abs(y - oy) > max_depth:
+            continue
+        r, g, b, a = opx[x, y]
+        if a >= 30:
+            opx[x, y] = (0, 0, 0, 0)
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if vis[i]:
+                continue
+            nr, ng, nb, na = opx[nx, ny]
+            if na < 30:
+                vis[i] = 1
+                q.append((nx, ny, ox, oy))
+                continue
+            npx = (nr, ng, nb)
+            if _is_studio_frame_body(npx, center):
+                vis[i] = 1
+                continue
+            if _is_studio_insert(npx, center):
+                vis[i] = 1
+                q.append((nx, ny, ox, oy))
+    return out
+
+
+def expand_hole_through_insert(img: Image.Image, center: tuple[int, int, int]) -> Image.Image:
+    """İçteki kalan duvar/karton bandını deliğe katar; çerçeve gövdesine dokunmaz."""
+    w, h = img.size
+    px = img.load()
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int]] = deque()
+    for y in range(h):
+        row = y * w
+        for x in range(w):
+            if px[x, y][3] < 30:
+                vis[row + x] = 1
+                q.append((x, y))
+    if not q:
+        return img
+    out = img.copy()
+    opx = out.load()
+    while q:
+        x, y = q.popleft()
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if vis[i]:
+                continue
+            r, g, b, a = opx[nx, ny]
+            if a < 30:
+                vis[i] = 1
+                q.append((nx, ny))
+                continue
+            if _looks_like_insert_or_wall((r, g, b), center):
+                vis[i] = 1
+                opx[nx, ny] = (0, 0, 0, 0)
+                q.append((nx, ny))
+    return out
+
+
+def clear_outer_studio_wall(img: Image.Image, center: tuple[int, int, int]) -> Image.Image:
+    """Dış kenardaki gri duvar ve gölgeyi sil; çerçeve malzemesini bırak."""
+    w, h = img.size
+    px = img.load()
+    seeds: list[tuple[int, int]] = []
+    for x in range(w):
+        seeds.append((x, 0))
+        seeds.append((x, h - 1))
+    for y in range(h):
+        seeds.append((0, y))
+        seeds.append((w - 1, y))
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int]] = deque()
+    for sx, sy in seeds:
+        r, g, b, a = px[sx, sy]
+        if a < 30:
+            continue
+        if not _looks_like_insert_or_wall((r, g, b), center):
+            continue
+        i = sy * w + sx
+        if vis[i]:
+            continue
+        vis[i] = 1
+        q.append((sx, sy))
+    if not q:
+        return img
+    out = img.copy()
+    opx = out.load()
+    while q:
+        x, y = q.popleft()
+        r, g, b, a = opx[x, y]
+        if a >= 30:
+            opx[x, y] = (0, 0, 0, 0)
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if vis[i]:
+                continue
+            nr, ng, nb, na = opx[nx, ny]
+            if na < 30 or _looks_like_insert_or_wall((nr, ng, nb), center):
+                vis[i] = 1
+                q.append((nx, ny))
+    return out
+
+
+def extract_studio_wall_frame(img: Image.Image) -> Image.Image | None:
+    """Duvar fotoğrafından gölgesiz, şeffaf içli dikdörtgen çerçeve keser."""
+    w, h = img.size
+    px = img.load()
+    cx, cy = w // 2, h // 2
+    center = px[cx, cy][:3]
+    if px[cx, cy][3] < 40:
+        return None
+    cbr = _px_br(center)
+    if cbr < 165 or cbr > 252 or _px_spread(center) > 28:
+        return None
+
+    ys = [cy, max(h // 3, cy - h // 12), min(h - 1 - h // 3, cy + h // 12)]
+    xs = [cx, max(w // 3, cx - w // 12), min(w - 1 - w // 3, cx + w // 12)]
+    lefts, rights, tops, bottoms = [], [], [], []
+    for y in ys:
+        left = _scan_studio_inner(px, cx, y, -1, 0, w, h, center)
+        right = _scan_studio_inner(px, cx, y, 1, 0, w, h, center)
+        if left is not None:
+            lefts.append(left)
+        if right is not None:
+            rights.append(right)
+    for x in xs:
+        top = _scan_studio_inner(px, x, cy, 0, -1, w, h, center)
+        bottom = _scan_studio_inner(px, x, cy, 0, 1, w, h, center)
+        if top is not None:
+            tops.append(top)
+        if bottom is not None:
+            bottoms.append(bottom)
+    if not (lefts and rights and tops and bottoms):
+        return None
+
+    il, ir, it, ib = _median_i(lefts), _median_i(rights), _median_i(tops), _median_i(bottoms)
+    if ir - il < w * 0.2 or ib - it < h * 0.2:
+        return None
+
+    walls = {s: _sample_centerish_wall(px, w, h, s, center) for s in ("left", "right", "top", "bottom")}
+    ol = _scan_studio_outer(px, il, cy, -1, 0, w, h, walls["left"], center)
+    oright = _scan_studio_outer(px, ir, cy, 1, 0, w, h, walls["right"], center)
+    ot = _scan_studio_outer(px, cx, it, 0, -1, w, h, walls["top"], center)
+    ob = _scan_studio_outer(px, cx, ib, 0, 1, w, h, walls["bottom"], center)
+
+    # Fotoğraf kenarına taşmış (kırpılmış) kenarları typical ray hesabına katma.
+    good_rails: list[int] = []
+    if walls["left"] is not None and ol is not None:
+        good_rails.append(il - ol)
+    if walls["top"] is not None and ot is not None:
+        good_rails.append(it - ot)
+    if walls["right"] is not None and oright is not None:
+        good_rails.append(oright - ir)
+    if walls["bottom"] is not None and ob is not None:
+        good_rails.append(ob - ib)
+    typical = _pick_studio_rail([r for r in good_rails if r >= 40])
+    if typical is None:
+        typical = _pick_studio_rail(good_rails)
+    if typical is None:
+        return None
+
+    def _outer(detected: int | None, inner: int, toward_min: bool) -> int:
+        guessed = inner - typical if toward_min else inner + typical
+        if detected is None:
+            return guessed
+        rail = inner - detected if toward_min else detected - inner
+        if rail < typical * 0.45 or rail > typical * 1.18:
+            return guessed
+        return detected
+
+    inset = 3
+    ol = max(0, _outer(ol, il, True) + inset)
+    ot = max(0, _outer(ot, it, True) + inset)
+    oright = min(w - 1, _outer(oright, ir, False) - inset)
+    ob = min(h - 1, _outer(ob, ib, False) - inset)
+    if oright - ol < 40 or ob - ot < 40:
+        return None
+
+    cropped = img.crop((ol, ot, oright + 1, ob + 1)).copy()
+    cw, ch = cropped.size
+    il -= ol
+    ir -= ol
+    it -= ot
+    ib -= ot
+    opx = cropped.load()
+    # Dudağı bırak: delik iç dudağın hemen içinden başlar.
+    for y in range(ch):
+        for x in range(cw):
+            if il < x < ir and it < y < ib:
+                opx[x, y] = (0, 0, 0, 0)
+    cropped = expand_hole_through_insert(cropped, center)
+    cropped = peel_outer_studio_wall(cropped, center)
+    cropped = clear_corner_studio_wall(cropped, center)
+    cw, ch = cropped.size
+    cpx = cropped.load()
+    hil, hit, hir, hib = detect_hole_bounds(cpx, cw, ch)
+    if hir > hil and hib > hit:
+        cropped, hil, hit, hir, hib = trim_asymmetric_rails(cropped, hil, hit, hir, hib)
+    bbox = cropped.getbbox()
+    if bbox:
+        cropped = cropped.crop(bbox)
+    return cropped
+
+
+def _median_rgb(samples: list[tuple[int, int, int]]) -> tuple[int, int, int]:
+    rs, gs, bs = zip(*samples)
+    n = len(samples) // 2
+    return (sorted(rs)[n], sorted(gs)[n], sorted(bs)[n])
+
+
+def sample_border_background(px, w: int, h: int) -> tuple[int, int, int]:
+    pts = [
+        (8, 8),
+        (w // 2, 8),
+        (w - 9, 8),
+        (8, h // 2),
+        (w - 9, h // 2),
+        (8, h - 9),
+        (w // 2, h - 9),
+        (w - 9, h - 9),
+    ]
+    samples = [px[min(max(x, 0), w - 1), min(max(y, 0), h - 1)][:3] for x, y in pts]
+    return _median_rgb(samples)
+
+
+def flood_similar_mask(
+    px, w: int, h: int, seeds: list[tuple[int, int]], tol: int, ref_color: tuple[int, int, int] | None = None
+) -> bytearray:
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int]] = deque()
+    for sx, sy in seeds:
+        if 0 <= sx < w and 0 <= sy < h:
+            i = sy * w + sx
+            if vis[i]:
+                continue
+            vis[i] = 1
+            q.append((sx, sy))
+    while q:
+        x, y = q.popleft()
+        ref = ref_color or px[x, y][:3]
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if vis[i]:
+                continue
+            r, g, b, a = px[nx, ny]
+            if a < 50:
+                vis[i] = 1
+                q.append((nx, ny))
+                continue
+            if abs(r - ref[0]) <= tol and abs(g - ref[1]) <= tol and abs(b - ref[2]) <= tol:
+                vis[i] = 1
+                q.append((nx, ny))
+    return vis
+
+
+def clear_studio_backdrop(img: Image.Image) -> Image.Image:
+    """Gri stüdyo duvarını ve iç boşluğu şeffaflaştır; beyaz karton çekimlerine dokunma."""
+    w, h = img.size
+    if w < 40 or h < 40:
+        return img
+    px = img.load()
+    bg = sample_border_background(px, w, h)
+    bg_br = sum(bg) / 3
+    bg_spread = max(bg) - min(bg)
+    if bg_br > 247 or bg_br < 165 or bg_spread > 22:
+        return img
+
+    cx, cy = w // 2, h // 2
+    border_seeds = [
+        (8, 8),
+        (w // 2, 8),
+        (w - 9, 8),
+        (8, h // 2),
+        (w - 9, h // 2),
+        (8, h - 9),
+        (w // 2, h - 9),
+        (w - 9, h - 9),
+    ]
+    outer = flood_similar_mask(px, w, h, border_seeds, tol=12, ref_color=bg)
+    inner_ref = px[cx, cy][:3]
+    inner = flood_similar_mask(px, w, h, [(cx, cy)], tol=14, ref_color=inner_ref)
+    out = img.copy()
+    opx = out.load()
+    for y in range(h):
+        row = y * w
+        for x in range(w):
+            if outer[row + x] or inner[row + x]:
+                r, g, b, _a = opx[x, y]
+                opx[x, y] = (r, g, b, 0)
+    return out
+
+
 def center_frame_hole(img: Image.Image, il: int, it: int, ir: int, ib: int) -> tuple[Image.Image, int, int, int, int]:
     """Deliği kare tuvalin ortasına al; dört kenar kalınlığı eşitlensin."""
     w, h = img.size
@@ -1225,9 +1798,786 @@ def trim_asymmetric_rails(
     return out, il, it, ir, ib
 
 
+def _hole_bounds(px, w: int, h: int) -> tuple[int, int, int, int]:
+    cx, cy = w // 2, h // 2
+
+    def is_hole(x: int, y: int) -> bool:
+        return px[x, y][3] < 30
+
+    il = 0
+    while il < w and not is_hole(il, cy):
+        il += 1
+    ir = w - 1
+    while ir >= 0 and not is_hole(ir, cy):
+        ir -= 1
+    it = 0
+    while it < h and not is_hole(cx, it):
+        it += 1
+    ib = h - 1
+    while ib >= 0 and not is_hole(cx, ib):
+        ib -= 1
+    return il, it, ir, ib
+
+
+def expand_hole_inward(
+    img: Image.Image,
+    top: int,
+    right: int,
+    bottom: int,
+    left: int,
+    equalize: str = "outer",
+) -> Image.Image:
+    """Deliği içeri büyüt; kalan gri/krem iç bandı fotoğrafın altına alır."""
+    if top <= 0 and right <= 0 and bottom <= 0 and left <= 0 and equalize == "none":
+        return img
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+
+    il = max(0, il - max(0, left))
+    it = max(0, it - max(0, top))
+    ir = min(w - 1, ir + max(0, right))
+    ib = min(h - 1, ib + max(0, bottom))
+    out = img.copy()
+    opx = out.load()
+    for y in range(it, ib + 1):
+        for x in range(il, ir + 1):
+            opx[x, y] = (0, 0, 0, 0)
+
+    if equalize == "inner":
+        w, h = out.size
+        opx = out.load()
+        il, it, ir, ib = _hole_bounds(opx, w, h)
+        left_r, top_r, right_r, bottom_r = il, it, w - 1 - ir, h - 1 - ib
+        m = min(left_r, top_r, right_r, bottom_r)
+        if m > 0:
+            il = max(0, il - (left_r - m))
+            it = max(0, it - (top_r - m))
+            ir = min(w - 1, ir + (right_r - m))
+            ib = min(h - 1, ib + (bottom_r - m))
+            for y in range(it, ib + 1):
+                for x in range(il, ir + 1):
+                    opx[x, y] = (0, 0, 0, 0)
+    elif equalize == "outer":
+        out, il, it, ir, ib = trim_asymmetric_rails(out, il, it, ir, ib)
+
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    return out
+
+
+def _haze_walk(
+    px, x: int, y: int, dx: int, dy: int, limit: int, is_haze
+) -> int:
+    if x < 0 or y < 0:
+        return 0
+    r0, g0, b0, a0 = px[x, y]
+    if a0 < 30:
+        return 0
+    start_br = _px_br((r0, g0, b0))
+    dist = 0
+    while dist < limit:
+        if x < 0 or y < 0:
+            break
+        r, g, b, a = px[x, y]
+        if a < 30:
+            break
+        p = (r, g, b)
+        br = _px_br(p)
+        if br > start_br + 14:
+            break
+        if not is_haze(br, _px_spread(p), p):
+            break
+        dist += 1
+        x += dx
+        y += dy
+    return dist
+
+
+def _side_haze_depth(
+    px, w: int, h: int, il: int, it: int, ir: int, ib: int, side: str, is_haze, max_d: int, pct: float
+) -> int:
+    depths: list[int] = []
+    if side in ("top", "bottom"):
+        xs = [il + (ir - il) * i // 8 for i in range(2, 7)]
+        for x in xs:
+            if side == "top":
+                depths.append(_haze_walk(px, x, it - 1, 0, -1, min(max_d, it), is_haze))
+            else:
+                depths.append(_haze_walk(px, x, ib + 1, 0, 1, min(max_d, h - 1 - ib), is_haze))
+    else:
+        ys = [it + (ib - it) * i // 8 for i in range(2, 7)]
+        for y in ys:
+            if side == "left":
+                depths.append(_haze_walk(px, il - 1, y, -1, 0, min(max_d, il), is_haze))
+            else:
+                depths.append(_haze_walk(px, ir + 1, y, 1, 0, min(max_d, w - 1 - ir), is_haze))
+    if not depths:
+        return 0
+    depths.sort()
+    idx = min(len(depths) - 1, max(0, round((len(depths) - 1) * pct)))
+    return depths[idx]
+
+
+def expand_studio_inner_haze(img: Image.Image, kind: str, equalize: str = "outer") -> Image.Image:
+    """Yalnızca sorunlu 35 lik / 34 L renklerde iç karton/gri bandı deliğe katar."""
+    if kind == "altin":
+        is_haze = lambda br, spr, _p: spr < 26 and br > 55
+        max_d, pct = 70, 0.5
+    elif kind == "lacivert":
+        is_haze = lambda br, spr, _p: spr < 24 and br > 80
+        max_d, pct = 22, 0.5
+    elif kind == "pale":
+        is_haze = lambda br, spr, _p: br > 185 and spr < 28
+        max_d, pct = 22, 0.5
+    elif kind == "cream-lip":
+        # Oksit gümüş: karton 110–185, çerçeve gövdesi chroma ≥ 38.
+        is_haze = lambda br, spr, _p: br > 110 and spr < 38
+        max_d, pct = 28, 0.5
+    elif kind == "eskitme":
+        # Yalnızca stüdyo kartonu; iç altın dudağı ve siyah damarı yeme.
+        is_haze = lambda br, spr, _p: br > 135 and spr < 34
+        max_d, pct = 36, 0.55
+    elif kind == "grey-lip":
+        # Siyah iç oluk: nötr gri dudağı koyu gövdeye kadar al.
+        is_haze = lambda br, spr, _p: br > 70 and spr < 22
+        max_d, pct = 22, 0.5
+    elif kind == "bronz-right":
+        # Bronz sağ iç: nötr gri bant, altın gövde chroma > 40.
+        is_haze = lambda br, spr, _p: spr < 40 and br > 75
+        max_d, pct = 24, 0.5
+    elif kind == "beyaz":
+        return _expand_beyaz_inner(img)
+    elif kind == "34-beyaz":
+        return _expand_34_beyaz_inner(img)
+    else:
+        return img
+
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+    top = _side_haze_depth(px, w, h, il, it, ir, ib, "top", is_haze, max_d, pct)
+    right = _side_haze_depth(px, w, h, il, it, ir, ib, "right", is_haze, max_d, pct)
+    bottom = _side_haze_depth(px, w, h, il, it, ir, ib, "bottom", is_haze, max_d, pct)
+    left = _side_haze_depth(px, w, h, il, it, ir, ib, "left", is_haze, max_d, pct)
+    return expand_hole_inward(img, top, right, bottom, left, equalize=equalize)
+
+
+def _expand_beyaz_inner(img: Image.Image) -> Image.Image:
+    """Karton beyazını ve girintili kenarı al; krem çerçeve yüzünü bırak."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+
+    def is_cardboard(br: float, spr: int, _p) -> bool:
+        return br > 218 and spr < 25
+
+    def is_light_band(br: float, spr: int, _p) -> bool:
+        return br > 198 and spr < 22
+
+    top = _side_haze_depth(px, w, h, il, it, ir, ib, "top", is_cardboard, 12, 0.5)
+    right = max(
+        _side_haze_depth(px, w, h, il, it, ir, ib, "right", is_cardboard, 12, 0.5),
+        _side_haze_depth(px, w, h, il, it, ir, ib, "right", is_light_band, 8, 0.5),
+    )
+    bottom = _side_haze_depth(px, w, h, il, it, ir, ib, "bottom", is_cardboard, 16, 0.5)
+    left = _side_haze_depth(px, w, h, il, it, ir, ib, "left", is_cardboard, 12, 0.5)
+
+    def hole(x: int, y: int) -> bool:
+        return px[x, y][3] < 30
+
+    left_xs = []
+    for y in range(it + 4, ib - 3, 6):
+        x = il
+        while x > 0 and hole(x, y):
+            x -= 1
+        left_xs.append(x)
+    right_xs = []
+    for y in range(it + 4, ib - 3, 6):
+        x = ir
+        while x < w - 1 and hole(x, y):
+            x += 1
+        right_xs.append(x)
+    if left_xs:
+        left = max(left, max(0, il - min(left_xs) - 1))
+    if right_xs:
+        right = max(right, max(0, max(right_xs) - ir - 1))
+    return expand_hole_inward(img, top, right, bottom, left)
+
+
+def _expand_34_beyaz_inner(img: Image.Image) -> Image.Image:
+    """34 L beyaz: sağdaki oluğa ve üstteki gri dudağa kadar; krem yüzü bırak."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+
+    def is_grey_lip(br: float, spr: int, _p) -> bool:
+        return 168 < br < 205 and spr < 22
+
+    def is_to_groove(br: float, spr: int, _p) -> bool:
+        return br > 132 and spr < 22
+
+    def is_cardboard(br: float, spr: int, _p) -> bool:
+        return br > 218 and spr < 16
+
+    top = _side_haze_depth(px, w, h, il, it, ir, ib, "top", is_grey_lip, 8, 0.5)
+    right = max(
+        _side_haze_depth(px, w, h, il, it, ir, ib, "right", is_grey_lip, 8, 0.5),
+        _side_haze_depth(px, w, h, il, it, ir, ib, "right", is_to_groove, 14, 0.5),
+    )
+    bottom = max(
+        _side_haze_depth(px, w, h, il, it, ir, ib, "bottom", is_cardboard, 8, 0.5),
+        _side_haze_depth(px, w, h, il, it, ir, ib, "bottom", lambda br, spr, _p: br > 205 and spr < 20, 8, 0.5),
+    )
+    left = max(
+        _side_haze_depth(px, w, h, il, it, ir, ib, "left", is_cardboard, 8, 0.5),
+        _side_haze_depth(px, w, h, il, it, ir, ib, "left", lambda br, spr, _p: br > 205 and spr < 20, 8, 0.5),
+    )
+    return expand_hole_inward(img, top, right, bottom, left)
+
+
+def _side_mid_stats(px, w: int, h: int, side: str) -> tuple[float, int]:
+    if side == "top":
+        samples = [px[x, 0] for x in range(w // 4, (3 * w) // 4, 2)]
+    elif side == "bottom":
+        samples = [px[x, h - 1] for x in range(w // 4, (3 * w) // 4, 2)]
+    elif side == "left":
+        samples = [px[0, y] for y in range(h // 4, (3 * h) // 4, 2)]
+    else:
+        samples = [px[w - 1, y] for y in range(h // 4, (3 * h) // 4, 2)]
+    opaque = [(r, g, b) for r, g, b, a in samples if a >= 30]
+    if len(opaque) < 6:
+        return 0.0, 99
+    brs = sorted(_px_br(p) for p in opaque)
+    sprs = sorted(_px_spread(p) for p in opaque)
+    return brs[len(brs) // 2], sprs[len(sprs) // 2]
+
+
+def peel_leftover_pale_outer(img: Image.Image, max_peel: int = 14) -> Image.Image:
+    """Stüdyo duvarı kalan açık kenarı kırp; beyaz/krem çerçeve yüzüne girme."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+
+    inner_samples: list[float] = []
+    cx, cy = w // 2, h // 2
+    for d in (8, 16, 24):
+        if it - d > 0:
+            inner_samples.append(_px_br(px[cx, it - d][:3]))
+        if ib + d < h - 1:
+            inner_samples.append(_px_br(px[cx, ib + d][:3]))
+        if il - d > 0:
+            inner_samples.append(_px_br(px[il - d, cy][:3]))
+        if ir + d < w - 1:
+            inner_samples.append(_px_br(px[ir + d, cy][:3]))
+    inner_samples = [b for b in inner_samples if b > 0]
+    if not inner_samples:
+        return img
+    inner_face = sorted(inner_samples)[len(inner_samples) // 2]
+    if inner_face > 175:
+        return img
+
+    cut = max(inner_face + 45, 150)
+
+    def should_peel(side: str) -> bool:
+        med_br, med_spr = _side_mid_stats(px, w, h, side)
+        if med_spr > 28:
+            return False
+        return med_br >= cut or (med_br > 190 and med_spr < 22)
+
+    out = img
+    for _ in range(max_peel):
+        px = out.load()
+        w, h = out.size
+        if w < 40 or h < 40:
+            break
+        cropped = False
+        if should_peel("top"):
+            out = out.crop((0, 1, w, h))
+            cropped = True
+        elif should_peel("bottom"):
+            out = out.crop((0, 0, w, h - 1))
+            cropped = True
+        elif should_peel("left"):
+            out = out.crop((1, 0, w, h))
+            cropped = True
+        elif should_peel("right"):
+            out = out.crop((0, 0, w - 1, h))
+            cropped = True
+        if not cropped:
+            break
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    return out
+
+
+def peel_neutral_outer_haze(img: Image.Image, max_peel: int = 8) -> Image.Image:
+    """Dıştaki nötr stüdyo duvarını kırp; koyu dış fitilde dur."""
+    out = img
+    for _ in range(max_peel):
+        px = out.load()
+        w, h = out.size
+        if w < 40 or h < 40:
+            break
+
+        def haze_side(side: str) -> bool:
+            med_br, med_spr = _side_mid_stats(px, w, h, side)
+            return med_spr < 22 and med_br > 90
+
+        cropped = False
+        if haze_side("left"):
+            out = out.crop((1, 0, w, h))
+            cropped = True
+        elif haze_side("right"):
+            out = out.crop((0, 0, w - 1, h))
+            cropped = True
+        elif haze_side("top"):
+            out = out.crop((0, 1, w, h))
+            cropped = True
+        elif haze_side("bottom"):
+            out = out.crop((0, 0, w, h - 1))
+            cropped = True
+        if not cropped:
+            break
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    return out
+
+
+def clear_corner_pale(img: Image.Image, max_depth: int = 28) -> Image.Image:
+    """Köşede kalan stüdyo beyazını sil."""
+    w, h = img.size
+    px = img.load()
+    corners = ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1))
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int, int, int]] = deque()
+    for cx0, cy0 in corners:
+        r, g, b, a = px[cx0, cy0]
+        if a < 30:
+            continue
+        p = (r, g, b)
+        if _px_br(p) < 175 or _px_spread(p) > 30:
+            continue
+        vis[cy0 * w + cx0] = 1
+        q.append((cx0, cy0, cx0, cy0))
+    if not q:
+        return img
+    out = img.copy()
+    opx = out.load()
+    while q:
+        x, y, ox, oy = q.popleft()
+        if abs(x - ox) > max_depth or abs(y - oy) > max_depth:
+            continue
+        opx[x, y] = (0, 0, 0, 0)
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if vis[i]:
+                continue
+            nr, ng, nb, na = opx[nx, ny]
+            if na < 30:
+                vis[i] = 1
+                q.append((nx, ny, ox, oy))
+                continue
+            np = (nr, ng, nb)
+            if _px_br(np) < 175 or _px_spread(np) > 30:
+                continue
+            vis[i] = 1
+            q.append((nx, ny, ox, oy))
+    return out
+
+
+def punch_pale_rim_pixels(img: Image.Image, max_in: int = 10) -> Image.Image:
+    """Kenarda köşeye bağlı olmayan stüdyo beyazını sil; beyaz çerçeveye dokunma."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+    inner_brs: list[float] = []
+    cx, cy = w // 2, h // 2
+    for d in (10, 20):
+        if it - d > 0 and px[cx, it - d][3] >= 30:
+            inner_brs.append(_px_br(px[cx, it - d][:3]))
+        if ib + d < h and px[cx, ib + d][3] >= 30:
+            inner_brs.append(_px_br(px[cx, ib + d][:3]))
+        if il - d > 0 and px[il - d, cy][3] >= 30:
+            inner_brs.append(_px_br(px[il - d, cy][:3]))
+        if ir + d < w and px[ir + d, cy][3] >= 30:
+            inner_brs.append(_px_br(px[ir + d, cy][:3]))
+    if inner_brs and sorted(inner_brs)[len(inner_brs) // 2] > 175:
+        return img
+
+    def is_pale(p: tuple[int, int, int, int]) -> bool:
+        if p[3] < 30:
+            return False
+        rgb = (p[0], p[1], p[2])
+        return _px_br(rgb) > 175 and _px_spread(rgb) < 28
+
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int, int]] = deque()
+    for x in range(w):
+        for y in (0, h - 1):
+            if is_pale(px[x, y]):
+                vis[y * w + x] = 1
+                q.append((x, y, 0))
+    for y in range(h):
+        for x in (0, w - 1):
+            if is_pale(px[x, y]) and not vis[y * w + x]:
+                vis[y * w + x] = 1
+                q.append((x, y, 0))
+    if not q:
+        return img
+    out = img.copy()
+    opx = out.load()
+    while q:
+        x, y, dist = q.popleft()
+        opx[x, y] = (0, 0, 0, 0)
+        if dist >= max_in:
+            continue
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if vis[i]:
+                continue
+            if not is_pale(opx[nx, ny]):
+                continue
+            vis[i] = 1
+            q.append((nx, ny, dist + 1))
+    return out
+
+
+def peel_ragged_transparent_outer(img: Image.Image, max_peel: int = 12) -> Image.Image:
+    """Kenarda delik açılmış (şeffaf) stüdyo kalıntısını kırp; rayı boş bırakma."""
+    out = img
+    for _ in range(max_peel):
+        px = out.load()
+        w, h = out.size
+        if w < 40 or h < 40:
+            break
+        il, it, ir, ib = _hole_bounds(px, w, h)
+        if ir <= il or ib <= it:
+            break
+
+        def ragged(side: str) -> bool:
+            trans = 0
+            n = 0
+            if side == "right":
+                for y in range(0, h, 2):
+                    n += 1
+                    if px[w - 1, y][3] < 30:
+                        trans += 1
+            elif side == "left":
+                for y in range(0, h, 2):
+                    n += 1
+                    if px[0, y][3] < 30:
+                        trans += 1
+            elif side == "top":
+                for x in range(0, w, 2):
+                    n += 1
+                    if px[x, 0][3] < 30:
+                        trans += 1
+            else:
+                for x in range(0, w, 2):
+                    n += 1
+                    if px[x, h - 1][3] < 30:
+                        trans += 1
+            return n >= 8 and trans / n >= 0.04
+
+        cropped = False
+        if ragged("right"):
+            out = out.crop((0, 0, w - 1, h))
+            cropped = True
+        elif ragged("left"):
+            out = out.crop((1, 0, w, h))
+            cropped = True
+        elif ragged("top"):
+            out = out.crop((0, 1, w, h))
+            cropped = True
+        elif ragged("bottom"):
+            out = out.crop((0, 0, w, h - 1))
+            cropped = True
+        if not cropped:
+            break
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    return out
+
+
+def complete_dark_outer_rim(img: Image.Image, dark_br: float = 58, max_depth: int = 12) -> Image.Image:
+    """Siyah dış fitili olan kenarın medyan profilini eksik kenarlara yaz."""
+    w, h = img.size
+    px = img.load()
+
+    def walk(side: str) -> tuple[int, int]:
+        if side == "left":
+            return (0, 1)
+        if side == "right":
+            return (w - 1, -1)
+        if side == "top":
+            return (0, 1)
+        return (h - 1, -1)
+
+    def sample_at(side: str, along: int, depth: int) -> tuple[int, int, int, int]:
+        if side in ("left", "right"):
+            origin, step = walk(side)
+            return px[origin + step * depth, along]
+        origin, step = walk(side)
+        return px[along, origin + step * depth]
+
+    def along_range(side: str) -> range:
+        span = h if side in ("left", "right") else w
+        return range(span // 6, (5 * span) // 6, 3)
+
+    def side_depth(side: str) -> int:
+        ds: list[int] = []
+        for along in along_range(side):
+            d = 0
+            while d < max_depth + 4:
+                r, g, b, a = sample_at(side, along, d)
+                if a < 30 or _px_br((r, g, b)) > dark_br:
+                    break
+                d += 1
+            ds.append(d)
+        if not ds:
+            return 0
+        ds.sort()
+        return ds[len(ds) // 2]
+
+    def outer_br(side: str) -> float:
+        brs: list[float] = []
+        for along in along_range(side):
+            r, g, b, a = sample_at(side, along, 0)
+            if a < 30:
+                continue
+            brs.append(_px_br((r, g, b)))
+        if not brs:
+            return 255.0
+        brs.sort()
+        return brs[len(brs) // 2]
+
+    depths = {s: side_depth(s) for s in ("left", "right", "top", "bottom")}
+    edge_br = {s: outer_br(s) for s in depths}
+    donors = [s for s, d in depths.items() if d >= 4]
+    if not donors:
+        return img
+    target = min(max_depth, max(depths[s] for s in donors))
+    if target < 4:
+        return img
+
+    profile: list[tuple[int, int, int, int]] = []
+    for d in range(target):
+        rs, gs, bs, n = [], [], [], 0
+        for side in donors:
+            if d >= depths[side]:
+                continue
+            for along in along_range(side):
+                r, g, b, a = sample_at(side, along, d)
+                if a < 30 or _px_br((r, g, b)) > dark_br:
+                    continue
+                rs.append(r)
+                gs.append(g)
+                bs.append(b)
+                n += 1
+        if n < 8:
+            if profile:
+                profile.append(profile[-1])
+            else:
+                profile.append((28, 24, 18, 255))
+            continue
+        rs.sort()
+        gs.sort()
+        bs.sort()
+        mid = n // 2
+        profile.append((rs[mid], gs[mid], bs[mid], 255))
+
+    out = img.copy()
+    opx = out.load()
+
+    def paint_side(side: str) -> None:
+        span = h if side in ("left", "right") else w
+        for along in range(span):
+            for d in range(target):
+                sr, sg, sb, sa = profile[d]
+                if side == "left":
+                    x, y = d, along
+                elif side == "right":
+                    x, y = w - 1 - d, along
+                elif side == "top":
+                    x, y = along, d
+                else:
+                    x, y = along, h - 1 - d
+                dr, dg, db, da = opx[x, y]
+                if da < 30:
+                    continue
+                dest_br = _px_br((dr, dg, db))
+                src_br = _px_br((sr, sg, sb))
+                # Gerçek siyah fitili açma; dıştaki açık saçağı her zaman boya.
+                if d > 0 and dest_br <= src_br:
+                    continue
+                if d > 0 and dest_br <= dark_br and dest_br <= src_br + 8:
+                    continue
+                fade = 1.0 if d < target - 2 else max(0.45, (target - d) / 2.0)
+                opx[x, y] = (
+                    int(sr * fade + dr * (1 - fade)),
+                    int(sg * fade + dg * (1 - fade)),
+                    int(sb * fade + db * (1 - fade)),
+                    255,
+                )
+
+    for side in ("left", "right", "top", "bottom"):
+        missing_outer = edge_br[side] > dark_br
+        thin = depths[side] < target * 0.75
+        if missing_outer or thin:
+            paint_side(side)
+
+    # Dış 1–2px açık saçağı her kenarda tek tek koyulaştır (medyan atlamasın).
+    cap = max(dark_br, _px_br(profile[0][:3]) + 4)
+    sr0, sg0, sb0, _sa0 = profile[0]
+    sr1, sg1, sb1, _sa1 = profile[min(1, target - 1)]
+    for side in ("left", "right", "top", "bottom"):
+        span = h if side in ("left", "right") else w
+        for along in range(span):
+            for d, (sr, sg, sb) in ((0, (sr0, sg0, sb0)), (1, (sr1, sg1, sb1))):
+                if side == "left":
+                    x, y = d, along
+                elif side == "right":
+                    x, y = w - 1 - d, along
+                elif side == "top":
+                    x, y = along, d
+                else:
+                    x, y = along, h - 1 - d
+                dr, dg, db, da = opx[x, y]
+                if da < 30:
+                    continue
+                if _px_br((dr, dg, db)) > cap:
+                    opx[x, y] = (sr, sg, sb, 255)
+    return out
+
+
+def _postprocess_named_frame(img: Image.Image, dest_name: str) -> Image.Image:
+    haze_kind = STUDIO_INNER_HAZE.get(dest_name)
+    if dest_name in STUDIO_EQUALIZE_INWARD:
+        equalize = "inner"
+    else:
+        equalize = "outer"
+    if haze_kind:
+        img = expand_studio_inner_haze(img, haze_kind, equalize=equalize)
+    extra = STUDIO_EXTRA_INWARD.get(dest_name)
+    if extra:
+        img = expand_hole_inward(img, *extra, equalize=equalize)
+    if dest_name in STUDIO_GREY_OUTER:
+        img = peel_neutral_outer_haze(img)
+        img = expand_hole_inward(img, 0, 0, 0, 0, equalize="inner")
+    if dest_name in STUDIO_OUTER_PALE:
+        img = peel_leftover_pale_outer(img)
+        img = clear_corner_pale(img)
+        img = punch_pale_rim_pixels(img)
+        img = peel_ragged_transparent_outer(img)
+        px = img.load()
+        w, h = img.size
+        il, it, ir, ib = _hole_bounds(px, w, h)
+        if ir > il and ib > it:
+            img, il, it, ir, ib = trim_asymmetric_rails(img, il, it, ir, ib)
+            bbox = img.getbbox()
+            if bbox:
+                img = img.crop(bbox)
+    if dest_name in STUDIO_DARK_OUTER_RIM:
+        img = complete_dark_outer_rim(img)
+    return img
+
+
+# Yalnızca iç bant kalan stüdyo çekimleri.
+STUDIO_INNER_HAZE: dict[str, str] = {
+    "35-lik-altin.png": "altin",
+    "35-lik-lacivert.png": "lacivert",
+    "35-lik-beyaz.png": "beyaz",
+    "34-l-beyaz.png": "34-beyaz",
+    "34-l-bej.png": "pale",
+    "34-l-gumus.png": "pale",
+    "34-l-oksit-gumus.png": "cream-lip",
+    "34-l-eskitme-altin.png": "eskitme",
+    "34-l-bronz.png": "bronz-right",
+    "34-l-siyah.png": "grey-lip",
+}
+
+STUDIO_EQUALIZE_INWARD: set[str] = {
+    "34-l-bronz.png",
+}
+
+STUDIO_GREY_OUTER: set[str] = {
+    "34-l-bronz.png",
+}
+
+STUDIO_OUTER_PALE: set[str] = {
+    "34-l-bakir.png",
+    "34-l-duz-altin.png",
+    "34-l-altin.png",
+    "34-l-oksit-gumus.png",
+    "34-l-siyah.png",
+}
+
+STUDIO_DARK_OUTER_RIM: set[str] = {
+    "34-l-altin.png",
+    "34-l-bronz.png",
+    "34-l-duz-altin.png",
+    "34-l-siyah.png",
+}
+
+# T, R, B, L extra hole expand after haze (kalan krem şerit).
+STUDIO_EXTRA_INWARD: dict[str, tuple[int, int, int, int]] = {
+    "34-l-eskitme-altin.png": (0, 0, 0, 2),
+}
+
+
+def _studio_extract_usable(img: Image.Image) -> bool:
+    """Peel/taşma sonucu incelmiş veya deliksiz çıktıyı reddet."""
+    w, h = img.size
+    if w < 80 or h < 80:
+        return False
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il + 20 or ib <= it + 20:
+        return False
+    rails = [il, it, w - 1 - ir, h - 1 - ib]
+    if min(rails) < 40:
+        return False
+    if max(rails) > min(rails) * 2.4:
+        return False
+    return True
+
+
 def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
     """Kaynak fotoğraftaki doğal mitre köşeleri korunur — parça birleştirme yok."""
     raw = Image.open(src).convert("RGBA")
+    studio = extract_studio_wall_frame(raw)
+    if studio is not None and not _studio_extract_usable(studio):
+        studio = None
+    if studio is not None:
+        studio = _postprocess_named_frame(studio, dest.name)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        studio.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(studio)
+
+    raw = clear_studio_backdrop(raw)
     raw = crop_to_frame_content(raw)
     raw_w, raw_h = raw.size
     raw_px = raw.load()
@@ -1248,6 +2598,8 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
     out = clear_inner_mat_lip_band(out)
     out = strip_outer_shadow_rim(out)
     out = enhance_light_frame_grain(out)
+
+    out = _postprocess_named_frame(out, dest.name)
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     out.save(dest, "PNG")

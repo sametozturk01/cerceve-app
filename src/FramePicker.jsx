@@ -13,6 +13,8 @@ import {
   loadHiddenFrameIds,
   hideFrameId,
   unhideFrameId,
+  hydrateHiddenFramesFromShared,
+  rememberHiddenFrameIds,
 } from "./utils/hiddenFramesStorage";
 import {
   loadFrameOverrides,
@@ -24,9 +26,9 @@ import {
 import { formatTurkishPrice, linePriceForSize } from "./utils/framePricing";
 import { getFrameDisplayLabel } from "./utils/frameDisplay";
 import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride, hydrateCustomCategoriesFromShared, hydrateSeriesLabelsFromShared, isUserSeries, rememberCategories, rememberSeriesLabels } from "./utils/categoriesStorage";
-import { loadHiddenSeriesIds, hideSeriesCategory } from "./utils/hiddenSeriesStorage";
+import { loadHiddenSeriesIds, hideSeriesCategory, hydrateHiddenSeriesFromShared, rememberHiddenSeriesIds, restoreCatalogSeriesOnce } from "./utils/hiddenSeriesStorage";
 import { fetchSharedCatalog } from "./utils/sharedCatalogClient";
-import { mergeCustomFrames, mergeCategories, mergeObjectMaps } from "./utils/catalogSync";
+import { mergeCustomFrames, mergeCategories, mergeObjectMaps, rememberDeletedCategoryIds, rememberDeletedFrameIds } from "./utils/catalogSync";
 import { BASE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "./data/frameFormOptions";
 import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
 import { BACKING_OPTIONS } from "./data/backingOptions";
@@ -959,24 +961,33 @@ export default function FramePicker() {
           return;
         }
         setCustomFrames(frames);
-        const [cats, labels, overrides] = await Promise.all([
+        const [cats, labels, overrides, _hiddenSeries, hiddenFrames] = await Promise.all([
           hydrateCustomCategoriesFromShared(),
           hydrateSeriesLabelsFromShared(),
           hydrateFrameOverridesFromShared(),
+          hydrateHiddenSeriesFromShared(),
+          hydrateHiddenFramesFromShared(),
         ]);
         if (!active) return;
         setUserCategories(cats);
         setSeriesLabelOverrides(labels);
         setFrameOverrides(overrides);
+        restoreCatalogSeriesOnce("35lik");
+        setHiddenSeriesIds(restoreCatalogSeriesOnce("34l"));
+        setHiddenFrameIds(hiddenFrames);
         return;
       }
 
       const shared = await fetchSharedCatalog();
       if (!shared || !active) return;
+      if (shared.deletedCategoryIds?.length) rememberDeletedCategoryIds(shared.deletedCategoryIds);
+      if (shared.deletedFrameIds?.length) rememberDeletedFrameIds(shared.deletedFrameIds);
       setCustomFrames((prev) => mergeCustomFrames(prev, shared.frames));
       setUserCategories((prev) => rememberCategories(mergeCategories(prev, shared.categories)));
       setSeriesLabelOverrides((prev) => rememberSeriesLabels(mergeObjectMaps(prev, shared.seriesLabels)));
       setFrameOverrides((prev) => rememberFrameOverrides(mergeObjectMaps(prev, shared.overrides)));
+      setHiddenSeriesIds(rememberHiddenSeriesIds(shared.hiddenSeriesIds));
+      setHiddenFrameIds(rememberHiddenFrameIds(shared.hiddenFrameIds));
     };
 
     refresh(true).catch((err) => console.error(err));
@@ -1310,9 +1321,8 @@ export default function FramePicker() {
     if (frameCategory === cat.id) setFrameCategory(null);
     if (isUserSeries(cat)) {
       setUserCategories(deleteCustomCategory(cat.id));
-    } else {
-      setHiddenSeriesIds(hideSeriesCategory(cat.id));
     }
+    setHiddenSeriesIds(hideSeriesCategory(cat.id));
     showToast({ type: "success", message: `"${cat.label}" serisi kaldırıldı.` }, 2800);
   };
 

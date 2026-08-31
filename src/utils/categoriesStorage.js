@@ -1,5 +1,13 @@
 import { fetchSharedCatalog, putSharedCatalog } from "./sharedCatalogClient";
-import { clearCategoryRemoved, markCategoryRemoved, mergeCategories, mergeObjectMaps } from "./catalogSync";
+import {
+  clearCategoryRemoved,
+  markCategoryRemoved,
+  mergeCategories,
+  mergeObjectMaps,
+  rememberDeletedCategoryIds,
+  loadDeletedCategoryIds,
+} from "./catalogSync";
+import { unhideSeriesCategory } from "./hiddenSeriesStorage";
 
 const LS_KEY = "cerceve-custom-categories";
 
@@ -59,7 +67,7 @@ async function persistCategories(cats, deletedIds = []) {
   try {
     await putSharedCatalog({
       categories: cats,
-      deletedCategoryIds: deletedIds,
+      deletedCategoryIds: [...new Set([...loadDeletedCategoryIds(), ...deletedIds])],
     });
   } catch (err) {
     console.warn("Seriler paylaşılamadı.", err);
@@ -72,7 +80,11 @@ export function addCustomCategory(label, knownCategories = []) {
   if (!trimmed) return null;
 
   const existing = findSeriesByLabel(trimmed, [knownCategories, readLocal()]);
-  if (existing) return existing;
+  if (existing) {
+    clearCategoryRemoved(existing.id);
+    unhideSeriesCategory(existing.id);
+    return existing;
+  }
 
   let id = slugSeriesId(trimmed);
   const taken = new Set(
@@ -84,6 +96,7 @@ export function addCustomCategory(label, knownCategories = []) {
 
   const entry = { id, label: trimmed, userAdded: true };
   clearCategoryRemoved(id);
+  unhideSeriesCategory(id);
   persistCategories([...readLocal(), entry]);
   return entry;
 }
@@ -111,6 +124,9 @@ export function rememberCategories(cats) {
 export async function hydrateCustomCategoriesFromShared() {
   const shared = await fetchSharedCatalog();
   if (!shared) return readLocal();
+  if (shared.deletedCategoryIds?.length) {
+    rememberDeletedCategoryIds(shared.deletedCategoryIds);
+  }
   const merged = mergeCategories(readLocal(), shared.categories);
   writeLocal(merged);
   const sharedIds = new Set((shared.categories ?? []).map((c) => c.id));

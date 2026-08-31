@@ -1,13 +1,16 @@
-export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "F30 D91", "F30 Düz", "30 luk Ağaç Kabuğu", "46 d", ""];
+export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "34 L", "35 lik", "F30 D91", "F30 Düz", "30 luk Ağaç Kabuğu", "46 d", "46 Ağaç Kabuğu", ""];
 
 export const BASE_CATEGORY_OPTIONS = [
   { id: "20lik", label: "20 lik" },
   { id: "22lik", label: "22 lik" },
   { id: "29d", label: "29 D" },
+  { id: "34l", label: "34 L" },
+  { id: "35lik", label: "35 lik" },
   { id: "f30d91", label: "F30 D91" },
   { id: "f30duz", label: "F30 Düz" },
   { id: "30luk-agac-kabugu", label: "30 luk Ağaç Kabuğu" },
   { id: "46d", label: "46 d" },
+  { id: "46-agac-kabugu", label: "46 Ağaç Kabuğu" },
 ];
 
 export const EDITABLE_CATEGORY_OPTIONS = BASE_CATEGORY_OPTIONS;
@@ -15,6 +18,7 @@ export const EDITABLE_CATEGORY_OPTIONS = BASE_CATEGORY_OPTIONS;
 export function defaultMmFromSeriesLabel(label) {
   const key = String(label ?? "").trim().toLocaleLowerCase("tr-TR");
   if (key === "46 d" || key === "46d") return 30;
+  if (key === "46 ağaç kabuğu" || key === "46 agac kabugu") return 30;
   const m = String(label ?? "").match(/(\d+)/);
   if (!m) return 20;
   const n = Number(m[1]);

@@ -10,6 +10,10 @@ export async function fetchSharedCatalog() {
       overrides: data.overrides && typeof data.overrides === "object" ? data.overrides : {},
       seriesLabels:
         data.seriesLabels && typeof data.seriesLabels === "object" ? data.seriesLabels : {},
+      hiddenSeriesIds: Array.isArray(data.hiddenSeriesIds) ? data.hiddenSeriesIds : [],
+      hiddenFrameIds: Array.isArray(data.hiddenFrameIds) ? data.hiddenFrameIds : [],
+      deletedCategoryIds: Array.isArray(data.deletedCategoryIds) ? data.deletedCategoryIds : [],
+      deletedFrameIds: Array.isArray(data.deletedFrameIds) ? data.deletedFrameIds : [],
     };
   } catch {
     return null;

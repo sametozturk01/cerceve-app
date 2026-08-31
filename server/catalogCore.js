@@ -4,16 +4,31 @@ export const CATALOG_BLOB_PATH = "cerceve/shared-catalog.json";
 export const IMAGE_BLOB_PREFIX = "cerceve/frames/";
 
 export function emptyCatalog() {
-  return { frames: [], categories: [], overrides: {}, seriesLabels: {} };
+  return {
+    frames: [],
+    categories: [],
+    overrides: {},
+    seriesLabels: {},
+    hiddenSeriesIds: [],
+    hiddenFrameIds: [],
+    deletedCategoryIds: [],
+    deletedFrameIds: [],
+  };
 }
 
 export function normalizeCatalog(parsed) {
+  const list = (value) =>
+    Array.isArray(value) ? value.filter((id) => typeof id === "string") : [];
   return {
     frames: Array.isArray(parsed?.frames) ? parsed.frames : [],
     categories: Array.isArray(parsed?.categories) ? parsed.categories : [],
     overrides: parsed?.overrides && typeof parsed.overrides === "object" ? parsed.overrides : {},
     seriesLabels:
       parsed?.seriesLabels && typeof parsed.seriesLabels === "object" ? parsed.seriesLabels : {},
+    hiddenSeriesIds: list(parsed?.hiddenSeriesIds),
+    hiddenFrameIds: list(parsed?.hiddenFrameIds),
+    deletedCategoryIds: list(parsed?.deletedCategoryIds),
+    deletedFrameIds: list(parsed?.deletedFrameIds),
   };
 }
 
@@ -49,8 +64,9 @@ export function upsertCategoriesFromFrame(data, frame) {
   const cats = Array.isArray(frame?.categories) ? frame.categories : [];
   const label = String(frame?.code || frame?.label || "").trim();
   if (!Array.isArray(data.categories)) data.categories = [];
+  const deleted = new Set(data.deletedCategoryIds ?? []);
   for (const id of cats) {
-    if (!id || id === "custom" || id === "all") continue;
+    if (!id || id === "custom" || id === "all" || deleted.has(id)) continue;
     if (data.categories.some((c) => c.id === id)) continue;
     data.categories.push({
       id,
@@ -97,6 +113,26 @@ export async function dispatchCatalogRequest({ method, kind, body, store }) {
       if (Array.isArray(body.deletedCategoryIds)) {
         const drop = new Set(body.deletedCategoryIds);
         current.categories = (current.categories ?? []).filter((c) => !drop.has(c.id));
+        current.deletedCategoryIds = [...new Set([...(current.deletedCategoryIds ?? []), ...body.deletedCategoryIds])];
+      }
+      if (Array.isArray(body.deletedFrameIds)) {
+        current.deletedFrameIds = [...new Set([...(current.deletedFrameIds ?? []), ...body.deletedFrameIds])];
+        const dropFrames = new Set(body.deletedFrameIds);
+        current.frames = (current.frames ?? []).filter((f) => !dropFrames.has(f.id));
+      }
+      if (Array.isArray(body.hiddenSeriesIds)) {
+        current.hiddenSeriesIds = [...new Set([...(current.hiddenSeriesIds ?? []), ...body.hiddenSeriesIds])];
+      }
+      if (Array.isArray(body.unhiddenSeriesIds)) {
+        const show = new Set(body.unhiddenSeriesIds);
+        current.hiddenSeriesIds = (current.hiddenSeriesIds ?? []).filter((id) => !show.has(id));
+      }
+      if (Array.isArray(body.hiddenFrameIds)) {
+        current.hiddenFrameIds = [...new Set([...(current.hiddenFrameIds ?? []), ...body.hiddenFrameIds])];
+      }
+      if (Array.isArray(body.unhiddenFrameIds)) {
+        const show = new Set(body.unhiddenFrameIds);
+        current.hiddenFrameIds = (current.hiddenFrameIds ?? []).filter((id) => !show.has(id));
       }
       if (body.overrides && typeof body.overrides === "object") {
         current.overrides = { ...(current.overrides ?? {}), ...body.overrides };
@@ -162,6 +198,7 @@ export async function dispatchCatalogRequest({ method, kind, body, store }) {
       const data = await store.readCatalog();
       const existing = data.frames.find((f) => f.id === id);
       data.frames = data.frames.filter((f) => f.id !== id);
+      data.deletedFrameIds = [...new Set([...(data.deletedFrameIds ?? []), id])];
       if (existing?.image) {
         try {
           await store.deleteImage(existing.image);

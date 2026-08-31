@@ -4,8 +4,9 @@ import {
   fetchSharedCatalog,
   patchSharedFrame,
   postSharedFrame,
+  putSharedCatalog,
 } from "./sharedCatalogClient";
-import { markFrameRemoved, mergeCustomFrames } from "./catalogSync";
+import { markFrameRemoved, mergeCustomFrames, rememberDeletedFrameIds } from "./catalogSync";
 
 const DB_NAME = "cerceve-custom-frames";
 const DB_VERSION = 1;
@@ -28,7 +29,15 @@ const COLOR_DEFAULTS = {
   platin: { id: "platin", label: "Platin", hex: "#E5E4E2" },
   şampanya: { id: "sampanya", label: "Şampanya", hex: "#D4C4A8" },
   sampanya: { id: "sampanya", label: "Şampanya", hex: "#D4C4A8" },
-  gri: { id: "gri", label: "Gri", hex: "#948073" },
+  gri: { id: "gri", label: "Gri", hex: "#6B7280" },
+  bronz: { id: "bronz", label: "Bronz", hex: "#8C6A3F" },
+  bakır: { id: "bakir", label: "Bakır", hex: "#B87333" },
+  bakir: { id: "bakir", label: "Bakır", hex: "#B87333" },
+  "eskitme altın": { id: "eskitme-altin", label: "Eskitme Altın", hex: "#A67C52" },
+  "eskitme altin": { id: "eskitme-altin", label: "Eskitme Altın", hex: "#A67C52" },
+  "antik bronz": { id: "antik-bronz", label: "Antik Bronz", hex: "#6E4E32" },
+  "düz altın": { id: "duz-altin", label: "Düz Altın", hex: "#C8A84B" },
+  "duz altin": { id: "duz-altin", label: "Düz Altın", hex: "#C8A84B" },
 };
 
 const SERIES_CATEGORY = {
@@ -39,11 +48,16 @@ const SERIES_CATEGORY = {
   "FA 30": "fa30",
   "FA 40": "fa40",
   "29 D": "29d",
+  "35 lik": "35lik",
+  "34 L": "34l",
+  "34 l": "34l",
   "F30 D91": "f30d91",
   "F30 Düz": "f30duz",
   "30 luk Ağaç Kabuğu": "30luk-agac-kabugu",
   "46 d": "46d",
   "46 D": "46d",
+  "46 Ağaç Kabuğu": "46-agac-kabugu",
+  "46 ağaç kabuğu": "46-agac-kabugu",
   "FA 29 KR": "fa29kr",
   "A 25": "a25",
   "B 26": "b26",
@@ -175,6 +189,7 @@ export async function loadCustomFrames() {
   const local = framesFromIdbRows(rows);
   const shared = await fetchSharedCatalog();
   if (shared) {
+    if (shared.deletedFrameIds?.length) rememberDeletedFrameIds(shared.deletedFrameIds);
     await migrateIdbToShared();
     const fresh = await fetchSharedCatalog();
     const remote = (fresh ?? shared).frames.map((f) => ({ ...f, custom: true }));
@@ -412,6 +427,9 @@ export async function updateCustomFrame(id, updates) {
 
 export async function deleteCustomFrame(id) {
   markFrameRemoved(id);
+  putSharedCatalog({ deletedFrameIds: [id] }).catch((err) => {
+    console.warn("Silinen çerçeve paylaşılamadı.", err);
+  });
   const shared = await fetchSharedCatalog();
   if (shared?.frames.some((f) => f.id === id)) {
     await deleteSharedFrame(id);
