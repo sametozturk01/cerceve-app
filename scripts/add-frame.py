@@ -2471,10 +2471,78 @@ def complete_dark_outer_rim(img: Image.Image, dark_br: float = 58, max_depth: in
     return out
 
 
+def mirror_left_rail_from_right(img: Image.Image) -> Image.Image:
+    """Sol rayı sağ profilin yatay aynasıyla değiştir; dört kenar aynı kalınlık."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+    left, right = il, w - 1 - ir
+    if right < 40:
+        return img
+    shift = right - left
+    new_w = w + shift
+    canvas = Image.new("RGBA", (new_w, h), (0, 0, 0, 0))
+    if shift >= 0:
+        canvas.paste(img, (shift, 0))
+    else:
+        canvas.paste(img.crop((-shift, 0, w, h)), (0, 0))
+    right_strip = img.crop((w - right, 0, w, h)).transpose(Image.FLIP_LEFT_RIGHT)
+    canvas.paste(right_strip, (0, 0))
+    return canvas
+
+
+def rebuild_horizontal_rails_from_right(img: Image.Image) -> Image.Image:
+    """Dört rayı sağ kolun parlak oluk + koyu iç dudak profilinden eşit bas."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+    left, top, right, bottom = il, it, w - 1 - ir, h - 1 - ib
+    t = right
+    if t < 40 or min(left, top, bottom) < 40:
+        return img
+
+    scoop_d = min(20, t - 1)
+    y0, y1 = top + 8, h - bottom - 8
+    best_y, best = (y0 + y1) // 2, -1e9
+    found = False
+    for y in range(y0, y1):
+        scoop = sum(px[w - 1 - scoop_d, y][:3]) / 3
+        inner = sum(px[w - t, y][:3]) / 3
+        if scoop < 165:
+            continue
+        score = scoop - 1.5 * inner
+        if score > best:
+            best, best_y, found = score, y, True
+    if not found:
+        best = -1.0
+        for y in range(y0, y1):
+            scoop = sum(px[w - 1 - scoop_d, y][:3]) / 3
+            if scoop > best:
+                best, best_y = scoop, y
+
+    profile = [px[w - 1 - d, best_y] for d in range(t)]
+    out = img.copy()
+    opx = out.load()
+    for y in range(h):
+        for x in range(w):
+            if left <= x <= ir and top <= y <= ib:
+                continue
+            d = min(y, h - 1 - y, x, w - 1 - x)
+            if d < t:
+                opx[x, y] = profile[d]
+    return out
+
+
 def _postprocess_named_frame(img: Image.Image, dest_name: str) -> Image.Image:
     haze_kind = STUDIO_INNER_HAZE.get(dest_name)
     if dest_name in STUDIO_EQUALIZE_INWARD:
         equalize = "inner"
+    elif dest_name in STUDIO_EQUALIZE_NONE:
+        equalize = "none"
     else:
         equalize = "outer"
     if haze_kind:
@@ -2482,6 +2550,9 @@ def _postprocess_named_frame(img: Image.Image, dest_name: str) -> Image.Image:
     extra = STUDIO_EXTRA_INWARD.get(dest_name)
     if extra:
         img = expand_hole_inward(img, *extra, equalize=equalize)
+    if dest_name in STUDIO_MIRROR_LEFT_FROM_RIGHT:
+        img = mirror_left_rail_from_right(img)
+        img = rebuild_horizontal_rails_from_right(img)
     if dest_name in STUDIO_GREY_OUTER:
         img = peel_neutral_outer_haze(img)
         img = expand_hole_inward(img, 0, 0, 0, 0, equalize="inner")
@@ -2521,6 +2592,14 @@ STUDIO_EQUALIZE_INWARD: set[str] = {
     "34-l-bronz.png",
 }
 
+STUDIO_EQUALIZE_NONE: set[str] = {
+    "34-l-eskitme-altin.png",
+}
+
+STUDIO_MIRROR_LEFT_FROM_RIGHT: set[str] = {
+    "34-l-eskitme-altin.png",
+}
+
 STUDIO_GREY_OUTER: set[str] = {
     "34-l-bronz.png",
 }
@@ -2541,9 +2620,7 @@ STUDIO_DARK_OUTER_RIM: set[str] = {
 }
 
 # T, R, B, L extra hole expand after haze (kalan krem şerit).
-STUDIO_EXTRA_INWARD: dict[str, tuple[int, int, int, int]] = {
-    "34-l-eskitme-altin.png": (0, 0, 0, 2),
-}
+STUDIO_EXTRA_INWARD: dict[str, tuple[int, int, int, int]] = {}
 
 
 def _studio_extract_usable(img: Image.Image) -> bool:
