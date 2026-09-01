@@ -1712,6 +1712,109 @@ def extract_matte_white_on_black(img: Image.Image) -> Image.Image:
     return out
 
 
+def extract_black_satin_square(img: Image.Image) -> Image.Image:
+    """Siyah fon + siyah saten kare: oluk gölgesi delik olmasın, gövde opak kalsın."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    px = src.load()
+    cx, cy = w // 2, h // 2
+
+    def brightness(x: int, y: int) -> float:
+        r, g, b, _a = px[x, y]
+        return (r + g + b) / 3
+
+    def walk_to(x: int, y: int, dx: int, dy: int, thresh: float, run_need: int = 2):
+        run = 0
+        first: tuple[int, int] | None = None
+        while 0 <= x < w and 0 <= y < h:
+            if brightness(x, y) >= thresh:
+                if first is None:
+                    first = (x, y)
+                run += 1
+                if run >= run_need:
+                    return first
+            else:
+                run = 0
+                first = None
+            x += dx
+            y += dy
+        return first
+
+    def expand(x: int, y: int, dx: int, dy: int, thresh: float, limit: int = 12) -> tuple[int, int]:
+        last = (x, y)
+        for _ in range(limit):
+            nx, ny = x + dx, y + dy
+            if not (0 <= nx < w and 0 <= ny < h):
+                break
+            if brightness(nx, ny) >= thresh:
+                last = (nx, ny)
+                x, y = nx, ny
+            else:
+                break
+        return last
+
+    body = 8.0
+    left_o = walk_to(0, cy, 1, 0, body)
+    right_o = walk_to(w - 1, cy, -1, 0, body)
+    top_o = walk_to(cx, 0, 0, 1, body)
+    bot_o = walk_to(cx, h - 1, 0, -1, body)
+    left_i = walk_to(cx, cy, -1, 0, body)
+    right_i = walk_to(cx, cy, 1, 0, body)
+    top_i = walk_to(cx, cy, 0, -1, body)
+    bot_i = walk_to(cx, cy, 0, 1, body)
+    if not all((left_o, right_o, top_o, bot_o, left_i, right_i, top_i, bot_i)):
+        return src
+
+    ol, _ = expand(*left_o, -1, 0, 4.0)
+    oright, _ = expand(*right_o, 1, 0, 4.0)
+    _, ot = expand(*top_o, 0, -1, 4.0)
+    _, ob = expand(*bot_o, 0, 1, 4.0)
+    il, _ = expand(*left_i, 1, 0, 4.0)
+    ir, _ = expand(*right_i, -1, 0, 4.0)
+    _, it = expand(*top_i, 0, 1, 4.0)
+    _, ib = expand(*bot_i, 0, -1, 4.0)
+
+    if il - ol < 40 or it - ot < 40 or ir - il < 40 or ib - it < 40:
+        return src
+
+    cw, ch = oright - ol + 1, ob - ot + 1
+    out = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    opx = out.load()
+    for y in range(ot, ob + 1):
+        for x in range(ol, oright + 1):
+            if il < x < ir and it < y < ib:
+                continue
+            r, g, b, _a = px[x, y]
+            opx[x - ol, y - ot] = (r, g, b, 255)
+
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+
+    px = out.load()
+    w, h = out.size
+    cx, cy = w // 2, h // 2
+
+    def trans(x: int, y: int) -> bool:
+        return px[x, y][3] < 30
+
+    top = 0
+    while top < h and trans(cx, top):
+        top += 1
+    bot = h - 1
+    while bot >= 0 and trans(cx, bot):
+        bot -= 1
+    left = 0
+    while left < w and trans(left, cy):
+        left += 1
+    right = w - 1
+    while right >= 0 and trans(right, cy):
+        right -= 1
+    if left < right and top < bot:
+        out = out.crop((left, top, right + 1, bot + 1))
+    return dilate_opaque_into_hole(out, 2)
+
+
 def extract_faithful_black_square(
     img: Image.Image,
     *,
@@ -3498,6 +3601,10 @@ STUDIO_MATTE_WHITE_BLACK: set[str] = {
     "47-l-beyaz.png",
 }
 
+STUDIO_BLACK_SATIN: set[str] = {
+    "47-l-siyah.png",
+}
+
 STUDIO_WHITE_STUDIO: set[str] = set()
 
 STUDIO_KEEP_LONG_OUTER: set[str] = {
@@ -3531,6 +3638,13 @@ def _studio_extract_usable(img: Image.Image) -> bool:
 def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None) -> int:
     """Kaynak fotoğraftaki doğal mitre köşeleri korunur — parça birleştirme yok."""
     raw = Image.open(src).convert("RGBA")
+    if dest.name in STUDIO_BLACK_SATIN:
+        out = extract_black_satin_square(raw)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
     if dest.name in STUDIO_MATTE_WHITE_BLACK:
         out = extract_matte_white_on_black(raw)
         dest.parent.mkdir(parents=True, exist_ok=True)
