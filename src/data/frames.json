@@ -25,6 +25,10 @@
       "label": "47 L"
     },
     {
+      "id": "fa41",
+      "label": "FA 41"
+    },
+    {
       "id": "35lik",
       "label": "35 lik"
     },
@@ -1516,6 +1520,217 @@
         }
       ],
       "previewImage": "/frames/previews/47-l-beyaz-preview.png"
+    },
+    {
+      "id": "FA 41 Beyaz",
+      "code": "FA 41",
+      "colorName": "Beyaz",
+      "label": "FA 41 Beyaz",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 53,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-beyaz-preview.png"
+    },
+    {
+      "id": "FA 41 Siyah",
+      "code": "FA 41",
+      "colorName": "Siyah",
+      "label": "FA 41 Siyah",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 59,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-siyah-preview.png"
+    },
+    {
+      "id": "FA 41 Gümüş",
+      "code": "FA 41",
+      "colorName": "Gümüş",
+      "label": "FA 41 Gümüş",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 66,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-gumus.png",
+      "colors": [
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#D8DCDC"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-gumus-preview.png"
+    },
+    {
+      "id": "FA 41 Şampanya",
+      "code": "FA 41",
+      "colorName": "Şampanya",
+      "label": "FA 41 Şampanya",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 59,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-sampanya.png",
+      "colors": [
+        {
+          "id": "sampanya",
+          "label": "Şampanya",
+          "hex": "#D4C4A8"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-sampanya-preview.png"
+    },
+    {
+      "id": "FA 41 Altın",
+      "code": "FA 41",
+      "colorName": "Altın",
+      "label": "FA 41 Altın",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 85,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-altin-preview.png"
+    },
+    {
+      "id": "FA 41 Eskitme Altın",
+      "code": "FA 41",
+      "colorName": "Eskitme Altın",
+      "label": "FA 41 Eskitme Altın",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 95,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-eskitme-altin.png",
+      "colors": [
+        {
+          "id": "eskitme-altin",
+          "label": "Eskitme Altın",
+          "hex": "#A67C52"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-eskitme-altin-preview.png"
+    },
+    {
+      "id": "FA 41 Ceviz",
+      "code": "FA 41",
+      "colorName": "Ceviz",
+      "label": "FA 41 Ceviz",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 82,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-ceviz-preview.png"
+    },
+    {
+      "id": "FA 41 Kahve",
+      "code": "FA 41",
+      "colorName": "Kahve",
+      "label": "FA 41 Kahve",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 85,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-kahve.png",
+      "colors": [
+        {
+          "id": "kahve",
+          "label": "Kahve",
+          "hex": "#5C3D1E"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-kahve-preview.png"
+    },
+    {
+      "id": "FA 41 Ceviz Gümüş",
+      "code": "FA 41",
+      "colorName": "Ceviz Gümüş",
+      "label": "FA 41 Ceviz Gümüş",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 109,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-ceviz-gumus.png",
+      "colors": [
+        {
+          "id": "ceviz-gumus",
+          "label": "Ceviz Gümüş",
+          "hex": "#4A3A32"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-ceviz-gumus-preview.png"
+    },
+    {
+      "id": "FA 41 Oksit Gümüş",
+      "code": "FA 41",
+      "colorName": "Oksit Gümüş",
+      "label": "FA 41 Oksit Gümüş",
+      "categories": [
+        "fa41"
+      ],
+      "thickness": 90,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/fa-41-oksit-gumus.png",
+      "colors": [
+        {
+          "id": "oksit-gumus",
+          "label": "Oksit Gümüş",
+          "hex": "#A39E94"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-41-oksit-gumus-preview.png"
     }
   ]
 }

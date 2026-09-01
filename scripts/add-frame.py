@@ -34,6 +34,8 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "gumus": {"id": "gumus", "label": "Gümüş", "hex": "#D8DCDC"},
     "gümüş": {"id": "gumus", "label": "Gümüş", "hex": "#D8DCDC"},
     "ceviz": {"id": "ceviz", "label": "Ceviz", "hex": "#5C4A3A"},
+    "ceviz gümüş": {"id": "ceviz-gumus", "label": "Ceviz Gümüş", "hex": "#4A3A32"},
+    "ceviz gumus": {"id": "ceviz-gumus", "label": "Ceviz Gümüş", "hex": "#4A3A32"},
     "düz ceviz": {"id": "duz-ceviz", "label": "Düz Ceviz", "hex": "#5C4A3A"},
     "duz ceviz": {"id": "duz-ceviz", "label": "Düz Ceviz", "hex": "#5C4A3A"},
     "siyah": {"id": "siyah", "label": "Siyah", "hex": "#1a1a1a"},
@@ -119,6 +121,9 @@ SERIES_CATEGORY = {
     "34 l": "34l",
     "47 L": "47l",
     "47 l": "47l",
+    "FA 41": "fa41",
+    "fa 41": "fa41",
+    "Fa 41": "fa41",
 }
 
 
@@ -2058,6 +2063,113 @@ def extract_white_studio_frame(img: Image.Image) -> Image.Image:
     return _stain_pale_white_outers(out)
 
 
+def extract_white_profile_frame(img: Image.Image) -> Image.Image:
+    """Beyaz duvar + sağ/alt viniet: delikten çık, yüzden sonra duvar veya gölge."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    px = src.load()
+    cx, cy = w // 2, h // 2
+
+    def br(x: int, y: int) -> float:
+        r, g, b, _a = px[x, y]
+        return (r + g + b) / 3
+
+    def in_b(x: int, y: int) -> bool:
+        return 0 <= x < w and 0 <= y < h
+
+    hole = br(cx, cy)
+
+    def find_inner(dx: int, dy: int) -> tuple[int, int] | None:
+        x, y = cx, cy
+        while in_b(x, y):
+            b = br(x, y)
+            if b > hole + 8 or b < hole - 7:
+                return x, y
+            x += dx
+            y += dy
+        return None
+
+    def find_outer(ix: int, iy: int, dx: int, dy: int) -> tuple[int, int]:
+        x, y = ix, iy
+        last = (x, y)
+        last_face = (x, y)
+        phase = "inner_groove"
+        face_run = 0
+        min_face = 18
+        for _ in range(140):
+            nx, ny = x + dx, y + dy
+            if not in_b(nx, ny):
+                return last if phase == "outer_groove" else last_face
+            b = br(nx, ny)
+            if b < 140 and phase == "outer_groove":
+                return last_face
+            if phase == "inner_groove":
+                if b >= 218:
+                    face_run += 1
+                    last_face = (nx, ny)
+                    if face_run >= min_face:
+                        phase = "face"
+                else:
+                    face_run = 0
+                last = (nx, ny)
+            elif phase == "face":
+                if b >= 218:
+                    last_face = (nx, ny)
+                    last = (nx, ny)
+                elif b < 210:
+                    phase = "outer_groove"
+                    last = (nx, ny)
+                else:
+                    last = (nx, ny)
+            else:
+                if b >= 235:
+                    return last
+                last = (nx, ny)
+            x, y = nx, ny
+        return last
+
+    ilp = find_inner(-1, 0)
+    irp = find_inner(1, 0)
+    itp = find_inner(0, -1)
+    ibp = find_inner(0, 1)
+    if not all((ilp, irp, itp, ibp)):
+        return src
+
+    olp = find_outer(*ilp, -1, 0)
+    orp = find_outer(*irp, 1, 0)
+    otp = find_outer(*itp, 0, -1)
+    obp = find_outer(*ibp, 0, 1)
+
+    ol, ot = olp[0], otp[1]
+    oright, ob = orp[0], obp[1]
+    il, it = ilp[0], itp[1]
+    ir, ib = irp[0], ibp[1]
+    if il - ol < 36 or it - ot < 36 or oright - ir < 36 or ob - ib < 36:
+        return src
+
+    cw, ch = oright - ol + 1, ob - ot + 1
+    out = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    opx = out.load()
+    for y in range(ot, ob + 1):
+        for x in range(ol, oright + 1):
+            if il < x < ir and it < y < ib:
+                continue
+            r, g, b, _a = px[x, y]
+            opx[x - ol, y - ot] = (r, g, b, 255)
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    px2 = out.load()
+    w2, h2 = out.size
+    hil, hit, hir, hib = _hole_bounds(px2, w2, h2)
+    if hir > hil and hib > hit:
+        out, *_ = trim_asymmetric_rails(out, hil, hit, hir, hib)
+        bbox = out.getbbox()
+        if bbox:
+            out = out.crop(bbox)
+    return out
+
+
 def extract_studio_wall_frame(img: Image.Image, keep_long_outer: bool = False) -> Image.Image | None:
     """Duvar fotoğrafından gölgesiz, şeffaf içli dikdörtgen çerçeve keser."""
     w, h = img.size
@@ -2738,7 +2850,7 @@ def peel_leftover_pale_outer(img: Image.Image, max_peel: int = 14) -> Image.Imag
     return out
 
 
-def peel_to_dark_outer_rim(img: Image.Image, max_peel: int = 18) -> Image.Image:
+def peel_to_dark_outer_rim(img: Image.Image, max_peel: int = 18, min_br: float = 118) -> Image.Image:
     """Açık stüdyo duvarını koyu dış fitile kadar kırp."""
     out = img
     for _ in range(max_peel):
@@ -2749,7 +2861,7 @@ def peel_to_dark_outer_rim(img: Image.Image, max_peel: int = 18) -> Image.Image:
 
         def pale_wall(side: str) -> bool:
             med_br, med_spr = _side_mid_stats(px, w, h, side)
-            return med_br > 118 and med_spr < 50
+            return med_br > min_br and med_spr < 50
 
         cropped = False
         if pale_wall("left"):
@@ -3519,6 +3631,26 @@ def _postprocess_named_frame(img: Image.Image, dest_name: str) -> Image.Image:
         img = restore_cropped_top_from_bottom(img)
     if dest_name in STUDIO_DARK_OUTER_RIM:
         img = complete_dark_outer_rim(img)
+    if dest_name in STUDIO_PEEL_GREY_DARK_OUTER:
+        img = peel_to_dark_outer_rim(img, min_br=70)
+        img = complete_dark_outer_rim(img)
+        px = img.load()
+        w, h = img.size
+        il, it, ir, ib = _hole_bounds(px, w, h)
+        if ir > il and ib > it:
+            img, *_ = trim_asymmetric_rails(img, il, it, ir, ib)
+            bbox = img.getbbox()
+            if bbox:
+                img = img.crop(bbox)
+    if dest_name == "fa-41-beyaz.png":
+        px = img.load()
+        w, h = img.size
+        il, it, ir, ib = _hole_bounds(px, w, h)
+        if ir > il and ib > it:
+            img, *_ = trim_asymmetric_rails(img, il, it, ir, ib)
+            bbox = img.getbbox()
+            if bbox:
+                img = img.crop(bbox)
     return img
 
 
@@ -3534,6 +3666,9 @@ STUDIO_INNER_HAZE: dict[str, str] = {
     "34-l-eskitme-altin.png": "eskitme",
     "34-l-siyah.png": "grey-lip",
     "47-l-altin.png": "grey-mat",
+    "fa-41-siyah.png": "grey-lip",
+    "fa-41-kahve.png": "cream-lip",
+    "fa-41-ceviz-gumus.png": "pale",
 }
 
 STUDIO_EQUALIZE_INWARD: set[str] = set()
@@ -3542,6 +3677,8 @@ STUDIO_EQUALIZE_NONE: set[str] = {
     "34-l-eskitme-altin.png",
     "47-l-altin.png",
     "47-l-kahve.png",
+    "fa-41-ceviz-gumus.png",
+    "fa-41-beyaz.png",
 }
 
 STUDIO_MIRROR_LEFT_FROM_RIGHT: set[str] = set()
@@ -3557,11 +3694,17 @@ STUDIO_OUTER_PALE: set[str] = {
     "34-l-duz-altin.png",
     "34-l-oksit-gumus.png",
     "34-l-siyah.png",
+    "fa-41-oksit-gumus.png",
+    "fa-41-siyah.png",
 }
 
 STUDIO_DARK_OUTER_RIM: set[str] = {
     "34-l-duz-altin.png",
     "34-l-siyah.png",
+}
+
+STUDIO_PEEL_GREY_DARK_OUTER: set[str] = {
+    "fa-41-siyah.png",
 }
 
 STUDIO_RESTORE_TOP_FROM_BOTTOM: set[str] = set()
@@ -3607,6 +3750,10 @@ STUDIO_BLACK_SATIN: set[str] = {
 
 STUDIO_WHITE_STUDIO: set[str] = set()
 
+STUDIO_WHITE_PROFILE: set[str] = {
+    "fa-41-beyaz.png",
+}
+
 STUDIO_KEEP_LONG_OUTER: set[str] = {
     "47-l-altin.png",
     "47-l-kahve.png",
@@ -3615,6 +3762,8 @@ STUDIO_KEEP_LONG_OUTER: set[str] = {
 # T, R, B, L extra hole expand after haze (kalan krem şerit).
 STUDIO_EXTRA_INWARD: dict[str, tuple[int, int, int, int]] = {
     "47-l-altin.png": (0, 4, 0, 0),
+    "fa-41-ceviz-gumus.png": (2, 0, 2, 8),
+    "fa-41-beyaz.png": (12, 14, 12, 12),
 }
 
 
@@ -3659,6 +3808,14 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
             peel_dark_outer=dest.name in STUDIO_PEEL_DARK_ALIAS_OUTER,
             dilate_hole=2 if dest.name in STUDIO_DILATE_HOLE else 0,
         )
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
+    if dest.name in STUDIO_WHITE_PROFILE:
+        out = extract_white_profile_frame(raw)
+        out = _postprocess_named_frame(out, dest.name)
         dest.parent.mkdir(parents=True, exist_ok=True)
         out.save(dest, "PNG")
         if force_thickness is not None:

@@ -977,6 +977,7 @@ export default function FramePicker() {
         setFrameOverrides(overrides);
         restoreCatalogSeriesOnce("35lik");
         restoreCatalogSeriesOnce("47l");
+        restoreCatalogSeriesOnce("fa41");
         setHiddenSeriesIds(restoreCatalogSeriesOnce("34l"));
         setHiddenFrameIds(hiddenFrames);
         return;
