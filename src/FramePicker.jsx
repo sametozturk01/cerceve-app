@@ -345,33 +345,36 @@ function drawNineSliceFrame(ctx, frameImg, x, y, w, h, slicePx, thickPx, rails =
     ctx.drawImage(frameImg, sx, sy, sW, sH, dx, dy, dW, dH);
   };
 
-  blit(r.left, 0, sw - r.left - r.right, r.top, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
+  // Kaynak rayları farklıysa dıştan ortak kalınlık al; iç fazla (paspartu) çizilmesin, köşe ezilmesin.
+  const s = Math.max(1, Math.min(r.left, r.top, r.right, r.bottom));
+
+  blit(s, 0, sw - 2 * s, s, fx + t - bleed, fy, fw - 2 * t + 2 * bleed, t);
   blit(
-    r.left,
-    sh - r.bottom,
-    sw - r.left - r.right,
-    r.bottom,
+    s,
+    sh - s,
+    sw - 2 * s,
+    s,
     fx + t - bleed,
     fy + fh - t,
     fw - 2 * t + 2 * bleed,
     t,
   );
-  blit(0, r.top, r.left, sh - r.top - r.bottom, fx, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
+  blit(0, s, s, sh - 2 * s, fx, fy + t - bleed, t, fh - 2 * t + 2 * bleed);
   blit(
-    sw - r.right,
-    r.top,
-    r.right,
-    sh - r.top - r.bottom,
+    sw - s,
+    s,
+    s,
+    sh - 2 * s,
     fx + fw - t,
     fy + t - bleed,
     t,
     fh - 2 * t + 2 * bleed,
   );
 
-  blit(0, 0, r.left, r.top, fx, fy, t, t);
-  blit(sw - r.right, 0, r.right, r.top, fx + fw - t, fy, t, t);
-  blit(0, sh - r.bottom, r.left, r.bottom, fx, fy + fh - t, t, t);
-  blit(sw - r.right, sh - r.bottom, r.right, r.bottom, fx + fw - t, fy + fh - t, t, t);
+  blit(0, 0, s, s, fx, fy, t, t);
+  blit(sw - s, 0, s, s, fx + fw - t, fy, t, t);
+  blit(0, sh - s, s, s, fx, fy + fh - t, t, t);
+  blit(sw - s, sh - s, s, s, fx + fw - t, fy + fh - t, t, t);
 
   ctx.imageSmoothingEnabled = smooth;
 }
@@ -973,6 +976,7 @@ export default function FramePicker() {
         setSeriesLabelOverrides(labels);
         setFrameOverrides(overrides);
         restoreCatalogSeriesOnce("35lik");
+        restoreCatalogSeriesOnce("47l");
         setHiddenSeriesIds(restoreCatalogSeriesOnce("34l"));
         setHiddenFrameIds(hiddenFrames);
         return;

@@ -21,6 +21,10 @@
       "label": "34 L"
     },
     {
+      "id": "47l",
+      "label": "47 L"
+    },
+    {
       "id": "35lik",
       "label": "35 lik"
     },
@@ -1120,7 +1124,7 @@
       "categories": [
         "34l"
       ],
-      "thickness": 77,
+      "thickness": 99,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/34-l-bronz.png",
@@ -1268,7 +1272,7 @@
       "categories": [
         "34l"
       ],
-      "thickness": 120,
+      "thickness": 104,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/34-l-altin.png",
@@ -1385,6 +1389,133 @@
         }
       ],
       "previewImage": "/frames/previews/34-l-duz-altin-preview.png"
+    },
+    {
+      "id": "47 L Siyah",
+      "code": "47 L",
+      "colorName": "Siyah",
+      "label": "47 L Siyah",
+      "categories": [
+        "47l"
+      ],
+      "thickness": 141,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/47-l-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/47-l-siyah-preview.png"
+    },
+    {
+      "id": "47 L Kahve",
+      "code": "47 L",
+      "colorName": "Kahve",
+      "label": "47 L Kahve",
+      "categories": [
+        "47l"
+      ],
+      "thickness": 138,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/47-l-kahve.png",
+      "colors": [
+        {
+          "id": "kahve",
+          "label": "Kahve",
+          "hex": "#5C3D1E"
+        }
+      ],
+      "previewImage": "/frames/previews/47-l-kahve-preview.png"
+    },
+    {
+      "id": "47 L Oksit Gümüş",
+      "code": "47 L",
+      "colorName": "Oksit Gümüş",
+      "label": "47 L Oksit Gümüş",
+      "categories": [
+        "47l"
+      ],
+      "thickness": 174,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/47-l-oksit-gumus.png",
+      "colors": [
+        {
+          "id": "oksit-gumus",
+          "label": "Oksit Gümüş",
+          "hex": "#A39E94"
+        }
+      ],
+      "previewImage": "/frames/previews/47-l-oksit-gumus-preview.png"
+    },
+    {
+      "id": "47 L Altın",
+      "code": "47 L",
+      "colorName": "Altın",
+      "label": "47 L Altın",
+      "categories": [
+        "47l"
+      ],
+      "thickness": 98,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/47-l-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/47-l-altin-preview.png"
+    },
+    {
+      "id": "47 L Ceviz",
+      "code": "47 L",
+      "colorName": "Ceviz",
+      "label": "47 L Ceviz",
+      "categories": [
+        "47l"
+      ],
+      "thickness": 179,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/47-l-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/47-l-ceviz-preview.png"
+    },
+    {
+      "id": "47 L Beyaz",
+      "code": "47 L",
+      "colorName": "Beyaz",
+      "label": "47 L Beyaz",
+      "categories": [
+        "47l"
+      ],
+      "thickness": 154,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/47-l-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/47-l-beyaz-preview.png"
     }
   ]
 }

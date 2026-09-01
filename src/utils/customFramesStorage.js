@@ -51,6 +51,8 @@ const SERIES_CATEGORY = {
   "35 lik": "35lik",
   "34 L": "34l",
   "34 l": "34l",
+  "47 L": "47l",
+  "47 l": "47l",
   "F30 D91": "f30d91",
   "F30 Düz": "f30duz",
   "30 luk Ağaç Kabuğu": "30luk-agac-kabugu",
