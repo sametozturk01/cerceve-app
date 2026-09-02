@@ -28,6 +28,72 @@ export function loadCustomCategories() {
   return readLocal();
 }
 
+export function stripCatalogDuplicateCategories(userCats = [], catalogCats = []) {
+  const catalogIds = new Set(
+    (catalogCats ?? []).map((c) => c?.id).filter((id) => id && id !== "all")
+  );
+  const catalogLabels = new Set(
+    (catalogCats ?? [])
+      .map((c) => normalizeLabel(c?.label))
+      .filter((label) => label && label !== "tümü")
+  );
+  return (userCats ?? []).filter((cat) => {
+    if (!cat?.id) return false;
+    if (catalogIds.has(cat.id)) return false;
+    const label = normalizeLabel(cat.label);
+    if (label && catalogLabels.has(label)) return false;
+    return true;
+  });
+}
+
+export function sanitizeSeriesLabelOverrides(overrides = {}, catalogCats = []) {
+  const next = { ...(overrides ?? {}) };
+  const cats = catalogCats ?? [];
+  for (const [id, label] of Object.entries(next)) {
+    const key = normalizeLabel(label);
+    if (!key) {
+      delete next[id];
+      continue;
+    }
+    const official = cats.find((c) => c?.id === id)?.label;
+    if (official && normalizeLabel(official) === key) {
+      delete next[id];
+      continue;
+    }
+    const taken = cats.some(
+      (c) => c?.id && c.id !== id && c.id !== "all" && normalizeLabel(c.label) === key
+    );
+    if (taken) delete next[id];
+  }
+  return next;
+}
+
+export function mergeVisibleCategories(catalogCats = [], userCats = [], labelOverrides = {}) {
+  const seenIds = new Set();
+  const seenLabels = new Set();
+  const extras = stripCatalogDuplicateCategories(userCats, catalogCats);
+  const overrides = sanitizeSeriesLabelOverrides(labelOverrides, catalogCats);
+  const out = [];
+  for (const cat of [...catalogCats, ...extras]) {
+    if (!cat?.id || seenIds.has(cat.id)) continue;
+    const label = overrides[cat.id] ?? cat.label;
+    const key = normalizeLabel(label);
+    if (key && seenLabels.has(key) && cat.id !== "all") continue;
+    seenIds.add(cat.id);
+    if (key) seenLabels.add(key);
+    out.push({ ...cat, label });
+  }
+  return out;
+}
+
+export function pruneCatalogDuplicateCategories(catalogCats = []) {
+  const current = readLocal();
+  const cleaned = stripCatalogDuplicateCategories(current, catalogCats);
+  if (cleaned.length === current.length) return cleaned;
+  persistCategories(cleaned);
+  return cleaned;
+}
+
 export function isUserSeries(cat) {
   return Boolean(cat?.userAdded || cat?.custom);
 }
@@ -121,16 +187,23 @@ export function rememberCategories(cats) {
   return cats;
 }
 
-export async function hydrateCustomCategoriesFromShared() {
+export async function hydrateCustomCategoriesFromShared(catalogCats = []) {
   const shared = await fetchSharedCatalog();
-  if (!shared) return readLocal();
+  if (!shared) return stripCatalogDuplicateCategories(readLocal(), catalogCats);
   if (shared.deletedCategoryIds?.length) {
     rememberDeletedCategoryIds(shared.deletedCategoryIds);
   }
-  const merged = mergeCategories(readLocal(), shared.categories);
+  const merged = stripCatalogDuplicateCategories(
+    mergeCategories(readLocal(), shared.categories),
+    catalogCats
+  );
   writeLocal(merged);
-  const sharedIds = new Set((shared.categories ?? []).map((c) => c.id));
-  if (merged.some((c) => !sharedIds.has(c.id))) {
+  const sharedClean = stripCatalogDuplicateCategories(shared.categories ?? [], catalogCats);
+  const sharedIds = new Set(sharedClean.map((c) => c.id));
+  if (
+    merged.some((c) => !sharedIds.has(c.id)) ||
+    sharedClean.length !== (shared.categories ?? []).length
+  ) {
     persistCategories(merged);
   }
   return merged;
@@ -148,20 +221,21 @@ function readLabelOverrides() {
   }
 }
 
-export function loadSeriesLabelOverrides() {
-  return readLabelOverrides();
+export function loadSeriesLabelOverrides(catalogCats = []) {
+  return sanitizeSeriesLabelOverrides(readLabelOverrides(), catalogCats);
 }
 
-export function saveSeriesLabelOverride(id, label) {
+export function saveSeriesLabelOverride(id, label, catalogCats = []) {
   const all = { ...readLabelOverrides() };
   const trimmed = (label ?? "").trim();
   if (!trimmed) delete all[id];
   else all[id] = trimmed;
-  localStorage.setItem(LABEL_OVERRIDE_KEY, JSON.stringify(all));
-  putSharedCatalog({ seriesLabels: all }).catch((err) => {
+  const cleaned = sanitizeSeriesLabelOverrides(all, catalogCats);
+  localStorage.setItem(LABEL_OVERRIDE_KEY, JSON.stringify(cleaned));
+  putSharedCatalog({ seriesLabels: cleaned }).catch((err) => {
     console.warn("Seri adları paylaşılamadı.", err);
   });
-  return all;
+  return cleaned;
 }
 
 export function rememberSeriesLabels(labels) {
@@ -169,13 +243,18 @@ export function rememberSeriesLabels(labels) {
   return labels ?? {};
 }
 
-export async function hydrateSeriesLabelsFromShared() {
+export async function hydrateSeriesLabelsFromShared(catalogCats = []) {
   const shared = await fetchSharedCatalog();
-  if (!shared) return readLabelOverrides();
-  const merged = mergeObjectMaps(readLabelOverrides(), shared.seriesLabels);
+  const merged = sanitizeSeriesLabelOverrides(
+    shared
+      ? mergeObjectMaps(readLabelOverrides(), shared.seriesLabels)
+      : readLabelOverrides(),
+    catalogCats
+  );
   rememberSeriesLabels(merged);
-  const sharedKeys = Object.keys(shared.seriesLabels ?? {});
-  if (Object.keys(merged).some((k) => !sharedKeys.includes(k))) {
+  const sharedLabels = shared?.seriesLabels ?? {};
+  const changed = JSON.stringify(merged) !== JSON.stringify(sharedLabels);
+  if (changed) {
     putSharedCatalog({ seriesLabels: merged }).catch(() => {});
   }
   return merged;

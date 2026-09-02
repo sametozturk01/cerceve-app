@@ -90,8 +90,11 @@ SERIES_CATEGORY = {
     "FA 30": "fa30",
     "FA 40": "fa40",
     "29 D": "29d",
-    "29 KR": "fa29kr",
-    "FA 29 KR": "fa29kr",
+    "29 KR": "29krduz",
+    "29 KR Düz": "29krduz",
+    "29 kr düz": "29krduz",
+    "29 kr duz": "29krduz",
+    "FA 29 KR": "29krduz",
     "29 -210": "29210",
     "A 25": "a25",
     "B 26": "b26",
@@ -117,6 +120,8 @@ SERIES_CATEGORY = {
     "f30 düz": "f30duz",
     "f30 duz": "f30duz",
     "35 lik": "35lik",
+    "35 L": "35l",
+    "35 l": "35l",
     "34 L": "34l",
     "34 l": "34l",
     "47 L": "47l",
@@ -1717,6 +1722,92 @@ def extract_matte_white_on_black(img: Image.Image) -> Image.Image:
     return out
 
 
+def extract_opaque_on_black(img: Image.Image) -> Image.Image:
+    """Siyah fon/delikli kare: çerçeve birebir; dış peel ve iç snap yok."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    px = src.load()
+    cx, cy = w // 2, h // 2
+
+    def is_void(x: int, y: int) -> bool:
+        r, g, b, a = px[x, y]
+        if a < 30:
+            return True
+        br = (r + g + b) / 3
+        spr = max(r, g, b) - min(r, g, b)
+        return br < 24 and spr < 12
+
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int]] = deque()
+    for sx, sy in (
+        (cx, cy),
+        (0, 0),
+        (w - 1, 0),
+        (0, h - 1),
+        (w - 1, h - 1),
+        (cx, 0),
+        (cx, h - 1),
+        (0, cy),
+        (w - 1, cy),
+    ):
+        if 0 <= sx < w and 0 <= sy < h and is_void(sx, sy) and not vis[sy * w + sx]:
+            vis[sy * w + sx] = 1
+            q.append((sx, sy))
+    while q:
+        x, y = q.popleft()
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            i = ny * w + nx
+            if 0 <= nx < w and 0 <= ny < h and not vis[i] and is_void(nx, ny):
+                vis[i] = 1
+                q.append((nx, ny))
+
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    opx = out.load()
+    for y in range(h):
+        row = y * w
+        for x in range(w):
+            if vis[row + x]:
+                continue
+            r, g, b, _a = px[x, y]
+            opx[x, y] = (r, g, b, 255)
+
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    px = out.load()
+    w, h = out.size
+    cx, cy = w // 2, h // 2
+
+    def trans(x: int, y: int) -> bool:
+        return px[x, y][3] < 30
+
+    top = 0
+    while top < h and trans(cx, top):
+        top += 1
+    bot = h - 1
+    while bot >= 0 and trans(cx, bot):
+        bot -= 1
+    left = 0
+    while left < w and trans(left, cy):
+        left += 1
+    right = w - 1
+    while right >= 0 and trans(right, cy):
+        right -= 1
+    if left < right and top < bot:
+        out = out.crop((left, top, right + 1, bot + 1))
+    px = out.load()
+    w, h = out.size
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir > il and ib > it:
+        rails = [il, it, w - 1 - ir, h - 1 - ib]
+        if max(rails) - min(rails) <= 8:
+            out, *_ = trim_asymmetric_rails(out, il, it, ir, ib)
+            bbox = out.getbbox()
+            if bbox:
+                out = out.crop(bbox)
+    return out
+
+
 def extract_black_satin_square(img: Image.Image) -> Image.Image:
     """Siyah fon + siyah saten kare: oluk gölgesi delik olmasın, gövde opak kalsın."""
     src = img.convert("RGBA")
@@ -2064,69 +2155,548 @@ def extract_white_studio_frame(img: Image.Image) -> Image.Image:
 
 
 def extract_white_profile_frame(img: Image.Image) -> Image.Image:
-    """Beyaz duvar + sağ/alt viniet: delikten çık, yüzden sonra duvar veya gölge."""
+    """Siyah fondaki beyaz kare: siyahı flood et, kalıp ve gönye birebir."""
     src = img.convert("RGBA")
     w, h = src.size
     px = src.load()
     cx, cy = w // 2, h // 2
 
-    def br(x: int, y: int) -> float:
+    def is_void(x: int, y: int) -> bool:
+        r, g, b, a = px[x, y]
+        if a < 30:
+            return True
+        br = (r + g + b) / 3
+        spr = max(r, g, b) - min(r, g, b)
+        return br < 28 and spr < 14
+
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int]] = deque()
+    for sx, sy in (
+        (cx, cy),
+        (0, 0),
+        (w - 1, 0),
+        (0, h - 1),
+        (w - 1, h - 1),
+        (cx, 0),
+        (cx, h - 1),
+        (0, cy),
+        (w - 1, cy),
+    ):
+        if 0 <= sx < w and 0 <= sy < h and is_void(sx, sy) and not vis[sy * w + sx]:
+            vis[sy * w + sx] = 1
+            q.append((sx, sy))
+    while q:
+        x, y = q.popleft()
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            i = ny * w + nx
+            if 0 <= nx < w and 0 <= ny < h and not vis[i] and is_void(nx, ny):
+                vis[i] = 1
+                q.append((nx, ny))
+
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    opx = out.load()
+    for y in range(h):
+        row = y * w
+        for x in range(w):
+            if vis[row + x]:
+                continue
+            r, g, b, _a = px[x, y]
+            opx[x, y] = (r, g, b, 255)
+
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    px2 = out.load()
+    w2, h2 = out.size
+    cx2, cy2 = w2 // 2, h2 // 2
+
+    def trans(x: int, y: int) -> bool:
+        return px2[x, y][3] < 30
+
+    top = 0
+    while top < h2 and trans(cx2, top):
+        top += 1
+    bot = h2 - 1
+    while bot >= 0 and trans(cx2, bot):
+        bot -= 1
+    left = 0
+    while left < w2 and trans(left, cy2):
+        left += 1
+    right = w2 - 1
+    while right >= 0 and trans(right, cy2):
+        right -= 1
+    if left < right and top < bot:
+        out = out.crop((left, top, right + 1, bot + 1))
+    px3 = out.load()
+    w3, h3 = out.size
+    hil, hit, hir, hib = _hole_bounds(px3, w3, h3)
+    if hir > hil and hib > hit:
+        out, *_ = trim_asymmetric_rails(out, hil, hit, hir, hib)
+        bbox = out.getbbox()
+        if bbox:
+            out = out.crop(bbox)
+    return out
+
+
+def extract_fa41_product_frame(img: Image.Image) -> Image.Image:
+    """FA 41 ürün fotoğrafı: duvar + krem paspartu; çerçeve pikselleri birebir."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    px = src.load()
+    cx, cy = w // 2, h // 2
+
+    def rgb(x: int, y: int) -> tuple[int, int, int]:
         r, g, b, _a = px[x, y]
+        return r, g, b
+
+    def br(x: int, y: int) -> float:
+        r, g, b = rgb(x, y)
         return (r + g + b) / 3
+
+    def spr(x: int, y: int) -> int:
+        r, g, b = rgb(x, y)
+        return max(r, g, b) - min(r, g, b)
+
+    def rmb(x: int, y: int) -> int:
+        r, _g, b = rgb(x, y)
+        return r - b
+
+    def in_b(x: int, y: int) -> bool:
+        return 0 <= x < w and 0 <= y < h
+
+    def edge_wall(x0: int, y0: int, dx: int, dy: int, n: int = 10) -> float:
+        vals: list[float] = []
+        x, y = x0, y0
+        for _ in range(n):
+            if not in_b(x, y):
+                break
+            vals.append(br(x, y))
+            x += dx
+            y += dy
+        return sorted(vals)[len(vals) // 2] if vals else 220.0
+
+    hole = br(cx, cy)
+    wall_l = edge_wall(0, cy, 1, 0)
+    wall_r = edge_wall(w - 1, cy, -1, 0)
+    wall_t = edge_wall(cx, 0, 0, 1)
+    wall_b = edge_wall(cx, h - 1, 0, -1)
+
+    def find_inner(dx: int, dy: int) -> tuple[int, int] | None:
+        x, y = cx, cy
+        while in_b(x, y) and abs(br(x, y) - hole) <= 12:
+            x += dx
+            y += dy
+        while in_b(x, y) and br(x, y) >= 152:
+            x += dx
+            y += dy
+        if not in_b(x, y):
+            return None
+        return x, y
+
+    def find_outer_from_edge(dx: int, dy: int, wall_br: float) -> tuple[int, int] | None:
+        if dx == 1:
+            x, y = 0, cy
+        elif dx == -1:
+            x, y = w - 1, cy
+        elif dy == 1:
+            x, y = cx, 0
+        else:
+            x, y = cx, h - 1
+        last = (x, y)
+
+        def step() -> bool:
+            nonlocal x, y, last
+            last = (x, y)
+            x += dx
+            y += dy
+            return in_b(x, y)
+
+        for _ in range(max(w, h)):
+            if not in_b(x, y):
+                return last
+            b, s, rb = br(x, y), spr(x, y), rmb(x, y)
+            if abs(b - wall_br) <= 14 and s < 12:
+                if not step():
+                    return last
+                continue
+            break
+        for _ in range(max(w, h)):
+            if not in_b(x, y):
+                return last
+            b, s, rb = br(x, y), spr(x, y), rmb(x, y)
+            if b < 115 or s >= 24:
+                return x, y
+            if b >= 148 and s < 24:
+                if not step():
+                    return last
+                continue
+            return x, y
+        return last
+
+    ilp = find_inner(-1, 0)
+    irp = find_inner(1, 0)
+    itp = find_inner(0, -1)
+    ibp = find_inner(0, 1)
+    olp = find_outer_from_edge(1, 0, wall_l)
+    orp = find_outer_from_edge(-1, 0, wall_r)
+    otp = find_outer_from_edge(0, 1, wall_t)
+    obp = find_outer_from_edge(0, -1, wall_b)
+    if not all((ilp, irp, itp, ibp, olp, orp, otp, obp)):
+        return src
+
+    ol, ot = olp[0], otp[1]
+    oright, ob = orp[0], obp[1]
+    il, it = ilp[0], itp[1]
+    ir, ib = irp[0], ibp[1]
+    if il <= ol or ir >= oright or it <= ot or ib >= ob:
+        return src
+    if il - ol < 36 or it - ot < 36 or oright - ir < 36 or ob - ib < 36:
+        return src
+
+    brs: list[float] = []
+    goldish = 0
+    for frac in (0.28, 0.4, 0.5, 0.62, 0.75):
+        sx = int(ol + (il - ol) * frac)
+        sr, sg, sb = rgb(sx, cy)
+        brs.append((sr + sg + sb) / 3)
+        if (sr - sb) >= 18 and (max(sr, sg, sb) - min(sr, sg, sb)) >= 20:
+            goldish += 1
+    mbr = sorted(brs)[len(brs) // 2]
+    if mbr < 70:
+        kind = "dark"
+    elif goldish >= 4:
+        kind = "gold"
+    else:
+        kind = "metal"
+
+    def snap_inner_to_bead(x: int, y: int, dx: int, dy: int) -> tuple[int, int]:
+        """Krem paspartuda kalan iç kenarı koyu iç boncuğa kadar ilerlet."""
+        last = (x, y)
+        for _ in range(22):
+            if not in_b(x, y):
+                return last
+            if br(x, y) < 122:
+                return x, y
+            last = (x, y)
+            x += dx
+            y += dy
+        return last
+
+    def snap_inner_to_gold(x: int, y: int, dx: int, dy: int) -> tuple[int, int]:
+        """Krem paspartuyu geç; altın iç dudak / koyu altın iç rim."""
+        last = (x, y)
+        for _ in range(28):
+            if not in_b(x, y):
+                return last
+            b, s, rb = br(x, y), spr(x, y), rmb(x, y)
+            if (rb >= 28 and s >= 28) or (b < 80 and s >= 24):
+                return x, y
+            last = (x, y)
+            x += dx
+            y += dy
+        return last
+
+    if kind == "metal":
+        il, _ = snap_inner_to_bead(il, cy, -1, 0)
+        ir, _ = snap_inner_to_bead(ir, cy, 1, 0)
+        _, it = snap_inner_to_bead(cx, it, 0, -1)
+        _, ib = snap_inner_to_bead(cx, ib, 0, 1)
+        if il <= ol or ir >= oright or it <= ot or ib >= ob:
+            return src
+        if il - ol < 36 or it - ot < 36 or oright - ir < 36 or ob - ib < 36:
+            return src
+    elif kind == "gold":
+        il, _ = snap_inner_to_gold(il, cy, -1, 0)
+        ir, _ = snap_inner_to_gold(ir, cy, 1, 0)
+        _, it = snap_inner_to_gold(cx, it, 0, -1)
+        _, ib = snap_inner_to_gold(cx, ib, 0, 1)
+        if il <= ol or ir >= oright or it <= ot or ib >= ob:
+            return src
+        if il - ol < 36 or it - ot < 36 or oright - ir < 36 or ob - ib < 36:
+            return src
+
+    def is_leftover_px(r: int, g: int, b: int) -> bool:
+        bv = (r + g + b) / 3
+        s = max(r, g, b) - min(r, g, b)
+        rb = r - b
+        if kind == "dark":
+            return bv >= 145
+        if kind == "gold":
+            return bv >= 140 and s <= 22
+        # Şampanya/gümüş: krem paspartu (düşük kroma); dışbükey metal yüz s>22.
+        return bv >= 140 and s <= 22
+
+    def is_wall_px(r: int, g: int, b: int, wall_br: float) -> bool:
+        bv = (r + g + b) / 3
+        s = max(r, g, b) - min(r, g, b)
+        rb = r - b
+        if kind in ("metal", "gold"):
+            return bv >= 198 and s < 14 and abs(bv - wall_br) <= 20
+        if kind != "dark":
+            return False
+        return bv >= 150
+
+    cw, ch = oright - ol + 1, ob - ot + 1
+    out = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    opx = out.load()
+    for y in range(ot, ob + 1):
+        for x in range(ol, oright + 1):
+            if il < x < ir and it < y < ib:
+                continue
+            r, g, b, _a = px[x, y]
+            opx[x - ol, y - ot] = (r, g, b, 255)
+
+    def punch_and_peel(im: Image.Image) -> Image.Image:
+        pxh = im.load()
+        ww, hh = im.size
+        hil, hit, hir, hib = _hole_bounds(pxh, ww, hh)
+        if hir <= hil or hib <= hit:
+            return im
+        clear = (0, 0, 0, 0)
+
+        leftover_n = 28 if kind in ("metal", "gold") else 16
+        for y in range(hit, hib + 1):
+            x = hil - 1
+            n = 0
+            while x >= 0 and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                x -= 1
+                n += 1
+            x = hir + 1
+            n = 0
+            while x < ww and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                x += 1
+                n += 1
+        for x in range(hil, hir + 1):
+            y = hit - 1
+            n = 0
+            while y >= 0 and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                y -= 1
+                n += 1
+            y = hib + 1
+            n = 0
+            while y < hh and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                y += 1
+                n += 1
+
+        for y in range(hh):
+            x = 0
+            n = 0
+            while x < ww and n < 24:
+                r, g, b, a = pxh[x, y]
+                if a < 30:
+                    break
+                if not is_wall_px(r, g, b, wall_l):
+                    break
+                pxh[x, y] = clear
+                x += 1
+                n += 1
+            x = ww - 1
+            n = 0
+            while x >= 0 and n < 24:
+                r, g, b, a = pxh[x, y]
+                if a < 30:
+                    break
+                if not is_wall_px(r, g, b, wall_r):
+                    break
+                pxh[x, y] = clear
+                x -= 1
+                n += 1
+        for x in range(ww):
+            y = 0
+            n = 0
+            while y < hh and n < 24:
+                r, g, b, a = pxh[x, y]
+                if a < 30:
+                    break
+                if not is_wall_px(r, g, b, wall_t):
+                    break
+                pxh[x, y] = clear
+                y += 1
+                n += 1
+            y = hh - 1
+            n = 0
+            while y >= 0 and n < 24:
+                r, g, b, a = pxh[x, y]
+                if a < 30:
+                    break
+                if not is_wall_px(r, g, b, wall_b):
+                    break
+                pxh[x, y] = clear
+                y -= 1
+                n += 1
+        return im
+
+    out = punch_and_peel(out)
+    if kind == "dark":
+        out = expand_hole_inward(out, 2, 2, 2, 2, equalize="none")
+    elif kind == "metal":
+        pxh = out.load()
+        ww, hh = out.size
+        hil, hit, hir, hib = _hole_bounds(pxh, ww, hh)
+
+        def inner_edge_median_br() -> float:
+            vals: list[float] = []
+            for y in range(hit + 8, max(hit + 9, hib - 7), 10):
+                r, g, b, a = pxh[hil, y]
+                if a >= 30:
+                    vals.append((r + g + b) / 3)
+            return sorted(vals)[len(vals) // 2] if vals else 0.0
+
+        def groove_walk(x0: int, y0: int, dx: int, dy: int) -> int:
+            seen_pale = False
+            x, y = x0, y0
+            for i in range(1, 24):
+                x += dx
+                y += dy
+                if not (0 <= x < ww and 0 <= y < hh):
+                    return 0
+                r, g, b, a = pxh[x, y]
+                if a < 30:
+                    return 0
+                bv = (r + g + b) / 3
+                if bv >= 175:
+                    seen_pale = True
+                if seen_pale and bv < 100:
+                    return max(0, i - 1)
+            return 0
+
+        def side_depth(vals: list[int]) -> int:
+            if not vals:
+                return 0
+            return min(20, max(vals))
+
+        if hir > hil and hib > hit and inner_edge_median_br() >= 160:
+            ys = list(range(hit + 8, max(hit + 9, hib - 7), 6))
+            xs = list(range(hil + 8, max(hil + 9, hir - 7), 6))
+            left_d = side_depth([groove_walk(hil, y, -1, 0) for y in ys])
+            right_d = side_depth([groove_walk(hir, y, 1, 0) for y in ys])
+            top_d = side_depth([groove_walk(x, hit, 0, -1) for x in xs])
+            bot_d = side_depth([groove_walk(x, hib, 0, 1) for x in xs])
+            if max(left_d, right_d, top_d, bot_d) > 0:
+                out = expand_hole_inward(out, top_d, right_d, bot_d, left_d, equalize="none")
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    px2 = out.load()
+    w2, h2 = out.size
+    hil, hit, hir, hib = _hole_bounds(px2, w2, h2)
+    if hir > hil and hib > hit:
+        out, *_ = trim_asymmetric_rails(out, hil, hit, hir, hib)
+        bbox = out.getbbox()
+        if bbox:
+            out = out.crop(bbox)
+    return out
+
+
+def extract_35l_gumus_product(img: Image.Image) -> Image.Image:
+    """35 L gümüş ürün fotoğrafı: duvar + paspartu; sağdaki speküler kesik sol raydan tamamlanır."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    px = src.load()
+    cx, cy = w // 2, h // 2
+
+    def rgb(x: int, y: int) -> tuple[int, int, int]:
+        r, g, b, _a = px[x, y]
+        return r, g, b
+
+    def br(x: int, y: int) -> float:
+        r, g, b = rgb(x, y)
+        return (r + g + b) / 3
+
+    def spr(x: int, y: int) -> int:
+        r, g, b = rgb(x, y)
+        return max(r, g, b) - min(r, g, b)
+
+    def rmb(x: int, y: int) -> int:
+        r, _g, b = rgb(x, y)
+        return r - b
 
     def in_b(x: int, y: int) -> bool:
         return 0 <= x < w and 0 <= y < h
 
     hole = br(cx, cy)
 
+    def is_mat(x: int, y: int) -> bool:
+        b, s = br(x, y), spr(x, y)
+        return abs(b - hole) <= 16 and s <= 10
+
+    def is_metal(x: int, y: int) -> bool:
+        b, s, rb = br(x, y), spr(x, y), rmb(x, y)
+        if s >= 14 or rb >= 14:
+            return True
+        if 80 <= b <= 200 and s >= 12:
+            return True
+        return False
+
+    def is_blown(x: int, y: int) -> bool:
+        return br(x, y) >= 236 and spr(x, y) <= 8
+
     def find_inner(dx: int, dy: int) -> tuple[int, int] | None:
         x, y = cx, cy
-        while in_b(x, y):
-            b = br(x, y)
-            if b > hole + 8 or b < hole - 7:
-                return x, y
+        while in_b(x, y) and is_mat(x, y):
             x += dx
             y += dy
-        return None
+        if not in_b(x, y):
+            return None
+        last = (x, y)
+        for _ in range(90):
+            if not in_b(x, y):
+                return last
+            if is_metal(x, y):
+                return (x, y)
+            if br(x, y) < 198 and spr(x, y) >= 8:
+                return (x, y)
+            last = (x, y)
+            x += dx
+            y += dy
+        return last
 
     def find_outer(ix: int, iy: int, dx: int, dy: int) -> tuple[int, int]:
         x, y = ix, iy
-        last = (x, y)
-        last_face = (x, y)
-        phase = "inner_groove"
-        face_run = 0
-        min_face = 18
-        for _ in range(140):
-            nx, ny = x + dx, y + dy
-            if not in_b(nx, ny):
-                return last if phase == "outer_groove" else last_face
-            b = br(nx, ny)
-            if b < 140 and phase == "outer_groove":
-                return last_face
-            if phase == "inner_groove":
-                if b >= 218:
-                    face_run += 1
-                    last_face = (nx, ny)
-                    if face_run >= min_face:
-                        phase = "face"
-                else:
-                    face_run = 0
-                last = (nx, ny)
-            elif phase == "face":
-                if b >= 218:
-                    last_face = (nx, ny)
-                    last = (nx, ny)
-                elif b < 210:
-                    phase = "outer_groove"
-                    last = (nx, ny)
-                else:
-                    last = (nx, ny)
+        last_metal = (x, y)
+        seen_metal = False
+        for _ in range(max(w, h)):
+            if not in_b(x, y):
+                return last_metal
+            if is_metal(x, y):
+                seen_metal = True
+                last_metal = (x, y)
+            elif is_blown(x, y) and seen_metal:
+                last_metal = (x, y)
             else:
-                if b >= 235:
-                    return last
-                last = (nx, ny)
-            x, y = nx, ny
-        return last
+                nx, ny = x, y
+                found = False
+                for _k in range(6):
+                    nx += dx
+                    ny += dy
+                    if not in_b(nx, ny):
+                        break
+                    if is_metal(nx, ny) or (is_blown(nx, ny) and seen_metal):
+                        found = True
+                        break
+                if found:
+                    last_metal = (x, y)
+                elif seen_metal:
+                    return last_metal
+            x += dx
+            y += dy
+        return last_metal
 
     ilp = find_inner(-1, 0)
     irp = find_inner(1, 0)
@@ -2144,6 +2714,8 @@ def extract_white_profile_frame(img: Image.Image) -> Image.Image:
     oright, ob = orp[0], obp[1]
     il, it = ilp[0], itp[1]
     ir, ib = irp[0], ibp[1]
+    if il <= ol or ir >= oright or it <= ot or ib >= ob:
+        return src
     if il - ol < 36 or it - ot < 36 or oright - ir < 36 or ob - ib < 36:
         return src
 
@@ -2156,13 +2728,833 @@ def extract_white_profile_frame(img: Image.Image) -> Image.Image:
                 continue
             r, g, b, _a = px[x, y]
             opx[x - ol, y - ot] = (r, g, b, 255)
+
+    pxh = out.load()
+    ww, hh = out.size
+    hil, hit, hir, hib = _hole_bounds(pxh, ww, hh)
+    clear = (0, 0, 0, 0)
+    if hir > hil and hib > hit:
+        for y in range(hit, hib + 1):
+            x = hil - 1
+            n = 0
+            while x >= 0 and n < 18:
+                r, g, b, a = pxh[x, y]
+                bv = (r + g + b) / 3
+                s = max(r, g, b) - min(r, g, b)
+                if a < 30 or s >= 13 or bv < 188:
+                    break
+                pxh[x, y] = clear
+                x -= 1
+                n += 1
+            x = hir + 1
+            n = 0
+            while x < ww and n < 18:
+                r, g, b, a = pxh[x, y]
+                bv = (r + g + b) / 3
+                s = max(r, g, b) - min(r, g, b)
+                if a < 30 or s >= 13 or bv < 188:
+                    break
+                pxh[x, y] = clear
+                x += 1
+                n += 1
+        for x in range(hil, hir + 1):
+            y = hit - 1
+            n = 0
+            while y >= 0 and n < 18:
+                r, g, b, a = pxh[x, y]
+                bv = (r + g + b) / 3
+                s = max(r, g, b) - min(r, g, b)
+                if a < 30 or s >= 13 or bv < 188:
+                    break
+                pxh[x, y] = clear
+                y -= 1
+                n += 1
+            y = hib + 1
+            n = 0
+            while y < hh and n < 18:
+                r, g, b, a = pxh[x, y]
+                bv = (r + g + b) / 3
+                s = max(r, g, b) - min(r, g, b)
+                if a < 30 or s >= 13 or bv < 188:
+                    break
+                pxh[x, y] = clear
+                y += 1
+                n += 1
+
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    out = replace_right_rail_from_left(out)
+    px2 = out.load()
+    w2, h2 = out.size
+    hil, hit, hir, hib = _hole_bounds(px2, w2, h2)
+    if hir > hil and hib > hit:
+        for (x0, y0, inside) in (
+            (hil, hit, lambda x, y: x >= hil and y >= hit),
+            (hir, hit, lambda x, y: x <= hir and y >= hit),
+            (hil, hib, lambda x, y: x >= hil and y <= hib),
+            (hir, hib, lambda x, y: x <= hir and y <= hib),
+        ):
+            for y in range(max(0, y0 - 6), min(h2, y0 + 7)):
+                for x in range(max(0, x0 - 6), min(w2, x0 + 7)):
+                    r, g, b, a = px2[x, y]
+                    bv = (r + g + b) / 3
+                    s = max(r, g, b) - min(r, g, b)
+                    if a >= 30 and bv >= 175 and s <= 16 and inside(x, y):
+                        px2[x, y] = clear
+        hil, hit, hir, hib = _hole_bounds(px2, w2, h2)
+        out, *_ = trim_asymmetric_rails(out, hil, hit, hir, hib)
+        bbox = out.getbbox()
+        if bbox:
+            out = out.crop(bbox)
+        out = expand_hole_inward(out, 1, 1, 1, 1, equalize="none")
+    return out
+
+
+def peel_beige_studio_margin(img: Image.Image, max_peel: int = 80) -> Image.Image:
+    """Kalan açık duvar şeridini kırp; boncuk/altın yüze girme."""
+    out = img.convert("RGBA")
+    for _ in range(max_peel):
+        px = out.load()
+        w, h = out.size
+        if w < 80 or h < 80:
+            break
+
+        def beige_side(side: str) -> bool:
+            med_br, med_spr = _side_mid_stats(px, w, h, side)
+            return med_br >= 155 and med_spr <= 28
+
+        cropped = False
+        if beige_side("right"):
+            out = out.crop((0, 0, w - 1, h))
+            cropped = True
+        elif beige_side("top"):
+            out = out.crop((0, 1, w, h))
+            cropped = True
+        elif beige_side("left"):
+            out = out.crop((1, 0, w, h))
+            cropped = True
+        elif beige_side("bottom"):
+            out = out.crop((0, 0, w, h - 1))
+            cropped = True
+        if not cropped:
+            break
+    bbox = out.getbbox()
+    return out.crop(bbox) if bbox else out
+
+
+def _is_29kr_warm_wall_or_shadow(p: tuple[int, int, int]) -> bool:
+    """Ceviz ürün fotoğrafındaki bej duvar ve düşen gölge; ahşap/boncuk değil."""
+    r, g, b = p[0], p[1], p[2]
+    br = (r + g + b) / 3.0
+    spr = max(r, g, b) - min(r, g, b)
+    rb = r - b
+    # Bu fotoğrafta çerçeve yüzü koyu; açık piksel duvar (altın yansımalı bile olsa).
+    if br >= 145:
+        return True
+    # Boncuk/altın dudak
+    if rb >= 20 and spr >= 16:
+        return False
+    if br < 108:
+        return False
+    if spr >= 34:
+        return False
+    if spr <= 10 and br >= 100:
+        return True
+    return 108 <= br < 145 and spr <= 22
+
+
+def extract_29kr_duz_wood_on_wall(img: Image.Image) -> Image.Image:
+    """Sıcak duvar + ceviz: dış gölgeyi ve iç deliği flood-fill ile sil, boncuğu bırak."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    out = src.copy()
+    opx = out.load()
+    visited = bytearray(w * h)
+
+    def flood(seeds: list[tuple[int, int]]) -> None:
+        q = deque(seeds)
+        while q:
+            x, y = q.popleft()
+            i = y * w + x
+            if visited[i]:
+                continue
+            visited[i] = 1
+            r, g, b, a = opx[x, y]
+            if a < 30 or not _is_29kr_warm_wall_or_shadow((r, g, b)):
+                continue
+            opx[x, y] = (0, 0, 0, 0)
+            if x > 0:
+                q.append((x - 1, y))
+            if x + 1 < w:
+                q.append((x + 1, y))
+            if y > 0:
+                q.append((x, y - 1))
+            if y + 1 < h:
+                q.append((x, y + 1))
+
+    seeds: list[tuple[int, int]] = []
+    for x in range(w):
+        seeds.append((x, 0))
+        seeds.append((x, h - 1))
+    for y in range(h):
+        seeds.append((0, y))
+        seeds.append((w - 1, y))
+    seeds.append((w // 2, h // 2))
+    flood(seeds)
+
+    out = _keep_largest_opaque_component(out)
+    bbox = out.getbbox()
+    if not bbox:
+        return src
+    out = out.crop(bbox)
+    out = _punch_29kr_inner_pale(out)
+    out = _punch_29kr_pale_next_to_hole(out, max_steps=4)
+    out = _heal_29kr_outer_corners(out)
+    return _finish_29kr_duz(out)
+
+
+def _keep_largest_opaque_component(img: Image.Image) -> Image.Image:
+    """Kenarda kalan duvar adacıklarını at, çerçeve halkasını bırak."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    label = bytearray(w * h)
+    best_id = 0
+    best_n = 0
+    next_id = 0
+    for y0 in range(h):
+        for x0 in range(w):
+            i0 = y0 * w + x0
+            if label[i0] or px[x0, y0][3] < 30:
+                continue
+            next_id += 1
+            if next_id > 255:
+                break
+            n = 0
+            q: deque[tuple[int, int]] = deque([(x0, y0)])
+            while q:
+                x, y = q.popleft()
+                i = y * w + x
+                if label[i]:
+                    continue
+                if px[x, y][3] < 30:
+                    label[i] = 255
+                    continue
+                label[i] = next_id
+                n += 1
+                if x > 0:
+                    q.append((x - 1, y))
+                if x + 1 < w:
+                    q.append((x + 1, y))
+                if y > 0:
+                    q.append((x, y - 1))
+                if y + 1 < h:
+                    q.append((x, y + 1))
+            if n > best_n:
+                best_n = n
+                best_id = next_id
+    if best_id == 0:
+        return out
+    for y in range(h):
+        for x in range(w):
+            if label[y * w + x] != best_id:
+                px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def _punch_29kr_pale_next_to_hole(img: Image.Image, max_steps: int = 10) -> Image.Image:
+    """Delikte kalan bej şeridi sil; ahşap/boncuk pikseline geçme."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    for _ in range(max_steps):
+        to_clear: list[tuple[int, int]] = []
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a < 30 or not _is_29kr_warm_wall_or_shadow((r, g, b)):
+                    continue
+                for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                    if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] < 30:
+                        to_clear.append((x, y))
+                        break
+        if not to_clear:
+            break
+        for x, y in to_clear:
+            px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def _29kr_first_opaque(px, w: int, h: int, dx: int, dy: int) -> tuple[int, int] | None:
+    x, y = w // 2, h // 2
+    for _ in range(max(w, h)):
+        x += dx
+        y += dy
+        if not (0 <= x < w and 0 <= y < h):
+            return None
+        if px[x, y][3] >= 30:
+            return x, y
+    return None
+
+
+def _29kr_axis_rails(img: Image.Image) -> tuple[int, int, int, int] | None:
+    """Merkezden yürüyerek ray kalınlığı; kenardaki 1px çentikten etkilenmez."""
+    w, h = img.size
+    px = img.load()
+    if px[w // 2, h // 2][3] >= 30:
+        return None
+    left = _29kr_first_opaque(px, w, h, -1, 0)
+    right = _29kr_first_opaque(px, w, h, 1, 0)
+    top = _29kr_first_opaque(px, w, h, 0, -1)
+    bot = _29kr_first_opaque(px, w, h, 0, 1)
+    if not all((left, right, top, bot)):
+        return None
+    return left[0], top[1], w - 1 - right[0], h - 1 - bot[1]
+
+
+def _29kr_wood_usable(img: Image.Image) -> bool:
+    rails = _29kr_axis_rails(img)
+    if rails is None:
+        return False
+    if min(rails) < 55 or max(rails) > min(rails) * 1.45:
+        return False
+    return True
+
+
+def _punch_29kr_inner_pale(img: Image.Image) -> Image.Image:
+    """Eksen iç dikdörtgenindeki açık duvarı sil; koyu boncuk/ahşaba dokunma."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    left = _29kr_first_opaque(px, w, h, -1, 0)
+    right = _29kr_first_opaque(px, w, h, 1, 0)
+    top = _29kr_first_opaque(px, w, h, 0, -1)
+    bot = _29kr_first_opaque(px, w, h, 0, 1)
+    if not all((left, right, top, bot)):
+        return out
+    il, it, ir, ib = left[0], top[1], right[0], bot[1]
+    for y in range(it, ib + 1):
+        for x in range(il, ir + 1):
+            r, g, b, a = px[x, y]
+            if a < 30:
+                continue
+            br = (r + g + b) / 3.0
+            if br >= 125 or _is_29kr_warm_wall_or_shadow((r, g, b)):
+                px[x, y] = (0, 0, 0, 0)
+    inset = 4
+    for y in range(it + inset, ib - inset + 1):
+        for x in range(il + inset, ir - inset + 1):
+            px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def _heal_29kr_outer_corners(img: Image.Image, corner: int = 36) -> Image.Image:
+    """Ray bölgesindeki şeffaf/bej boşluğu komşu ahşap/metalle doldur; deliğe dokunma."""
+    del corner
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return out
+
+    def is_gap(x: int, y: int) -> bool:
+        r, g, b, a = px[x, y]
+        if a < 30:
+            return True
+        br = (r + g + b) / 3.0
+        spr = max(r, g, b) - min(r, g, b)
+        return br >= 100 and spr <= 40
+
+    def is_body(x: int, y: int) -> bool:
+        if not (0 <= x < w and 0 <= y < h):
+            return False
+        if il < x < ir and it < y < ib:
+            return False
+        r, g, b, a = px[x, y]
+        if a < 30:
+            return False
+        br = (r + g + b) / 3.0
+        spr = max(r, g, b) - min(r, g, b)
+        return br < 95 or spr >= 40
+
+    def sample(x0: int, y0: int, dx: int, dy: int) -> tuple[int, int, int, int] | None:
+        x, y = x0, y0
+        for _ in range(120):
+            x += dx
+            y += dy
+            if not (0 <= x < w and 0 <= y < h):
+                return None
+            if is_body(x, y):
+                ox = x - ((x0 - x) % 12)
+                oy = y - ((y0 - y) % 12)
+                if is_body(ox, oy):
+                    return px[ox, oy]
+                return px[x, y]
+        return None
+
+    def in_hole(x: int, y: int) -> bool:
+        return il < x < ir and it < y < ib
+
+    for y in range(h):
+        for x in range(w):
+            if in_hole(x, y) or not is_gap(x, y):
+                continue
+            bottom = y >= ib
+            top = y <= it
+            right = x >= ir
+            left = x <= il
+            picks: list[tuple[int, int, int, int]] = []
+            if bottom or top:
+                picks.append(sample(x, y, -1, 0))
+                picks.append(sample(x, y, 1, 0))
+            if left or right:
+                picks.append(sample(x, y, 0, -1))
+                picks.append(sample(x, y, 0, 1))
+            if not picks:
+                picks = [
+                    sample(x, y, -1, 0),
+                    sample(x, y, 1, 0),
+                    sample(x, y, 0, -1),
+                    sample(x, y, 0, 1),
+                ]
+            body = next((p for p in picks if p is not None), None)
+            if body is not None:
+                px[x, y] = body
+    return out
+
+
+def _clear_29kr_outer_corner_specks(img: Image.Image, corner: int = 28) -> Image.Image:
+    """Dış köşede kalan bej üçgeni sil."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    boxes = (
+        (0, 0, min(corner, w), min(corner, h)),
+        (max(0, w - corner), 0, w, min(corner, h)),
+        (0, max(0, h - corner), min(corner, w), h),
+        (max(0, w - corner), max(0, h - corner), w, h),
+    )
+    for x0, y0, x1, y1 in boxes:
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                r, g, b, a = px[x, y]
+                if a < 30:
+                    continue
+                br = (r + g + b) / 3.0
+                spr = max(r, g, b) - min(r, g, b)
+                if br >= 130 and spr <= 36:
+                    px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def extract_29kr_duz_product(img: Image.Image) -> Image.Image:
+    """29 KR Düz ürün fotoğrafı: duvar + iç boncuklu dudak korunur."""
+    rgba = img.convert("RGBA")
+    studio = extract_studio_wall_frame(rgba, keep_long_outer=True)
+    if studio is not None and _studio_extract_usable(studio):
+        return _finish_29kr_duz(studio)
+    wood = extract_29kr_duz_wood_on_wall(rgba)
+    if _29kr_wood_usable(wood):
+        return wood
+    out = extract_34l_product_frame(rgba)
+    return _finish_29kr_duz(peel_beige_studio_margin(out))
+
+
+def _is_29kr_inner_leftover_wall(p: tuple[int, int, int]) -> bool:
+    """Boncuk/oluk değil; deliğe bitişik kalan gölgeli duvar (parlak gümüş yüze girme)."""
+    r, g, b = p[0], p[1], p[2]
+    br = (r + g + b) / 3.0
+    spr = max(r, g, b) - min(r, g, b)
+    if spr > 20:
+        return False
+    return 96 <= br <= 152
+
+
+def _punch_29kr_inner_leftover_from_hole(img: Image.Image, max_depth: int = 10) -> Image.Image:
+    """Delikten en fazla max_depth px duvar sil; koyu oluk ve boncuğa dur."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    vis = bytearray(w * h)
+    q: deque[tuple[int, int, int]] = deque()
+    for y in range(h):
+        row = y * w
+        for x in range(w):
+            if px[x, y][3] < 30:
+                vis[row + x] = 1
+                q.append((x, y, 0))
+    while q:
+        x, y, depth = q.popleft()
+        if depth >= max_depth:
+            continue
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if vis[i]:
+                continue
+            vis[i] = 1
+            r, g, b, a = px[nx, ny]
+            if a < 30:
+                q.append((nx, ny, depth))
+                continue
+            if _is_29kr_inner_leftover_wall((r, g, b)):
+                px[nx, ny] = (0, 0, 0, 0)
+                q.append((nx, ny, depth + 1))
+    return out
+
+
+def _trim_transparent_midline_padding(img: Image.Image) -> Image.Image:
+    """Orta eksende şeffaf dış payı kırp; nine-slice rayı 0 ölçmesin."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    cx, cy = w // 2, h // 2
+    left = 0
+    while left < w and px[left, cy][3] < 30:
+        left += 1
+    right = w - 1
+    while right >= 0 and px[right, cy][3] < 30:
+        right -= 1
+    top = 0
+    while top < h and px[cx, top][3] < 30:
+        top += 1
+    bottom = h - 1
+    while bottom >= 0 and px[cx, bottom][3] < 30:
+        bottom -= 1
+    if right <= left or bottom <= top:
+        return out
+    if left == 0 and top == 0 and right == w - 1 and bottom == h - 1:
+        return out
+    return out.crop((left, top, right + 1, bottom + 1))
+
+
+def _finish_29kr_duz(img: Image.Image) -> Image.Image:
+    """Dış duvar/gölgeyi ve iç duvar artığını sil; dış profili ve boncuğu bırak."""
+    out = _peel_29kr_outer_studio_margin(img)
+    out = _punch_29kr_inner_leftover_from_hole(out)
+    out = _trim_transparent_midline_padding(out)
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+        out = _trim_transparent_midline_padding(out)
+    return _heal_29kr_outer_corners(out)
+
+
+def _peel_29kr_outer_studio_margin(img: Image.Image, max_peel: int = 90) -> Image.Image:
+    """Dıştaki açık duvar ve düşen gölgeyi kırp; metal/ahşap yüze dur."""
+    out = img.convert("RGBA")
+    for _ in range(max_peel):
+        px = out.load()
+        w, h = out.size
+        if w < 80 or h < 80:
+            break
+
+        def wall_side(side: str) -> bool:
+            med_br, med_spr = _side_mid_stats(px, w, h, side)
+            return med_br >= 110 and med_spr <= 28
+
+        cropped = False
+        if wall_side("bottom"):
+            out = out.crop((0, 0, w, h - 1))
+            cropped = True
+        elif wall_side("right"):
+            out = out.crop((0, 0, w - 1, h))
+            cropped = True
+        elif wall_side("top"):
+            out = out.crop((0, 1, w, h))
+            cropped = True
+        elif wall_side("left"):
+            out = out.crop((1, 0, w, h))
+            cropped = True
+        if not cropped:
+            break
+    bbox = out.getbbox()
+    return out.crop(bbox) if bbox else out
+
+
+def extract_34l_product_frame(img: Image.Image) -> Image.Image:
+    """34 L ürün fotoğrafı: duvar + paspartu; çerçeve pikselleri birebir, gölge dışarıda."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    px = src.load()
+    cx, cy = w // 2, h // 2
+
+    def rgb(x: int, y: int) -> tuple[int, int, int]:
+        r, g, b, _a = px[x, y]
+        return r, g, b
+
+    def br(x: int, y: int) -> float:
+        r, g, b = rgb(x, y)
+        return (r + g + b) / 3
+
+    def spr(x: int, y: int) -> int:
+        r, g, b = rgb(x, y)
+        return max(r, g, b) - min(r, g, b)
+
+    def rmb(x: int, y: int) -> int:
+        r, _g, b = rgb(x, y)
+        return r - b
+
+    def in_b(x: int, y: int) -> bool:
+        return 0 <= x < w and 0 <= y < h
+
+    def edge_wall(x0: int, y0: int, dx: int, dy: int, n: int = 10) -> float:
+        vals: list[float] = []
+        x, y = x0, y0
+        for _ in range(n):
+            if not in_b(x, y):
+                break
+            vals.append(br(x, y))
+            x += dx
+            y += dy
+        if not vals:
+            return 220.0
+        mx = max(vals)
+        return mx if mx >= 200 else sorted(vals)[len(vals) // 2]
+
+    hole = br(cx, cy)
+    wall_l = edge_wall(0, cy, 1, 0)
+    wall_r = edge_wall(w - 1, cy, -1, 0)
+    wall_t = edge_wall(cx, 0, 0, 1)
+    wall_b = edge_wall(cx, h - 1, 0, -1)
+
+    def classify_ahead(x: int, y: int, dx: int, dy: int) -> str:
+        min_b, max_s, max_rb = 255.0, 0, 0
+        xx, yy = x, y
+        for _ in range(48):
+            if not in_b(xx, yy):
+                break
+            b, s, rb = br(xx, yy), spr(xx, yy), rmb(xx, yy)
+            min_b = min(min_b, b)
+            max_s = max(max_s, s)
+            max_rb = max(max_rb, rb)
+            xx += dx
+            yy += dy
+        if min_b < 52:
+            return "dark"
+        if max_s >= 36 or max_rb >= 30:
+            return "gold"
+        if min_b < 100 and max_s >= 14:
+            return "wood"
+        if max_s >= 20:
+            return "metal"
+        return "white"
+
+    def find_inner(dx: int, dy: int) -> tuple[int, int] | None:
+        x, y = cx, cy
+        while in_b(x, y) and abs(br(x, y) - hole) <= 12:
+            x += dx
+            y += dy
+        if not in_b(x, y):
+            return None
+        side = classify_ahead(x, y, dx, dy)
+        last = (x, y)
+        seen_dip = False
+        dip_pos = last
+        for _ in range(90):
+            if not in_b(x, y):
+                return last
+            b, s, rb = br(x, y), spr(x, y), rmb(x, y)
+            if side == "dark":
+                if b < 100:
+                    return (x, y)
+            elif side == "gold":
+                if s >= 24 or (rb >= 22 and s >= 18):
+                    return (x, y)
+            elif side == "wood":
+                if (b < 145 and s >= 12) or b < 90:
+                    return (x, y)
+            elif side == "metal":
+                if s >= 20 or (b < 150 and s >= 14):
+                    return (x, y)
+            else:
+                if b < 200:
+                    seen_dip = True
+                    dip_pos = (x, y)
+                elif seen_dip and b >= 200:
+                    return dip_pos
+                elif b >= 232:
+                    return last
+            last = (x, y)
+            x += dx
+            y += dy
+        return dip_pos if seen_dip else last
+
+    def find_outer_from_edge(dx: int, dy: int, wall_br: float) -> tuple[int, int] | None:
+        if dx == 1:
+            x, y = 0, cy
+        elif dx == -1:
+            x, y = w - 1, cy
+        elif dy == 1:
+            x, y = cx, 0
+        else:
+            x, y = cx, h - 1
+        last = (x, y)
+
+        def step() -> bool:
+            nonlocal x, y, last
+            last = (x, y)
+            x += dx
+            y += dy
+            return in_b(x, y)
+
+        for _ in range(max(w, h)):
+            if not in_b(x, y):
+                return last
+            b, s = br(x, y), spr(x, y)
+            if wall_br >= 200:
+                pale_wall = abs(b - wall_br) <= 12 and s <= 14
+                drop_shadow = b >= 100 and b < 185 and s < 24
+            else:
+                pale_wall = False
+                drop_shadow = s < 24 and 100 <= b < 200
+            if pale_wall or drop_shadow:
+                if not step():
+                    return last
+                continue
+            return x, y
+        return last
+
+    ilp = find_inner(-1, 0)
+    irp = find_inner(1, 0)
+    itp = find_inner(0, -1)
+    ibp = find_inner(0, 1)
+    olp = find_outer_from_edge(1, 0, wall_l)
+    orp = find_outer_from_edge(-1, 0, wall_r)
+    otp = find_outer_from_edge(0, 1, wall_t)
+    obp = find_outer_from_edge(0, -1, wall_b)
+    if not all((ilp, irp, itp, ibp, olp, orp, otp, obp)):
+        return src
+
+    ol, ot = olp[0], otp[1]
+    oright, ob = orp[0], obp[1]
+    il, it = ilp[0], itp[1]
+    ir, ib = irp[0], ibp[1]
+    if il <= ol or ir >= oright or it <= ot or ib >= ob:
+        return src
+    if il - ol < 36 or it - ot < 36 or oright - ir < 36 or ob - ib < 36:
+        return src
+
+    rails = [il - ol, it - ot, oright - ir, ob - ib]
+    target = min(rails)
+    if il - ol > target:
+        il = ol + target
+    if oright - ir > target:
+        ir = oright - target
+    if it - ot > target:
+        it = ot + target
+    if ob - ib > target:
+        ib = ob - target
+
+    brs: list[float] = []
+    goldish = 0
+    woodish = 0
+    for frac in (0.28, 0.4, 0.5, 0.62, 0.75):
+        sx = int(ol + (il - ol) * frac)
+        sr, sg, sb = rgb(sx, cy)
+        bv = (sr + sg + sb) / 3
+        brs.append(bv)
+        spread = max(sr, sg, sb) - min(sr, sg, sb)
+        if (sr - sb) >= 18 and spread >= 20:
+            goldish += 1
+        if 40 <= bv <= 140 and 12 <= spread <= 40:
+            woodish += 1
+    mbr = sorted(brs)[len(brs) // 2]
+    if mbr < 70:
+        kind = "dark"
+    elif goldish >= 3:
+        kind = "gold"
+    elif woodish >= 3:
+        kind = "wood"
+    elif mbr >= 200:
+        kind = "white"
+    else:
+        kind = "metal"
+
+    def is_leftover_px(r: int, g: int, b: int) -> bool:
+        bv = (r + g + b) / 3
+        s = max(r, g, b) - min(r, g, b)
+        if kind == "white":
+            return False
+        if kind == "dark":
+            return bv >= 145 and s <= 16
+        if kind == "gold":
+            return bv >= 155 and s <= 20
+        if kind == "wood":
+            return bv >= 165 and s <= 14
+        return bv >= 155 and s <= 18
+
+    cw, ch = oright - ol + 1, ob - ot + 1
+    out = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    opx = out.load()
+    for y in range(ot, ob + 1):
+        for x in range(ol, oright + 1):
+            if il < x < ir and it < y < ib:
+                continue
+            r, g, b, _a = px[x, y]
+            opx[x - ol, y - ot] = (r, g, b, 255)
+
+    def punch_and_peel(im: Image.Image) -> Image.Image:
+        pxh = im.load()
+        ww, hh = im.size
+        hil, hit, hir, hib = _hole_bounds(pxh, ww, hh)
+        if hir <= hil or hib <= hit:
+            return im
+        clear = (0, 0, 0, 0)
+
+        leftover_n = 16 if kind in ("metal", "gold") else 12
+        for y in range(hit, hib + 1):
+            x = hil - 1
+            n = 0
+            while x >= 0 and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                x -= 1
+                n += 1
+            x = hir + 1
+            n = 0
+            while x < ww and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                x += 1
+                n += 1
+        for x in range(hil, hir + 1):
+            y = hit - 1
+            n = 0
+            while y >= 0 and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                y -= 1
+                n += 1
+            y = hib + 1
+            n = 0
+            while y < hh and n < leftover_n:
+                r, g, b, a = pxh[x, y]
+                if a < 30 or not is_leftover_px(r, g, b):
+                    break
+                pxh[x, y] = clear
+                y += 1
+                n += 1
+        return im
+
+    out = punch_and_peel(out)
     bbox = out.getbbox()
     if bbox:
         out = out.crop(bbox)
     px2 = out.load()
     w2, h2 = out.size
     hil, hit, hir, hib = _hole_bounds(px2, w2, h2)
-    if hir > hil and hib > hit:
+    rails = [hil, hit, w2 - 1 - hir, h2 - 1 - hib]
+    if hir > hil and hib > hit and min(rails) >= 40:
         out, *_ = trim_asymmetric_rails(out, hil, hit, hir, hib)
         bbox = out.getbbox()
         if bbox:
@@ -3103,6 +4495,20 @@ def replace_left_rail_from_right(img: Image.Image) -> Image.Image:
     return out
 
 
+def replace_right_rail_from_left(img: Image.Image) -> Image.Image:
+    """Ekran görüntüsünde kesilmiş sağ rayı sol profilin yatay aynası ile tamamla."""
+    left, _top, right, _bottom = _measure_rails(img)
+    if min(left, right) <= 0 or right >= left - 2:
+        return img
+    w, h = img.size
+    rest = img.crop((0, 0, w - right, h))
+    src = img.crop((0, 0, left, h)).transpose(Image.FLIP_LEFT_RIGHT)
+    out = Image.new("RGBA", (rest.width + left, h), (0, 0, 0, 0))
+    out.paste(rest, (0, 0), rest)
+    out.paste(src, (rest.width, 0))
+    return out
+
+
 def restore_cropped_top_from_bottom(img: Image.Image, n: int = 10) -> Image.Image:
     """Üst dış fitili kesilmişse alttaki koyu dış şeridi çevirip üste ekle."""
     w, h = img.size
@@ -3659,14 +5065,9 @@ STUDIO_INNER_HAZE: dict[str, str] = {
     "35-lik-altin.png": "altin",
     "35-lik-lacivert.png": "lacivert",
     "35-lik-beyaz.png": "beyaz",
-    "34-l-beyaz.png": "34-beyaz",
-    "34-l-bej.png": "pale",
-    "34-l-gumus.png": "pale",
-    "34-l-oksit-gumus.png": "cream-lip",
-    "34-l-eskitme-altin.png": "eskitme",
-    "34-l-siyah.png": "grey-lip",
+    "35-l-bej.png": "pale",
+    "35-l-oksit-gumus.png": "cream-lip",
     "47-l-altin.png": "grey-mat",
-    "fa-41-siyah.png": "grey-lip",
     "fa-41-kahve.png": "cream-lip",
     "fa-41-ceviz-gumus.png": "pale",
 }
@@ -3674,7 +5075,6 @@ STUDIO_INNER_HAZE: dict[str, str] = {
 STUDIO_EQUALIZE_INWARD: set[str] = set()
 
 STUDIO_EQUALIZE_NONE: set[str] = {
-    "34-l-eskitme-altin.png",
     "47-l-altin.png",
     "47-l-kahve.png",
     "fa-41-ceviz-gumus.png",
@@ -3690,22 +5090,17 @@ STUDIO_PEEL_OUTER_PALE: set[str] = {
 }
 
 STUDIO_OUTER_PALE: set[str] = {
-    "34-l-bakir.png",
-    "34-l-duz-altin.png",
-    "34-l-oksit-gumus.png",
-    "34-l-siyah.png",
+    "35-l-bakir.png",
+    "35-l-duz-altin.png",
+    "35-l-oksit-gumus.png",
     "fa-41-oksit-gumus.png",
-    "fa-41-siyah.png",
 }
 
 STUDIO_DARK_OUTER_RIM: set[str] = {
-    "34-l-duz-altin.png",
-    "34-l-siyah.png",
+    "35-l-duz-altin.png",
 }
 
-STUDIO_PEEL_GREY_DARK_OUTER: set[str] = {
-    "fa-41-siyah.png",
-}
+STUDIO_PEEL_GREY_DARK_OUTER: set[str] = set()
 
 STUDIO_RESTORE_TOP_FROM_BOTTOM: set[str] = set()
 
@@ -3724,12 +5119,12 @@ STUDIO_REPLACE_TOP_FROM_BOTTOM: set[str] = set()
 STUDIO_REPLACE_LEFT_FROM_RIGHT: set[str] = set()
 
 STUDIO_FAITHFUL_BLACK_SQUARE: set[str] = {
-    "34-l-bronz.png",
-    "34-l-altin.png",
+    "35-l-bronz.png",
+    "35-l-altin.png",
     "47-l-ceviz.png",
 }
 
-# Eskitme altın çatlakları delik olmasın (34 L'ye dokunma).
+# Eskitme altın çatlakları delik olmasın (35 L'ye dokunma).
 STUDIO_KEEP_DARK_SPECKS: set[str] = {
     "47-l-ceviz.png",
 }
@@ -3742,6 +5137,7 @@ STUDIO_DILATE_HOLE: set[str] = {
 
 STUDIO_MATTE_WHITE_BLACK: set[str] = {
     "47-l-beyaz.png",
+    "34-l-beyaz.png",
 }
 
 STUDIO_BLACK_SATIN: set[str] = {
@@ -3754,6 +5150,30 @@ STUDIO_WHITE_PROFILE: set[str] = {
     "fa-41-beyaz.png",
 }
 
+STUDIO_FA41_PRODUCT: set[str] = {
+    "fa-41-siyah.png",
+    "fa-41-altin.png",
+    "fa-41-gumus.png",
+    "fa-41-sampanya.png",
+}
+
+STUDIO_35L_GUMUS: set[str] = {
+    "35-l-gumus.png",
+}
+
+STUDIO_29KR_DUZ: set[str] = {
+    "29-kr-duz-ceviz.png",
+    "29-kr-duz-altin.png",
+    "29-kr-duz-gumus.png",
+}
+
+STUDIO_34L_PRODUCT: set[str] = {
+    "34-l-siyah.png",
+    "34-l-ceviz.png",
+    "34-l-eskitme-altin.png",
+    "34-l-sampanya.png",
+}
+
 STUDIO_KEEP_LONG_OUTER: set[str] = {
     "47-l-altin.png",
     "47-l-kahve.png",
@@ -3763,7 +5183,6 @@ STUDIO_KEEP_LONG_OUTER: set[str] = {
 STUDIO_EXTRA_INWARD: dict[str, tuple[int, int, int, int]] = {
     "47-l-altin.png": (0, 4, 0, 0),
     "fa-41-ceviz-gumus.png": (2, 0, 2, 8),
-    "fa-41-beyaz.png": (12, 14, 12, 12),
 }
 
 
@@ -3816,6 +5235,35 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
     if dest.name in STUDIO_WHITE_PROFILE:
         out = extract_white_profile_frame(raw)
         out = _postprocess_named_frame(out, dest.name)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
+    if dest.name in STUDIO_FA41_PRODUCT:
+        out = extract_fa41_product_frame(raw)
+        out = _postprocess_named_frame(out, dest.name)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
+    if dest.name in STUDIO_35L_GUMUS:
+        out = extract_opaque_on_black(raw)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
+    if dest.name in STUDIO_29KR_DUZ:
+        out = extract_29kr_duz_product(raw)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
+    if dest.name in STUDIO_34L_PRODUCT:
+        out = extract_34l_product_frame(raw)
         dest.parent.mkdir(parents=True, exist_ok=True)
         out.save(dest, "PNG")
         if force_thickness is not None:

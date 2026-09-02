@@ -17,8 +17,16 @@
       "label": "29 D"
     },
     {
+      "id": "29krduz",
+      "label": "29 KR Düz"
+    },
+    {
       "id": "34l",
       "label": "34 L"
+    },
+    {
+      "id": "35l",
+      "label": "35 L"
     },
     {
       "id": "47l",
@@ -380,6 +388,69 @@
         }
       ],
       "previewImage": "/frames/previews/29-d-platin-preview.png"
+    },
+    {
+      "id": "29 KR Düz Ceviz",
+      "code": "29 KR Düz",
+      "colorName": "Ceviz",
+      "label": "29 KR Düz Ceviz",
+      "categories": [
+        "29krduz"
+      ],
+      "thickness": 94,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-kr-duz-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/29-kr-duz-ceviz-preview.png"
+    },
+    {
+      "id": "29 KR Düz Altın",
+      "code": "29 KR Düz",
+      "colorName": "Altın",
+      "label": "29 KR Düz Altın",
+      "categories": [
+        "29krduz"
+      ],
+      "thickness": 76,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-kr-duz-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/29-kr-duz-altin-preview.png"
+    },
+    {
+      "id": "29 KR Düz Gümüş",
+      "code": "29 KR Düz",
+      "colorName": "Gümüş",
+      "label": "29 KR Düz Gümüş",
+      "categories": [
+        "29krduz"
+      ],
+      "thickness": 84,
+      "defaultMm": 29,
+      "radius": 0,
+      "image": "/frames/29-kr-duz-gumus.png",
+      "colors": [
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#A8A296"
+        }
+      ],
+      "previewImage": "/frames/previews/29-kr-duz-gumus-preview.png"
     },
     {
       "id": "F30 D91 Beyaz",
@@ -1079,6 +1150,49 @@
       "previewImage": "/frames/previews/35-lik-sampanya-preview.png"
     },
     {
+      "id": "34 L Beyaz",
+      "code": "34 L",
+      "colorName": "Beyaz",
+      "label": "34 L Beyaz",
+      "categories": [
+        "34l"
+      ],
+      "thickness": 135,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/34-l-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/34-l-beyaz-preview.png"
+    },
+    {
+      "id": "34 L Siyah",
+      "code": "34 L",
+      "colorName": "Siyah",
+      "label": "34 L Siyah",
+      "categories": [
+        "34l"
+      ],
+      "thickness": 87,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/34-l-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/34-l-siyah-preview.png"
+    },
+    {
       "id": "34 L Ceviz",
       "code": "34 L",
       "colorName": "Ceviz",
@@ -1086,7 +1200,7 @@
       "categories": [
         "34l"
       ],
-      "thickness": 106,
+      "thickness": 91,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/34-l-ceviz.png",
@@ -1107,7 +1221,7 @@
       "categories": [
         "34l"
       ],
-      "thickness": 104,
+      "thickness": 89,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/34-l-eskitme-altin.png",
@@ -1121,17 +1235,80 @@
       "previewImage": "/frames/previews/34-l-eskitme-altin-preview.png"
     },
     {
-      "id": "34 L Bronz",
+      "id": "34 L Şampanya",
       "code": "34 L",
-      "colorName": "Bronz",
-      "label": "34 L Bronz",
+      "colorName": "Şampanya",
+      "label": "34 L Şampanya",
       "categories": [
         "34l"
       ],
       "thickness": 99,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-bronz.png",
+      "image": "/frames/34-l-sampanya.png",
+      "colors": [
+        {
+          "id": "sampanya",
+          "label": "Şampanya",
+          "hex": "#D4C4A8"
+        }
+      ],
+      "previewImage": "/frames/previews/34-l-sampanya-preview.png"
+    },
+    {
+      "id": "35 L Ceviz",
+      "code": "35 L",
+      "colorName": "Ceviz",
+      "label": "35 L Ceviz",
+      "categories": [
+        "35l"
+      ],
+      "thickness": 106,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/35-l-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/35-l-ceviz-preview.png"
+    },
+    {
+      "id": "35 L Eskitme Altın",
+      "code": "35 L",
+      "colorName": "Eskitme Altın",
+      "label": "35 L Eskitme Altın",
+      "categories": [
+        "35l"
+      ],
+      "thickness": 104,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/35-l-eskitme-altin.png",
+      "colors": [
+        {
+          "id": "eskitme-altin",
+          "label": "Eskitme Altın",
+          "hex": "#A67C52"
+        }
+      ],
+      "previewImage": "/frames/previews/35-l-eskitme-altin-preview.png"
+    },
+    {
+      "id": "35 L Bronz",
+      "code": "35 L",
+      "colorName": "Bronz",
+      "label": "35 L Bronz",
+      "categories": [
+        "35l"
+      ],
+      "thickness": 99,
+      "defaultMm": 34,
+      "radius": 0,
+      "image": "/frames/35-l-bronz.png",
       "colors": [
         {
           "id": "bronz",
@@ -1139,20 +1316,20 @@
           "hex": "#8C6A3F"
         }
       ],
-      "previewImage": "/frames/previews/34-l-bronz-preview.png"
+      "previewImage": "/frames/previews/35-l-bronz-preview.png"
     },
     {
-      "id": "34 L Bej",
-      "code": "34 L",
+      "id": "35 L Bej",
+      "code": "35 L",
       "colorName": "Bej",
-      "label": "34 L Bej",
+      "label": "35 L Bej",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 93,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-bej.png",
+      "image": "/frames/35-l-bej.png",
       "colors": [
         {
           "id": "bej",
@@ -1160,20 +1337,20 @@
           "hex": "#C4A882"
         }
       ],
-      "previewImage": "/frames/previews/34-l-bej-preview.png"
+      "previewImage": "/frames/previews/35-l-bej-preview.png"
     },
     {
-      "id": "34 L Oksit Altın",
-      "code": "34 L",
+      "id": "35 L Oksit Altın",
+      "code": "35 L",
       "colorName": "Oksit Altın",
-      "label": "34 L Oksit Altın",
+      "label": "35 L Oksit Altın",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 119,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-oksit-altin.png",
+      "image": "/frames/35-l-oksit-altin.png",
       "colors": [
         {
           "id": "oksit-altin",
@@ -1181,20 +1358,20 @@
           "hex": "#B8956A"
         }
       ],
-      "previewImage": "/frames/previews/34-l-oksit-altin-preview.png"
+      "previewImage": "/frames/previews/35-l-oksit-altin-preview.png"
     },
     {
-      "id": "34 L Beyaz",
-      "code": "34 L",
+      "id": "35 L Beyaz",
+      "code": "35 L",
       "colorName": "Beyaz",
-      "label": "34 L Beyaz",
+      "label": "35 L Beyaz",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 104,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-beyaz.png",
+      "image": "/frames/35-l-beyaz.png",
       "colors": [
         {
           "id": "beyaz",
@@ -1203,20 +1380,20 @@
           "stroke": "#ccc"
         }
       ],
-      "previewImage": "/frames/previews/34-l-beyaz-preview.png"
+      "previewImage": "/frames/previews/35-l-beyaz-preview.png"
     },
     {
-      "id": "34 L Antik Bronz",
-      "code": "34 L",
+      "id": "35 L Antik Bronz",
+      "code": "35 L",
       "colorName": "Antik Bronz",
-      "label": "34 L Antik Bronz",
+      "label": "35 L Antik Bronz",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 132,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-antik-bronz.png",
+      "image": "/frames/35-l-antik-bronz.png",
       "colors": [
         {
           "id": "antik-bronz",
@@ -1224,20 +1401,20 @@
           "hex": "#6E4E32"
         }
       ],
-      "previewImage": "/frames/previews/34-l-antik-bronz-preview.png"
+      "previewImage": "/frames/previews/35-l-antik-bronz-preview.png"
     },
     {
-      "id": "34 L Gri",
-      "code": "34 L",
+      "id": "35 L Gri",
+      "code": "35 L",
       "colorName": "Gri",
-      "label": "34 L Gri",
+      "label": "35 L Gri",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 119,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-gri.png",
+      "image": "/frames/35-l-gri.png",
       "colors": [
         {
           "id": "gri",
@@ -1245,20 +1422,20 @@
           "hex": "#6B7280"
         }
       ],
-      "previewImage": "/frames/previews/34-l-gri-preview.png"
+      "previewImage": "/frames/previews/35-l-gri-preview.png"
     },
     {
-      "id": "34 L Gümüş",
-      "code": "34 L",
+      "id": "35 L Gümüş",
+      "code": "35 L",
       "colorName": "Gümüş",
-      "label": "34 L Gümüş",
+      "label": "35 L Gümüş",
       "categories": [
-        "34l"
+        "35l"
       ],
-      "thickness": 66,
+      "thickness": 113,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-gumus.png",
+      "image": "/frames/35-l-gumus.png",
       "colors": [
         {
           "id": "gumus",
@@ -1266,20 +1443,20 @@
           "hex": "#D8DCDC"
         }
       ],
-      "previewImage": "/frames/previews/34-l-gumus-preview.png"
+      "previewImage": "/frames/previews/35-l-gumus-preview.png"
     },
     {
-      "id": "34 L Altın",
-      "code": "34 L",
+      "id": "35 L Altın",
+      "code": "35 L",
       "colorName": "Altın",
-      "label": "34 L Altın",
+      "label": "35 L Altın",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 104,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-altin.png",
+      "image": "/frames/35-l-altin.png",
       "colors": [
         {
           "id": "altin",
@@ -1287,20 +1464,20 @@
           "hex": "#C8A84B"
         }
       ],
-      "previewImage": "/frames/previews/34-l-altin-preview.png"
+      "previewImage": "/frames/previews/35-l-altin-preview.png"
     },
     {
-      "id": "34 L Bakır",
-      "code": "34 L",
+      "id": "35 L Bakır",
+      "code": "35 L",
       "colorName": "Bakır",
-      "label": "34 L Bakır",
+      "label": "35 L Bakır",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 100,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-bakir.png",
+      "image": "/frames/35-l-bakir.png",
       "colors": [
         {
           "id": "bakir",
@@ -1308,20 +1485,20 @@
           "hex": "#B87333"
         }
       ],
-      "previewImage": "/frames/previews/34-l-bakir-preview.png"
+      "previewImage": "/frames/previews/35-l-bakir-preview.png"
     },
     {
-      "id": "34 L Kahve",
-      "code": "34 L",
+      "id": "35 L Kahve",
+      "code": "35 L",
       "colorName": "Kahve",
-      "label": "34 L Kahve",
+      "label": "35 L Kahve",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 93,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-kahve.png",
+      "image": "/frames/35-l-kahve.png",
       "colors": [
         {
           "id": "kahve",
@@ -1329,20 +1506,20 @@
           "hex": "#5C3D1E"
         }
       ],
-      "previewImage": "/frames/previews/34-l-kahve-preview.png"
+      "previewImage": "/frames/previews/35-l-kahve-preview.png"
     },
     {
-      "id": "34 L Oksit Gümüş",
-      "code": "34 L",
+      "id": "35 L Oksit Gümüş",
+      "code": "35 L",
       "colorName": "Oksit Gümüş",
-      "label": "34 L Oksit Gümüş",
+      "label": "35 L Oksit Gümüş",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 117,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-oksit-gumus.png",
+      "image": "/frames/35-l-oksit-gumus.png",
       "colors": [
         {
           "id": "oksit-gumus",
@@ -1350,20 +1527,20 @@
           "hex": "#A39E94"
         }
       ],
-      "previewImage": "/frames/previews/34-l-oksit-gumus-preview.png"
+      "previewImage": "/frames/previews/35-l-oksit-gumus-preview.png"
     },
     {
-      "id": "34 L Siyah",
-      "code": "34 L",
+      "id": "35 L Siyah",
+      "code": "35 L",
       "colorName": "Siyah",
-      "label": "34 L Siyah",
+      "label": "35 L Siyah",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 116,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-siyah.png",
+      "image": "/frames/35-l-siyah.png",
       "colors": [
         {
           "id": "siyah",
@@ -1371,20 +1548,20 @@
           "hex": "#1a1a1a"
         }
       ],
-      "previewImage": "/frames/previews/34-l-siyah-preview.png"
+      "previewImage": "/frames/previews/35-l-siyah-preview.png"
     },
     {
-      "id": "34 L Düz Altın",
-      "code": "34 L",
+      "id": "35 L Düz Altın",
+      "code": "35 L",
       "colorName": "Düz Altın",
-      "label": "34 L Düz Altın",
+      "label": "35 L Düz Altın",
       "categories": [
-        "34l"
+        "35l"
       ],
       "thickness": 100,
       "defaultMm": 34,
       "radius": 0,
-      "image": "/frames/34-l-duz-altin.png",
+      "image": "/frames/35-l-duz-altin.png",
       "colors": [
         {
           "id": "duz-altin",
@@ -1392,7 +1569,7 @@
           "hex": "#C8A84B"
         }
       ],
-      "previewImage": "/frames/previews/34-l-duz-altin-preview.png"
+      "previewImage": "/frames/previews/35-l-duz-altin-preview.png"
     },
     {
       "id": "47 L Siyah",
@@ -1529,7 +1706,7 @@
       "categories": [
         "fa41"
       ],
-      "thickness": 53,
+      "thickness": 134,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/fa-41-beyaz.png",
@@ -1551,7 +1728,7 @@
       "categories": [
         "fa41"
       ],
-      "thickness": 59,
+      "thickness": 62,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/fa-41-siyah.png",
@@ -1572,7 +1749,7 @@
       "categories": [
         "fa41"
       ],
-      "thickness": 66,
+      "thickness": 92,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/fa-41-gumus.png",
@@ -1593,7 +1770,7 @@
       "categories": [
         "fa41"
       ],
-      "thickness": 59,
+      "thickness": 95,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/fa-41-sampanya.png",
@@ -1614,7 +1791,7 @@
       "categories": [
         "fa41"
       ],
-      "thickness": 85,
+      "thickness": 91,
       "defaultMm": 34,
       "radius": 0,
       "image": "/frames/fa-41-altin.png",

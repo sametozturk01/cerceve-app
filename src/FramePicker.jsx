@@ -25,9 +25,9 @@ import {
 } from "./utils/frameOverridesStorage";
 import { formatTurkishPrice, linePriceForSize } from "./utils/framePricing";
 import { getFrameDisplayLabel } from "./utils/frameDisplay";
-import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride, hydrateCustomCategoriesFromShared, hydrateSeriesLabelsFromShared, isUserSeries, rememberCategories, rememberSeriesLabels } from "./utils/categoriesStorage";
+import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride, hydrateCustomCategoriesFromShared, hydrateSeriesLabelsFromShared, isUserSeries, rememberCategories, rememberSeriesLabels, mergeVisibleCategories, stripCatalogDuplicateCategories, pruneCatalogDuplicateCategories, sanitizeSeriesLabelOverrides } from "./utils/categoriesStorage";
 import { loadHiddenSeriesIds, hideSeriesCategory, hydrateHiddenSeriesFromShared, rememberHiddenSeriesIds, restoreCatalogSeriesOnce } from "./utils/hiddenSeriesStorage";
-import { fetchSharedCatalog } from "./utils/sharedCatalogClient";
+import { fetchSharedCatalog, putSharedCatalog } from "./utils/sharedCatalogClient";
 import { mergeCustomFrames, mergeCategories, mergeObjectMaps, rememberDeletedCategoryIds, rememberDeletedFrameIds } from "./utils/catalogSync";
 import { BASE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "./data/frameFormOptions";
 import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
@@ -72,8 +72,6 @@ const DECOR_SAMPLES = [
     layout: { cx: 0.487, cy: 0.27, slotW: 0.373, slotH: 0.195 },
   },
 ];
-
-const SIZES = SIZE_OPTIONS;
 
 const FRAME_PRICE = { none: 0 };
 
@@ -127,27 +125,7 @@ function buildSizeLabel(isCustomSize, customW, customH, selectedSize) {
   return selectedSize.label;
 }
 
-const PLACEHOLDER_SRC =
-  "data:image/svg+xml;charset=utf-8," +
-  encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="640" height="640">
-      <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#87CEEB"/>
-          <stop offset="100%" stop-color="#E0F4FF"/>
-        </linearGradient>
-      </defs>
-      <rect width="640" height="640" fill="url(#sky)"/>
-      <ellipse cx="180" cy="160" rx="110" ry="60" fill="#fff" opacity="0.7"/>
-      <ellipse cx="450" cy="130" rx="90"  ry="50" fill="#fff" opacity="0.6"/>
-      <polygon points="120,450 260,270 400,450" fill="#6a7f5c"/>
-      <polygon points="320,450 480,250 640,450" fill="#5a7048"/>
-      <rect x="0"   y="450" width="640" height="190" fill="#8bc34a" opacity="0.6"/>
-      <rect x="0"   y="500" width="640" height="140" fill="#7cb342" opacity="0.5"/>
-      <rect x="240" y="375" width="45"  height="75"  fill="#8B4513"/>
-      <rect x="218" y="345" width="88"  height="44"  fill="#CD5C5C"/>
-    </svg>
-  `);
+const PLACEHOLDER_SRC = "/baslangic.jpg";
 
 // ─── Yardımcılar ──────────────────────────────────────────────────────────────
 
@@ -921,7 +899,7 @@ export default function FramePicker() {
   
   const [selectedFrameId, setSelectedFrameId] = useState("none");
   const [selectedColorId, setSelectedColorId] = useState(null);
-  const [selectedSize,  setSelectedSize]  = useState(SIZES[0]);
+  const [selectedSize,  setSelectedSize]  = useState(SIZE_OPTIONS[0]);
   const [activeView,    setActiveView]    = useState("tablo");
   const [selectedDecor, setSelectedDecor] = useState("koltuk");
   const [added,         setAdded]         = useState(false);
@@ -932,8 +910,10 @@ export default function FramePicker() {
   const [customFrames,  setCustomFrames]  = useState([]);
   const [hiddenFrameIds, setHiddenFrameIds] = useState(() => loadHiddenFrameIds());
   const [frameOverrides, setFrameOverrides] = useState(() => loadFrameOverrides());
-  const [userCategories, setUserCategories] = useState(() => loadCustomCategories());
-  const [seriesLabelOverrides, setSeriesLabelOverrides] = useState(() => loadSeriesLabelOverrides());
+  const [userCategories, setUserCategories] = useState(() =>
+    stripCatalogDuplicateCategories(loadCustomCategories(), FRAME_CATEGORIES)
+  );
+  const [seriesLabelOverrides, setSeriesLabelOverrides] = useState(() => loadSeriesLabelOverrides(FRAME_CATEGORIES));
   const [hiddenSeriesIds, setHiddenSeriesIds] = useState(() => loadHiddenSeriesIds());
   const [showAddModal,  setShowAddModal]  = useState(false);
   const [showSeriesManage, setShowSeriesManage] = useState(false);
@@ -944,6 +924,12 @@ export default function FramePicker() {
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [toast,         setToast]         = useState(null);
   const toastTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!SIZE_OPTIONS.some((s) => s.id === selectedSize?.id)) {
+      setSelectedSize(SIZE_OPTIONS[0]);
+    }
+  }, [selectedSize]);
 
   const customFramesRef = useRef(customFrames);
   customFramesRef.current = customFrames;
@@ -965,8 +951,8 @@ export default function FramePicker() {
         }
         setCustomFrames(frames);
         const [cats, labels, overrides, _hiddenSeries, hiddenFrames] = await Promise.all([
-          hydrateCustomCategoriesFromShared(),
-          hydrateSeriesLabelsFromShared(),
+          hydrateCustomCategoriesFromShared(FRAME_CATEGORIES),
+          hydrateSeriesLabelsFromShared(FRAME_CATEGORIES),
           hydrateFrameOverridesFromShared(),
           hydrateHiddenSeriesFromShared(),
           hydrateHiddenFramesFromShared(),
@@ -975,7 +961,9 @@ export default function FramePicker() {
         setUserCategories(cats);
         setSeriesLabelOverrides(labels);
         setFrameOverrides(overrides);
+        restoreCatalogSeriesOnce("29krduz");
         restoreCatalogSeriesOnce("35lik");
+        restoreCatalogSeriesOnce("35l");
         restoreCatalogSeriesOnce("47l");
         restoreCatalogSeriesOnce("fa41");
         setHiddenSeriesIds(restoreCatalogSeriesOnce("34l"));
@@ -988,14 +976,31 @@ export default function FramePicker() {
       if (shared.deletedCategoryIds?.length) rememberDeletedCategoryIds(shared.deletedCategoryIds);
       if (shared.deletedFrameIds?.length) rememberDeletedFrameIds(shared.deletedFrameIds);
       setCustomFrames((prev) => mergeCustomFrames(prev, shared.frames));
-      setUserCategories((prev) => rememberCategories(mergeCategories(prev, shared.categories)));
-      setSeriesLabelOverrides((prev) => rememberSeriesLabels(mergeObjectMaps(prev, shared.seriesLabels)));
+      setUserCategories((prev) =>
+        rememberCategories(
+          stripCatalogDuplicateCategories(
+            mergeCategories(prev, shared.categories),
+            FRAME_CATEGORIES
+          )
+        )
+      );
+      setSeriesLabelOverrides((prev) => {
+        const cleaned = sanitizeSeriesLabelOverrides(
+          mergeObjectMaps(prev, shared.seriesLabels),
+          FRAME_CATEGORIES
+        );
+        if (JSON.stringify(cleaned) !== JSON.stringify(shared.seriesLabels ?? {})) {
+          putSharedCatalog({ seriesLabels: cleaned }).catch(() => {});
+        }
+        return rememberSeriesLabels(cleaned);
+      });
       setFrameOverrides((prev) => rememberFrameOverrides(mergeObjectMaps(prev, shared.overrides)));
       setHiddenSeriesIds(rememberHiddenSeriesIds(shared.hiddenSeriesIds));
       setHiddenFrameIds(rememberHiddenFrameIds(shared.hiddenFrameIds));
     };
 
     refresh(true).catch((err) => console.error(err));
+    pruneCatalogDuplicateCategories(FRAME_CATEGORIES);
 
     const poll = window.setInterval(() => {
       refresh(false).catch((err) => console.error(err));
@@ -1107,11 +1112,7 @@ export default function FramePicker() {
   const searchQuery = frameSearch.trim().toLocaleLowerCase("tr-TR");
 
   const allCategories = useMemo(
-    () =>
-      [...FRAME_CATEGORIES, ...userCategories].map((cat) => ({
-        ...cat,
-        label: seriesLabelOverrides[cat.id] ?? cat.label,
-      })),
+    () => mergeVisibleCategories(FRAME_CATEGORIES, userCategories, seriesLabelOverrides),
     [userCategories, seriesLabelOverrides]
   );
 
@@ -1311,10 +1312,10 @@ export default function FramePicker() {
     if (isUserSeries(cat)) {
       setUserCategories(renameCustomCategory(cat.id, trimmed));
       if (seriesLabelOverrides[cat.id]) {
-        setSeriesLabelOverrides(saveSeriesLabelOverride(cat.id, ""));
+        setSeriesLabelOverrides(saveSeriesLabelOverride(cat.id, "", FRAME_CATEGORIES));
       }
     } else {
-      setSeriesLabelOverrides(saveSeriesLabelOverride(cat.id, trimmed));
+      setSeriesLabelOverrides(saveSeriesLabelOverride(cat.id, trimmed, FRAME_CATEGORIES));
     }
     showToast({ type: "success", message: "Seri adı güncellendi." }, 2200);
   };
@@ -1772,16 +1773,17 @@ export default function FramePicker() {
 
         <p className="fp-section-label">Boyut</p>
         <div className="fp-size-grid">
-          {SIZES.map((s) => (
+          {SIZE_OPTIONS.map((s) => (
             <button
               key={s.id}
+              type="button"
               className={`fp-size-btn${!isCustomSize && selectedSize.id === s.id ? " active" : ""}`}
               onClick={() => {
                 setSelectedSize(s);
                 setIsCustomSize(false);
               }}
             >
-              {s.label}
+              <span className="fp-size-btn-label">{s.label}</span>
             </button>
           ))}
         </div>
@@ -2123,7 +2125,7 @@ export default function FramePicker() {
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSaved={handleFrameAdded}
-        categoryOptions={[...BASE_CATEGORY_OPTIONS, ...userCategories]}
+        categoryOptions={[...BASE_CATEGORY_OPTIONS, ...stripCatalogDuplicateCategories(userCategories, FRAME_CATEGORIES)]}
         seriesOptions={seriesOptions}
         defaultCode={
           frameCategory && frameCategory !== "all"
@@ -2148,7 +2150,7 @@ export default function FramePicker() {
         frame={editingFrame}
         onClose={closeEditModal}
         onSaved={handleFrameEdited}
-        categoryOptions={[...BASE_CATEGORY_OPTIONS, ...userCategories]}
+        categoryOptions={[...BASE_CATEGORY_OPTIONS, ...stripCatalogDuplicateCategories(userCategories, FRAME_CATEGORIES)]}
         seriesOptions={seriesOptions}
         onAddSeries={createUserSeries}
       />

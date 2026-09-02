@@ -2927,13 +2927,22 @@ body {
 
 .fp-size-btn {
   padding: 8px 4px;
-  font-size: 12px;
+  font-size: 13px;
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   cursor: pointer;
-  color: #444;
+  color: #1e293b;
   transition: all 0.12s;
+}
+
+.fp-size-btn-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .fp-size-btn:hover {
