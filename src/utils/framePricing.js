@@ -127,6 +127,15 @@ export function formatTurkishPrice(value) {
   return Math.max(0, Math.round(Number(value) || 0)).toLocaleString("tr-TR");
 }
 
+/** Dış çerçeve kalınlığı düşülünce iç açılış (cm). */
+export function innerOpeningCm(widthCm, heightCm, outerMm) {
+  const inset = (Math.max(0, Number(outerMm) || 0) / 10) * 2;
+  return {
+    widthCm: Math.max(0, (Number(widthCm) || 0) - inset),
+    heightCm: Math.max(0, (Number(heightCm) || 0) - inset),
+  };
+}
+
 export function linePriceForSize(
   frame,
   legacyPriceMap,

@@ -81,6 +81,16 @@ COLOR_DEFAULTS: dict[str, dict] = {
     "bakir": {"id": "bakir", "label": "Bakır", "hex": "#B87333"},
     "eskitme altın": {"id": "eskitme-altin", "label": "Eskitme Altın", "hex": "#A67C52"},
     "eskitme altin": {"id": "eskitme-altin", "label": "Eskitme Altın", "hex": "#A67C52"},
+    "yeşil eskitme": {"id": "yesileskitme", "label": "Yeşil Eskitme", "hex": "#3D6B5C"},
+    "yesil eskitme": {"id": "yesileskitme", "label": "Yeşil Eskitme", "hex": "#3D6B5C"},
+    "mavi eskitme": {"id": "mavieskitme", "label": "Mavi Eskitme", "hex": "#5A6A78"},
+    "kahve eskitme": {"id": "kahveeskitme", "label": "Kahve Eskitme", "hex": "#3D2A1F"},
+    "gümüş eskitme": {"id": "gumuseskitme", "label": "Gümüş Eskitme", "hex": "#8A8580"},
+    "gumus eskitme": {"id": "gumuseskitme", "label": "Gümüş Eskitme", "hex": "#8A8580"},
+    "gümüş ceviz": {"id": "gumusceviz", "label": "Gümüş Ceviz", "hex": "#8A7B6E"},
+    "gumus ceviz": {"id": "gumusceviz", "label": "Gümüş Ceviz", "hex": "#8A7B6E"},
+    "kahve altın": {"id": "kahvealtin", "label": "Kahve Altın", "hex": "#6B4A30"},
+    "kahve altin": {"id": "kahvealtin", "label": "Kahve Altın", "hex": "#6B4A30"},
     "antik bronz": {"id": "antik-bronz", "label": "Antik Bronz", "hex": "#6E4E32"},
 }
 
@@ -95,6 +105,10 @@ SERIES_CATEGORY = {
     "29 kr düz": "29krduz",
     "29 kr duz": "29krduz",
     "FA 29 KR": "29krduz",
+    "28 KR Boncuklu": "28krboncuklu",
+    "28 KR": "28krboncuklu",
+    "28 kr boncuklu": "28krboncuklu",
+    "28 kr": "28krboncuklu",
     "29 -210": "29210",
     "A 25": "a25",
     "B 26": "b26",
@@ -129,6 +143,9 @@ SERIES_CATEGORY = {
     "FA 41": "fa41",
     "fa 41": "fa41",
     "Fa 41": "fa41",
+    "FA 52": "fa52",
+    "fa 52": "fa52",
+    "Fa 52": "fa52",
 }
 
 
@@ -3149,6 +3166,159 @@ def _clear_29kr_outer_corner_specks(img: Image.Image, corner: int = 28) -> Image
     return out
 
 
+def _seal_frame_rail_gaps(img: Image.Image) -> Image.Image:
+    """Ray bölgesindeki şeffaf iğne deliklerini doldur; nine-slice üst kenarı kırılmasın."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    in_hole = bytearray(w * h)
+    cx, cy = w // 2, h // 2
+    if px[cx, cy][3] < 30:
+        q: deque[tuple[int, int]] = deque([(cx, cy)])
+        while q:
+            x, y = q.popleft()
+            i = y * w + x
+            if in_hole[i]:
+                continue
+            if px[x, y][3] >= 30:
+                continue
+            in_hole[i] = 1
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if 0 <= nx < w and 0 <= ny < h:
+                    q.append((nx, ny))
+    for _ in range(8):
+        for y in range(h):
+            for x in range(w):
+                if in_hole[y * w + x] or px[x, y][3] >= 30:
+                    continue
+                for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                    if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] >= 30 and not in_hole[ny * w + nx]:
+                        px[x, y] = px[nx, ny]
+                        break
+    return out
+
+
+def _straighten_hole_top_edge(img: Image.Image) -> Image.Image:
+    """Üst iç kenarda boncuk bandını yiyen dalgalı deliği düzleştir."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il + 4 or ib <= it + 4:
+        return out
+
+    tops: list[int] = []
+    for x in range(il + 2, ir - 1):
+        y = 0
+        while y < h and px[x, y][3] >= 30:
+            y += 1
+        tops.append(y)
+    if not tops:
+        return out
+
+    target = max(tops)
+    for x in range(il + 2, ir - 1):
+        y = 0
+        while y < h and px[x, y][3] >= 30:
+            y += 1
+        if y >= target:
+            continue
+        ref_y = target
+        while ref_y < h and px[x, ref_y][3] < 30:
+            ref_y += 1
+        if ref_y >= h:
+            continue
+        ref = px[x, ref_y]
+        for yy in range(y, target):
+            px[x, yy] = ref
+
+    for y in range(target, ib + 1):
+        for x in range(il + 1, ir):
+            px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def _merge_studio_outer_top_band(fa_img: Image.Image, studio_img: Image.Image, max_band: int = 42) -> Image.Image:
+    """FA41 temiz ray + stüdyo çıkarımının üst dış oyma bandı."""
+    merged = fa_img.convert("RGBA")
+    bbox = studio_img.getbbox()
+    if not bbox:
+        return merged
+    st_crop = studio_img.crop(bbox)
+    fw, fh = merged.size
+    if st_crop.width != fw:
+        st_crop = st_crop.resize((fw, st_crop.height), Image.LANCZOS)
+    mpx = merged.load()
+    spx = st_crop.load()
+    sw, sh = st_crop.size
+
+    def top_rail(im: Image.Image) -> int:
+        px = im.load()
+        w, h = im.size
+        y = 0
+        while y < h and px[w // 2, y][3] >= 30:
+            y += 1
+        return y
+
+    band = min(max_band, top_rail(merged), top_rail(st_crop))
+    for y in range(band):
+        for x in range(fw):
+            if x < sw and spx[x, y][3] >= 30:
+                mpx[x, y] = spx[x, y]
+    return merged
+
+
+def extract_28kr_boncuklu_gumus(img: Image.Image) -> Image.Image:
+    """Gümüş boncuklu: FA41 iç delik + stüdyo üst dış profil."""
+    rgba = img.convert("RGBA")
+    fa = extract_fa41_product_frame(rgba)
+    studio = extract_studio_wall_frame(rgba, keep_long_outer=True)
+    if studio is not None:
+        fa = _merge_studio_outer_top_band(fa, studio)
+    out = _straighten_hole_top_edge(fa)
+    return _seal_frame_rail_gaps(out)
+
+
+def extract_28kr_boncuklu_wood(img: Image.Image) -> Image.Image:
+    """Ceviz boncuklu: duvar flood + ray pinhole tamiri."""
+    out = extract_29kr_duz_wood_on_wall(img)
+    out = _seal_frame_rail_gaps(out)
+    out = _trim_transparent_midline_padding(out)
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+        out = _trim_transparent_midline_padding(out)
+    return out
+
+
+def extract_28kr_boncuklu_product(img: Image.Image, dest_name: str = "") -> Image.Image:
+    """28 KR Boncuklu ürün fotoğrafı: iç boncuklu dudak korunur."""
+    rgba = img.convert("RGBA")
+    name = dest_name.lower()
+    if "ceviz" in name:
+        return extract_28kr_boncuklu_wood(rgba)
+    if "altin" in name:
+        return extract_29kr_duz_product(rgba)
+    if "gumus" in name:
+        return extract_28kr_boncuklu_gumus(rgba)
+    studio = extract_studio_wall_frame(rgba, keep_long_outer=True)
+    if studio is not None and _studio_extract_usable(studio):
+        return _finish_29kr_duz(studio)
+    wood = extract_29kr_duz_wood_on_wall(rgba)
+    if _29kr_wood_usable(wood):
+        return wood
+    kr = extract_29kr_duz_product(rgba)
+    if _studio_extract_usable(kr):
+        return kr
+    c34 = extract_34l_product_frame(rgba)
+    if _studio_extract_usable(c34):
+        return _finish_29kr_duz(c34)
+    fa = extract_fa41_product_frame(rgba)
+    if _studio_extract_usable(fa):
+        return _finish_29kr_duz(fa)
+    return _finish_29kr_duz(kr)
+
+
 def extract_29kr_duz_product(img: Image.Image) -> Image.Image:
     """29 KR Düz ürün fotoğrafı: duvar + iç boncuklu dudak korunur."""
     rgba = img.convert("RGBA")
@@ -3666,6 +3836,131 @@ def extract_studio_wall_frame(img: Image.Image, keep_long_outer: bool = False) -
     return cropped
 
 
+def extract_fa52_product_frame(img: Image.Image) -> Image.Image:
+    """FA 52 ürün fotoğrafı: dış kenarı ve iç profil çizgilerini kesmeden çıkar."""
+    src = img.convert("RGBA")
+    w, h = src.size
+    px = src.load()
+    cx, cy = w // 2, h // 2
+    center = px[cx, cy][:3]
+    cbr = _px_br(center)
+
+    def is_insert(p: tuple[int, int, int]) -> bool:
+        dist = _color_dist(p, center)
+        br = _px_br(p)
+        spr = _px_spread(p)
+        # Siyah dolgulu çekim: yalnız koyu insert; krem dudağı/oluğu yeme.
+        if cbr < 80:
+            return br < 80
+        if spr >= 26:
+            return False
+        if br < 160 and dist >= 18:
+            return False
+        if dist < 26:
+            return True
+        if br >= 175 and spr < 14:
+            return True
+        return False
+
+    def first_inner(dx: int, dy: int, ox: int, oy: int) -> int | None:
+        x, y = ox, oy
+        last = x if dx else y
+        streak = 0
+        steps = 0
+        while 0 < x < w - 1 and 0 < y < h - 1 and steps < max(w, h):
+            x += dx
+            y += dy
+            steps += 1
+            coord = x if dx else y
+            if is_insert(px[x, y][:3]):
+                streak = 0
+                last = coord
+                continue
+            streak += 1
+            if streak >= 3:
+                return coord - 2 * dx if dx else coord - 2 * dy
+        return last if last != (ox if dx else oy) else None
+
+    def median_inner(dx: int, dy: int) -> int:
+        samples: list[int] = []
+        if dx:
+            for i in range(3, 8):
+                yy = cy + (h // 16) * (i - 5)
+                yy = min(max(yy, 8), h - 9)
+                v = first_inner(dx, 0, cx, yy)
+                if v is not None:
+                    samples.append(v)
+        else:
+            for i in range(3, 8):
+                xx = cx + (w // 16) * (i - 5)
+                xx = min(max(xx, 8), w - 9)
+                v = first_inner(0, dy, xx, cy)
+                if v is not None:
+                    samples.append(v)
+        if not samples:
+            v = first_inner(dx, dy, cx, cy)
+            return v if v is not None else (cx if dx else cy)
+        samples.sort()
+        return samples[len(samples) // 2]
+
+    il, ir, it, ib = median_inner(-1, 0), median_inner(1, 0), median_inner(0, -1), median_inner(0, 1)
+    if ir - il < w * 0.18 or ib - it < h * 0.18:
+        return extract_34l_product_frame(src)
+
+    bg = sample_border_background(px, w, h)
+    bg_br = _px_br(bg)
+
+    def is_margin(p: tuple[int, int, int]) -> bool:
+        """Yalnızca stüdyo fonu; açık renk çerçeve dudağına girme."""
+        if _px_spread(p) >= 14:
+            return False
+        br = _px_br(p)
+        dist = _color_dist(p, bg)
+        if dist < 12 and abs(br - bg_br) < 8:
+            return True
+        if bg_br >= 248 and br >= 248 and dist < 10:
+            return True
+        return False
+
+    def first_outer(start_x: int, start_y: int, dx: int, dy: int, inner: int) -> int:
+        x, y = start_x, start_y
+        edge = x if dx else y
+        while 0 <= x < w and 0 <= y < h:
+            coord = x if dx else y
+            if (dx > 0 and coord >= inner) or (dx < 0 and coord <= inner) or (
+                dy > 0 and coord >= inner
+            ) or (dy < 0 and coord <= inner):
+                return edge
+            p = px[x, y][:3]
+            if not is_margin(p):
+                return coord
+            x += dx
+            y += dy
+        return edge
+
+    ol = first_outer(0, cy, 1, 0, il)
+    oright = first_outer(w - 1, cy, -1, 0, ir)
+    ot = first_outer(cx, 0, 0, 1, it)
+    ob = first_outer(cx, h - 1, 0, -1, ib)
+
+    if oright - ol < 40 or ob - ot < 40:
+        return extract_34l_product_frame(src)
+
+    cropped = src.crop((ol, ot, oright + 1, ob + 1)).copy()
+    il -= ol
+    ir -= ol
+    it -= ot
+    ib -= ot
+    cw, ch = cropped.size
+    opx = cropped.load()
+    clear = (0, 0, 0, 0)
+    # İç dudağın ilk pikselini bırak; sadece karton/insert'i sil.
+    for y in range(it + 1, ib):
+        for x in range(il + 1, ir):
+            opx[x, y] = clear
+    return cropped
+
+
 def _median_rgb(samples: list[tuple[int, int, int]]) -> tuple[int, int, int]:
     rs, gs, bs = zip(*samples)
     n = len(samples) // 2
@@ -3985,9 +4280,9 @@ def expand_hole_inward(
 
 
 def _haze_walk(
-    px, x: int, y: int, dx: int, dy: int, limit: int, is_haze
+    px, x: int, y: int, dx: int, dy: int, limit: int, is_haze, w: int, h: int
 ) -> int:
-    if x < 0 or y < 0:
+    if x < 0 or y < 0 or x >= w or y >= h:
         return 0
     r0, g0, b0, a0 = px[x, y]
     if a0 < 30:
@@ -3995,7 +4290,7 @@ def _haze_walk(
     start_br = _px_br((r0, g0, b0))
     dist = 0
     while dist < limit:
-        if x < 0 or y < 0:
+        if x < 0 or y < 0 or x >= w or y >= h:
             break
         r, g, b, a = px[x, y]
         if a < 30:
@@ -4020,16 +4315,16 @@ def _side_haze_depth(
         xs = [il + (ir - il) * i // 8 for i in range(2, 7)]
         for x in xs:
             if side == "top":
-                depths.append(_haze_walk(px, x, it - 1, 0, -1, min(max_d, it), is_haze))
+                depths.append(_haze_walk(px, x, it - 1, 0, -1, min(max_d, it), is_haze, w, h))
             else:
-                depths.append(_haze_walk(px, x, ib + 1, 0, 1, min(max_d, h - 1 - ib), is_haze))
+                depths.append(_haze_walk(px, x, ib + 1, 0, 1, min(max_d, h - 1 - ib), is_haze, w, h))
     else:
         ys = [it + (ib - it) * i // 8 for i in range(2, 7)]
         for y in ys:
             if side == "left":
-                depths.append(_haze_walk(px, il - 1, y, -1, 0, min(max_d, il), is_haze))
+                depths.append(_haze_walk(px, il - 1, y, -1, 0, min(max_d, il), is_haze, w, h))
             else:
-                depths.append(_haze_walk(px, ir + 1, y, 1, 0, min(max_d, w - 1 - ir), is_haze))
+                depths.append(_haze_walk(px, ir + 1, y, 1, 0, min(max_d, w - 1 - ir), is_haze, w, h))
     if not depths:
         return 0
     depths.sort()
@@ -4072,6 +4367,8 @@ def expand_studio_inner_haze(img: Image.Image, kind: str, equalize: str = "outer
         return _expand_beyaz_inner(img)
     elif kind == "34-beyaz":
         return _expand_34_beyaz_inner(img)
+    elif kind == "fa52-beyaz":
+        return _expand_fa52_beyaz_inner(img)
     else:
         return img
 
@@ -4085,6 +4382,103 @@ def expand_studio_inner_haze(img: Image.Image, kind: str, equalize: str = "outer
     bottom = _side_haze_depth(px, w, h, il, it, ir, ib, "bottom", is_haze, max_d, pct)
     left = _side_haze_depth(px, w, h, il, it, ir, ib, "left", is_haze, max_d, pct)
     return expand_hole_inward(img, top, right, bottom, left, equalize=equalize)
+
+
+def _expand_fa52_beyaz_inner(img: Image.Image) -> Image.Image:
+    """FA 52 beyaz: yalnız parlak insert artığını al; iç dudağı ve oluğu bırak."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+    cx = (il + ir) // 2
+    cy = (it + ib) // 2
+
+    def walk(get, start: int, step: int, limit: int) -> int:
+        coord = start + step
+        eaten = 0
+        last = start
+        while eaten < 20:
+            if (step < 0 and coord < limit) or (step > 0 and coord > limit):
+                break
+            r, g, b, a = get(coord)
+            if a < 50:
+                break
+            br = (r + g + b) / 3
+            spr = max(r, g, b) - min(r, g, b)
+            if br < 182 or spr > 16:
+                break
+            last = coord
+            coord += step
+            eaten += 1
+        return last
+
+    it2 = walk(lambda y: px[cx, y], it, -1, 0)
+    ib2 = walk(lambda y: px[cx, y], ib, 1, h - 1)
+    il2 = walk(lambda x: px[x, cy], il, -1, 0)
+    ir2 = walk(lambda x: px[x, cy], ir, 1, w - 1)
+    return expand_hole_inward(img, it - it2, ir2 - ir, ib2 - ib, il - il2, equalize="none")
+
+
+def thicken_inner_cream_lip(img: Image.Image, pad: int = 20) -> Image.Image:
+    """İç krem dudağı deliğe doğru kalınlaştır; oluk fotoğrafın yanında gri halka olmasın."""
+    out = img.convert("RGBA").copy()
+    px = out.load()
+    w, h = out.size
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir - il < pad * 2 + 16 or ib - it < pad * 2 + 16:
+        return img
+    cx, cy = (il + ir) // 2, (it + ib) // 2
+
+    def cream_row_y(start: int, step: int, limit: int) -> int:
+        y = start + step
+        fallback = start + step
+        for _ in range(28):
+            if (step < 0 and y < limit) or (step > 0 and y > limit):
+                break
+            r, g, b, a = px[cx, y]
+            if a >= 50:
+                br = (r + g + b) / 3
+                if 148 <= br <= 178:
+                    return y
+                fallback = y
+            y += step
+        return fallback
+
+    def cream_col_x(start: int, step: int, limit: int) -> int:
+        x = start + step
+        fallback = start + step
+        for _ in range(28):
+            if (step < 0 and x < limit) or (step > 0 and x > limit):
+                break
+            r, g, b, a = px[x, cy]
+            if a >= 50:
+                br = (r + g + b) / 3
+                if 148 <= br <= 178:
+                    return x
+                fallback = x
+            x += step
+        return fallback
+
+    src_t = cream_row_y(it, -1, 0)
+    src_b = cream_row_y(ib, 1, h - 1)
+    src_l = cream_col_x(il, -1, 0)
+    src_r = cream_col_x(ir, 1, w - 1)
+
+    for d in range(pad):
+        y = it + d
+        for x in range(il, ir + 1):
+            px[x, y] = px[x, src_t]
+        y = ib - d
+        for x in range(il, ir + 1):
+            px[x, y] = px[x, src_b]
+        x = il + d
+        for y in range(it, ib + 1):
+            px[x, y] = px[src_l, y]
+        x = ir - d
+        for y in range(it, ib + 1):
+            px[x, y] = px[src_r, y]
+    return out
 
 
 def _expand_beyaz_inner(img: Image.Image) -> Image.Image:
@@ -4270,6 +4664,46 @@ def peel_to_dark_outer_rim(img: Image.Image, max_peel: int = 18, min_br: float =
             cropped = True
         if not cropped:
             break
+    bbox = out.getbbox()
+    if bbox:
+        out = out.crop(bbox)
+    return out
+
+
+def peel_dark_studio_outer(img: Image.Image, min_cream_br: float = 145, max_peel: int = 24) -> Image.Image:
+    """FA 52 beyaz: siyah/gri stüdyo kenarını krem dış dudağa kadar soy."""
+    out = img.convert("RGBA")
+    for _ in range(max_peel):
+        px = out.load()
+        w, h = out.size
+        if w < 40 or h < 40:
+            break
+        cropped = False
+        med_br, _ = _side_mid_stats(px, w, h, "bottom")
+        if med_br < min_cream_br:
+            out = out.crop((0, 0, w, h - 1))
+            cropped = True
+        elif _side_mid_stats(px, w, h, "left")[0] < min_cream_br:
+            out = out.crop((1, 0, w, h))
+            cropped = True
+        elif _side_mid_stats(px, w, h, "right")[0] < min_cream_br:
+            out = out.crop((0, 0, w - 1, h))
+            cropped = True
+        elif _side_mid_stats(px, w, h, "top")[0] < min_cream_br:
+            out = out.crop((0, 1, w, h))
+            cropped = True
+        if not cropped:
+            break
+
+    px = out.load()
+    w, h = out.size
+    for y in range(h):
+        for x in range(w):
+            if 4 <= x < w - 4 and 4 <= y < h - 4:
+                continue
+            r, g, b, a = px[x, y]
+            if a >= 30 and (r + g + b) / 3 < 80:
+                px[x, y] = (0, 0, 0, 0)
     bbox = out.getbbox()
     if bbox:
         out = out.crop(bbox)
@@ -4987,6 +5421,160 @@ def rebuild_horizontal_rails_from_right(img: Image.Image) -> Image.Image:
     return out
 
 
+def _fa52_walk_inner_mat(
+    get, start: int, step: int, limit: int, max_eat: int = 24
+) -> int:
+    """İç krem/gri matı ye; koyu oluk veya renkli gövdeye gelince dur."""
+    coord = start + step
+    eaten = 0
+    last = start
+    while eaten < max_eat:
+        if (step < 0 and coord < limit) or (step > 0 and coord > limit):
+            break
+        r, g, b, a = get(coord)
+        if a < 50:
+            break
+        br = (r + g + b) / 3
+        spr = max(r, g, b) - min(r, g, b)
+        if br < 70 and spr < 30:
+            break
+        if spr >= 42 and br > 95:
+            break
+        if eaten == 0 and br < 118 and spr < 22:
+            break
+        if br > 118 and spr < 38:
+            last = coord
+            coord += step
+            eaten += 1
+            continue
+        if eaten > 0 and br > 100 and spr < 24 and eaten < 16:
+            last = coord
+            coord += step
+            eaten += 1
+            continue
+        break
+    return last
+
+
+def punch_fa52_inner_mat(img: Image.Image) -> Image.Image:
+    """FA 52: kenar başına iç matı aç; koyu iç çizgiler rayda kalsın."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il or ib <= it:
+        return img
+    cx = (il + ir) // 2
+    cy = (it + ib) // 2
+    it2 = _fa52_walk_inner_mat(lambda y: px[cx, y], it, -1, 0)
+    ib2 = _fa52_walk_inner_mat(lambda y: px[cx, y], ib, 1, h - 1)
+    il2 = _fa52_walk_inner_mat(lambda x: px[x, cy], il, -1, 0)
+    ir2 = _fa52_walk_inner_mat(lambda x: px[x, cy], ir, 1, w - 1)
+    return expand_hole_inward(img, it - it2, ir2 - ir, ib2 - ib, il - il2, equalize="none")
+
+
+def finalize_asymmetric_frame_hole(img: Image.Image) -> Image.Image:
+    """Deliği gerçek sınırlarda dikdörtgen yap; ray dokusunu koru."""
+    w, h = img.size
+    px = img.load()
+    il, it, ir, ib = _hole_bounds(px, w, h)
+    if ir <= il + 8 or ib <= it + 8:
+        return img
+    out = img.convert("RGBA").copy()
+    px = out.load()
+    clear = (0, 0, 0, 0)
+    for y in range(it, ib + 1):
+        for x in range(il, ir + 1):
+            px[x, y] = clear
+
+    for _ in range(4):
+        changed = False
+        nxt = out.copy()
+        npx = nxt.load()
+        px = out.load()
+        for y in range(h):
+            in_rail_y = y < it or y > ib
+            for x in range(w):
+                in_rail_x = x < il or x > ir
+                if not (in_rail_x or in_rail_y):
+                    continue
+                if px[x, y][3] >= 250:
+                    continue
+                acc = [0, 0, 0]
+                n = 0
+                for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                    if 0 <= nx < w and 0 <= ny < h:
+                        r, g, b, a = px[nx, ny]
+                        if a >= 250:
+                            acc[0] += r
+                            acc[1] += g
+                            acc[2] += b
+                            n += 1
+                if n:
+                    npx[x, y] = (acc[0] // n, acc[1] // n, acc[2] // n, 255)
+                    changed = True
+        out = nxt
+        if not changed:
+            break
+    return out
+
+
+def finalize_fa52_frame(img: Image.Image, dest_name: str) -> Image.Image:
+    """FA 52: deliği düzelt; beyazda açık iç duvarı al, oluğu bırak."""
+    if dest_name == "fa-52-beyaz.png":
+        img = peel_dark_studio_outer(img)
+        img = _expand_fa52_beyaz_inner(img)
+    return finalize_asymmetric_frame_hole(img)
+
+
+def normalize_rectangular_frame_hole(img: Image.Image) -> Image.Image:
+    """Dört rayı eşitler ve deliği dikdörtgen yapar; fotoğraf kaymasın."""
+    left, top, right, bottom = _measure_rails(img)
+    s = min(left, top, right, bottom)
+    if s < 8:
+        return img
+    w, h = img.size
+    if w < s * 2 + 8 or h < s * 2 + 8:
+        return img
+    out = img.convert("RGBA").copy()
+    px = out.load()
+    clear = (0, 0, 0, 0)
+    for y in range(s, h - s):
+        for x in range(s, w - s):
+            px[x, y] = clear
+
+    # Ray içindeki şeffaf/silik pikselleri komşudan doldur.
+    for _ in range(4):
+        changed = False
+        nxt = out.copy()
+        npx = nxt.load()
+        px = out.load()
+        for y in range(h):
+            in_rail_y = y < s or y >= h - s
+            for x in range(w):
+                in_rail_x = x < s or x >= w - s
+                if not (in_rail_x or in_rail_y):
+                    continue
+                if px[x, y][3] >= 250:
+                    continue
+                acc = [0, 0, 0]
+                n = 0
+                for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                    if 0 <= nx < w and 0 <= ny < h:
+                        r, g, b, a = px[nx, ny]
+                        if a >= 250:
+                            acc[0] += r
+                            acc[1] += g
+                            acc[2] += b
+                            n += 1
+                if n:
+                    npx[x, y] = (acc[0] // n, acc[1] // n, acc[2] // n, 255)
+                    changed = True
+        out = nxt
+        if not changed:
+            break
+    return out
+
+
 def _postprocess_named_frame(img: Image.Image, dest_name: str) -> Image.Image:
     haze_kind = STUDIO_INNER_HAZE.get(dest_name)
     if dest_name in STUDIO_EQUALIZE_INWARD:
@@ -5057,6 +5645,11 @@ def _postprocess_named_frame(img: Image.Image, dest_name: str) -> Image.Image:
             bbox = img.getbbox()
             if bbox:
                 img = img.crop(bbox)
+    if dest_name == "22-lik-siyah.png":
+        img = peel_to_dark_outer_rim(img, min_br=78)
+        img = compose_square_tile(img)
+    if dest_name in STUDIO_FA52_PRODUCT:
+        img = finalize_fa52_frame(img, dest_name)
     return img
 
 
@@ -5079,6 +5672,18 @@ STUDIO_EQUALIZE_NONE: set[str] = {
     "47-l-kahve.png",
     "fa-41-ceviz-gumus.png",
     "fa-41-beyaz.png",
+    "fa-52-yesil-eskitme.png",
+    "fa-52-altin.png",
+    "fa-52-ceviz.png",
+    "fa-52-gumus-ceviz.png",
+    "fa-52-oksit-gumus.png",
+    "fa-52-beyaz.png",
+    "fa-52-mavi-eskitme.png",
+    "fa-52-kahve-eskitme.png",
+    "fa-52-kahve.png",
+    "fa-52-sampanya.png",
+    "fa-52-siyah.png",
+    "fa-52-kahve-altin.png",
 }
 
 STUDIO_MIRROR_LEFT_FROM_RIGHT: set[str] = set()
@@ -5167,11 +5772,33 @@ STUDIO_29KR_DUZ: set[str] = {
     "29-kr-duz-gumus.png",
 }
 
+STUDIO_28KR_BONCUKLU: set[str] = {
+    "28-kr-boncuklu-ceviz.png",
+    "28-kr-boncuklu-altin.png",
+    "28-kr-boncuklu-gumus.png",
+}
+
 STUDIO_34L_PRODUCT: set[str] = {
     "34-l-siyah.png",
     "34-l-ceviz.png",
     "34-l-eskitme-altin.png",
     "34-l-sampanya.png",
+}
+
+STUDIO_FA52_PRODUCT: set[str] = {
+    "fa-52-yesil-eskitme.png",
+    "fa-52-altin.png",
+    "fa-52-ceviz.png",
+    "fa-52-gumus-ceviz.png",
+    "fa-52-oksit-gumus.png",
+    "fa-52-beyaz.png",
+    "fa-52-mavi-eskitme.png",
+    "fa-52-kahve-eskitme.png",
+    "fa-52-kahve.png",
+    "fa-52-sampanya.png",
+    "fa-52-siyah.png",
+    "fa-52-kahve-altin.png",
+    "fa-52-gumus-eskitme.png",
 }
 
 STUDIO_KEEP_LONG_OUTER: set[str] = {
@@ -5262,6 +5889,23 @@ def process_frame_png(src: Path, dest: Path, force_thickness: int | None = None)
         if force_thickness is not None:
             return force_thickness
         return measure_output_thickness(out)
+    if dest.name in STUDIO_28KR_BONCUKLU:
+        out = extract_28kr_boncuklu_product(raw, dest.name)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
+    if dest.name in STUDIO_FA52_PRODUCT:
+        out = extract_fa52_product_frame(raw)
+        out = finalize_fa52_frame(out, dest.name)
+        out = compose_square_tile(out)
+        out = finalize_asymmetric_frame_hole(out)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        out.save(dest, "PNG")
+        if force_thickness is not None:
+            return force_thickness
+        return measure_output_thickness(out)
     if dest.name in STUDIO_34L_PRODUCT:
         out = extract_34l_product_frame(raw)
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -5346,25 +5990,59 @@ def _measure_rails(img: Image.Image) -> tuple[int, int, int, int]:
     return il, it, w - 1 - ir, h - 1 - ib
 
 
+def compose_square_tile(frame_img: Image.Image) -> Image.Image:
+    """Her rayı dıştan iç dudağa tam al; üst/iç profil kesilmez."""
+    img = frame_img.convert("RGBA")
+    left, top, right, bottom = _measure_rails(img)
+    if min(left, top, right, bottom) <= 0:
+        img = crop_to_frame_content(img)
+        left, top, right, bottom = _measure_rails(img)
+        if min(left, top, right, bottom) <= 0:
+            return pad_to_square(img)
+
+    sw, sh = img.size
+    s = max(left, top, right, bottom)
+    inner = max(sw - left - right, sh - top - bottom, 8)
+    side = inner + 2 * s
+    out = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+
+    def blit_box(src: tuple[int, int, int, int], dest: tuple[int, int, int, int], resample=Image.LANCZOS) -> None:
+        sx0, sy0, sx1, sy1 = src
+        dx, dy, dw, dh = dest
+        if sx1 <= sx0 or sy1 <= sy0 or dw <= 0 or dh <= 0:
+            return
+        patch = img.crop((sx0, sy0, sx1, sy1)).resize((dw, dh), resample)
+        out.paste(patch, (dx, dy), patch)
+
+    blit_box((left, 0, sw - right, top), (s, 0, inner, s))
+    blit_box((left, sh - bottom, sw - right, sh), (s, side - s, inner, s))
+    blit_box((0, top, left, sh - bottom), (0, s, s, inner))
+    blit_box((sw - right, top, sw, sh - bottom), (side - s, s, s, inner))
+    blit_box((0, 0, left, top), (0, 0, s, s), Image.NEAREST)
+    blit_box((sw - right, 0, sw, top), (side - s, 0, s, s), Image.NEAREST)
+    blit_box((0, sh - bottom, left, sh), (0, side - s, s, s), Image.NEAREST)
+    blit_box((sw - right, sh - bottom, sw, sh), (side - s, side - s, s, s), Image.NEAREST)
+    return out
+
+
 def compose_square_preview(frame_img: Image.Image, side: int = PREVIEW_SIDE) -> Image.Image:
     """İşlenmiş çerçeveden 20 lik gibi kare, dört kenarlı swatch üretir."""
-    sw, sh = frame_img.size
-    left, top, right, bottom = _measure_rails(frame_img)
+    square = compose_square_tile(frame_img)
+    left, top, right, bottom = _measure_rails(square)
     if min(left, top, right, bottom) <= 0:
-        cropped = crop_to_frame_content(frame_img)
-        square = pad_to_square(cropped)
         return square.resize((side, side), Image.LANCZOS)
 
     t = max(12, round(side * PREVIEW_RAIL_RATIO))
     out = Image.new("RGBA", (side, side), (26, 26, 26, 255))
+    sw, sh = square.size
+    s = min(left, top, right, bottom)
 
     def blit(sx: int, sy: int, sW: int, sH: int, dx: int, dy: int, dW: int, dH: int, resample=Image.LANCZOS) -> None:
         if sW <= 0 or sH <= 0 or dW <= 0 or dH <= 0:
             return
-        patch = frame_img.crop((sx, sy, sx + sW, sy + sH)).resize((dW, dH), resample)
+        patch = square.crop((sx, sy, sx + sW, sy + sH)).resize((dW, dH), resample)
         out.paste(patch, (dx, dy), patch)
 
-    s = min(left, top, right, bottom)
     blit(s, 0, sw - 2 * s, s, t, 0, side - 2 * t, t)
     blit(s, sh - s, sw - 2 * s, s, t, side - t, side - 2 * t, t)
     blit(0, s, s, sh - 2 * s, 0, t, t, side - 2 * t)

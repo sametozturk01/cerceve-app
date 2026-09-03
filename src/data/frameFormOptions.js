@@ -1,10 +1,11 @@
-export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "29 KR Düz", "34 L", "35 L", "35 lik", "47 L", "FA 41", "F30 D91", "F30 Düz", "30 luk Ağaç Kabuğu", "46 d", "46 Ağaç Kabuğu", ""];
+export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "29 KR Düz", "28 KR Boncuklu", "34 L", "35 L", "35 lik", "47 L", "FA 41", "FA 52", "F30 D91", "F30 Düz", "30 luk Ağaç Kabuğu", "46 d", "46 Ağaç Kabuğu", ""];
 
 export const BASE_CATEGORY_OPTIONS = [
   { id: "20lik", label: "20 lik" },
   { id: "22lik", label: "22 lik" },
   { id: "29d", label: "29 D" },
   { id: "29krduz", label: "29 KR Düz" },
+  { id: "28krboncuklu", label: "28 KR Boncuklu" },
   { id: "34l", label: "34 L" },
   { id: "35l", label: "35 L" },
   { id: "35lik", label: "35 lik" },
@@ -13,6 +14,7 @@ export const BASE_CATEGORY_OPTIONS = [
   { id: "f30d91", label: "F30 D91" },
   { id: "f30duz", label: "F30 Düz" },
   { id: "30luk-agac-kabugu", label: "30 luk Ağaç Kabuğu" },
+  { id: "fa52", label: "FA 52" },
   { id: "46d", label: "46 d" },
   { id: "46-agac-kabugu", label: "46 Ağaç Kabuğu" },
 ];
@@ -21,8 +23,6 @@ export const EDITABLE_CATEGORY_OPTIONS = BASE_CATEGORY_OPTIONS;
 
 export function defaultMmFromSeriesLabel(label) {
   const key = String(label ?? "").trim().toLocaleLowerCase("tr-TR");
-  if (key === "46 d" || key === "46d") return 30;
-  if (key === "46 ağaç kabuğu" || key === "46 agac kabugu") return 30;
   if (key === "fa 41" || key === "fa41") return 34;
   const m = String(label ?? "").match(/(\d+)/);
   if (!m) return 20;

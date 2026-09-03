@@ -21,6 +21,10 @@
       "label": "29 KR Düz"
     },
     {
+      "id": "28krboncuklu",
+      "label": "28 KR Boncuklu"
+    },
+    {
       "id": "34l",
       "label": "34 L"
     },
@@ -59,6 +63,10 @@
     {
       "id": "46-agac-kabugu",
       "label": "46 Ağaç Kabuğu"
+    },
+    {
+      "id": "fa52",
+      "label": "FA 52"
     }
   ],
   "frames": [
@@ -156,6 +164,27 @@
         }
       ],
       "previewImage": "/frames/previews/20-lik-ceviz-preview.png"
+    },
+    {
+      "id": "20 lik Siyah",
+      "code": "20 lik",
+      "colorName": "Siyah",
+      "label": "20 lik Siyah",
+      "categories": [
+        "20lik"
+      ],
+      "thickness": 110,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "/frames/20-lik-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/20-lik-siyah-preview.png"
     },
     {
       "id": "22 lik Beyaz",
@@ -304,6 +333,27 @@
         }
       ],
       "previewImage": "/frames/previews/22-lik-ceviz-preview.png"
+    },
+    {
+      "id": "22 lik Siyah",
+      "code": "22 lik",
+      "colorName": "Siyah",
+      "label": "22 lik Siyah",
+      "categories": [
+        "22lik"
+      ],
+      "thickness": 77,
+      "defaultMm": 22,
+      "radius": 0,
+      "image": "/frames/22-lik-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/22-lik-siyah-preview.png"
     },
     {
       "id": "29 D Ceviz",
@@ -812,6 +862,27 @@
       "previewImage": "/frames/previews/30-luk-agac-kabugu-mavi-preview.png"
     },
     {
+      "id": "30 luk Ağaç Kabuğu Bej",
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Bej",
+      "label": "30 luk Ağaç Kabuğu Bej",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "thickness": 74,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "/frames/30-luk-agac-kabugu-bej.png",
+      "colors": [
+        {
+          "id": "bej",
+          "label": "Bej",
+          "hex": "#C8B99A"
+        }
+      ],
+      "previewImage": "/frames/previews/30-luk-agac-kabugu-bej-preview.png"
+    },
+    {
       "id": "46 d Beyaz",
       "code": "46 d",
       "colorName": "Beyaz",
@@ -820,7 +891,7 @@
         "46d"
       ],
       "thickness": 80,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-d-beyaz.png",
       "colors": [
@@ -842,7 +913,7 @@
         "46d"
       ],
       "thickness": 92,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-d-siyah.png",
       "colors": [
@@ -863,7 +934,7 @@
         "46d"
       ],
       "thickness": 104,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-d-altin.png",
       "colors": [
@@ -884,7 +955,7 @@
         "46d"
       ],
       "thickness": 96,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-d-sampanya.png",
       "colors": [
@@ -905,7 +976,7 @@
         "46d"
       ],
       "thickness": 77,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-d-ceviz.png",
       "colors": [
@@ -926,7 +997,7 @@
         "46-agac-kabugu"
       ],
       "thickness": 107,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-agac-kabugu-platin.png",
       "colors": [
@@ -947,7 +1018,7 @@
         "46-agac-kabugu"
       ],
       "thickness": 118,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-agac-kabugu-ceviz.png",
       "colors": [
@@ -968,7 +1039,7 @@
         "46-agac-kabugu"
       ],
       "thickness": 126,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-agac-kabugu-siyah.png",
       "colors": [
@@ -989,7 +1060,7 @@
         "46-agac-kabugu"
       ],
       "thickness": 108,
-      "defaultMm": 30,
+      "defaultMm": 46,
       "radius": 0,
       "image": "/frames/46-agac-kabugu-altin.png",
       "colors": [
@@ -1136,7 +1207,7 @@
       "categories": [
         "35lik"
       ],
-      "thickness": 85,
+      "thickness": 87,
       "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-lik-sampanya.png",
@@ -1264,7 +1335,7 @@
         "35l"
       ],
       "thickness": 106,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-ceviz.png",
       "colors": [
@@ -1285,7 +1356,7 @@
         "35l"
       ],
       "thickness": 104,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-eskitme-altin.png",
       "colors": [
@@ -1306,7 +1377,7 @@
         "35l"
       ],
       "thickness": 99,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-bronz.png",
       "colors": [
@@ -1327,7 +1398,7 @@
         "35l"
       ],
       "thickness": 93,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-bej.png",
       "colors": [
@@ -1348,7 +1419,7 @@
         "35l"
       ],
       "thickness": 119,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-oksit-altin.png",
       "colors": [
@@ -1369,7 +1440,7 @@
         "35l"
       ],
       "thickness": 104,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-beyaz.png",
       "colors": [
@@ -1391,7 +1462,7 @@
         "35l"
       ],
       "thickness": 132,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-antik-bronz.png",
       "colors": [
@@ -1412,7 +1483,7 @@
         "35l"
       ],
       "thickness": 119,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-gri.png",
       "colors": [
@@ -1433,7 +1504,7 @@
         "35l"
       ],
       "thickness": 113,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-gumus.png",
       "colors": [
@@ -1454,7 +1525,7 @@
         "35l"
       ],
       "thickness": 104,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-altin.png",
       "colors": [
@@ -1475,7 +1546,7 @@
         "35l"
       ],
       "thickness": 100,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-bakir.png",
       "colors": [
@@ -1496,7 +1567,7 @@
         "35l"
       ],
       "thickness": 93,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-kahve.png",
       "colors": [
@@ -1517,7 +1588,7 @@
         "35l"
       ],
       "thickness": 117,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-oksit-gumus.png",
       "colors": [
@@ -1538,7 +1609,7 @@
         "35l"
       ],
       "thickness": 116,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-siyah.png",
       "colors": [
@@ -1559,7 +1630,7 @@
         "35l"
       ],
       "thickness": 100,
-      "defaultMm": 34,
+      "defaultMm": 35,
       "radius": 0,
       "image": "/frames/35-l-duz-altin.png",
       "colors": [
@@ -1580,7 +1651,7 @@
         "47l"
       ],
       "thickness": 165,
-      "defaultMm": 34,
+      "defaultMm": 47,
       "radius": 0,
       "image": "/frames/47-l-siyah.png",
       "colors": [
@@ -1601,7 +1672,7 @@
         "47l"
       ],
       "thickness": 138,
-      "defaultMm": 34,
+      "defaultMm": 47,
       "radius": 0,
       "image": "/frames/47-l-kahve.png",
       "colors": [
@@ -1622,7 +1693,7 @@
         "47l"
       ],
       "thickness": 174,
-      "defaultMm": 34,
+      "defaultMm": 47,
       "radius": 0,
       "image": "/frames/47-l-oksit-gumus.png",
       "colors": [
@@ -1643,7 +1714,7 @@
         "47l"
       ],
       "thickness": 98,
-      "defaultMm": 34,
+      "defaultMm": 47,
       "radius": 0,
       "image": "/frames/47-l-altin.png",
       "colors": [
@@ -1664,7 +1735,7 @@
         "47l"
       ],
       "thickness": 179,
-      "defaultMm": 34,
+      "defaultMm": 47,
       "radius": 0,
       "image": "/frames/47-l-ceviz.png",
       "colors": [
@@ -1685,7 +1756,7 @@
         "47l"
       ],
       "thickness": 154,
-      "defaultMm": 34,
+      "defaultMm": 47,
       "radius": 0,
       "image": "/frames/47-l-beyaz.png",
       "colors": [
@@ -1908,6 +1979,343 @@
         }
       ],
       "previewImage": "/frames/previews/fa-41-oksit-gumus-preview.png"
+    },
+    {
+      "id": "28 KR Boncuklu Ceviz",
+      "code": "28 KR Boncuklu",
+      "colorName": "Ceviz",
+      "label": "28 KR Boncuklu Ceviz",
+      "categories": [
+        "28krboncuklu"
+      ],
+      "thickness": 119,
+      "defaultMm": 28,
+      "radius": 0,
+      "image": "/frames/28-kr-boncuklu-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#5C4A3A"
+        }
+      ],
+      "previewImage": "/frames/previews/28-kr-boncuklu-ceviz-preview.png"
+    },
+    {
+      "id": "28 KR Boncuklu Altın",
+      "code": "28 KR Boncuklu",
+      "colorName": "Altın",
+      "label": "28 KR Boncuklu Altın",
+      "categories": [
+        "28krboncuklu"
+      ],
+      "thickness": 144,
+      "defaultMm": 28,
+      "radius": 0,
+      "image": "/frames/28-kr-boncuklu-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/28-kr-boncuklu-altin-preview.png"
+    },
+    {
+      "id": "28 KR Boncuklu Gümüş",
+      "code": "28 KR Boncuklu",
+      "colorName": "Gümüş",
+      "label": "28 KR Boncuklu Gümüş",
+      "categories": [
+        "28krboncuklu"
+      ],
+      "thickness": 118,
+      "defaultMm": 28,
+      "radius": 0,
+      "image": "/frames/28-kr-boncuklu-gumus.png",
+      "colors": [
+        {
+          "id": "gumus",
+          "label": "Gümüş",
+          "hex": "#A8A296"
+        }
+      ],
+      "previewImage": "/frames/previews/28-kr-boncuklu-gumus-preview.png"
+    },
+    {
+      "id": "FA 52 Yeşil Eskitme",
+      "code": "FA 52",
+      "colorName": "Yeşil Eskitme",
+      "label": "FA 52 Yeşil Eskitme",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 115,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-yesil-eskitme.png",
+      "colors": [
+        {
+          "id": "yesileskitme",
+          "label": "Yeşil Eskitme",
+          "hex": "#3D6B5C"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-yesil-eskitme-preview.png"
+    },
+    {
+      "id": "FA 52 Altın",
+      "code": "FA 52",
+      "colorName": "Altın",
+      "label": "FA 52 Altın",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 155,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-altin.png",
+      "colors": [
+        {
+          "id": "altin",
+          "label": "Altın",
+          "hex": "#C8A84B"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-altin-preview.png"
+    },
+    {
+      "id": "FA 52 Ceviz",
+      "code": "FA 52",
+      "colorName": "Ceviz",
+      "label": "FA 52 Ceviz",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 154,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-ceviz.png",
+      "colors": [
+        {
+          "id": "ceviz",
+          "label": "Ceviz",
+          "hex": "#694e3d"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-ceviz-preview.png"
+    },
+    {
+      "id": "FA 52 Gümüş Ceviz",
+      "code": "FA 52",
+      "colorName": "Gümüş Ceviz",
+      "label": "FA 52 Gümüş Ceviz",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 134,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-gumus-ceviz.png",
+      "colors": [
+        {
+          "id": "gumusceviz",
+          "label": "Gümüş Ceviz",
+          "hex": "#8A7B6E"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-gumus-ceviz-preview.png"
+    },
+    {
+      "id": "FA 52 Oksit Gümüş",
+      "code": "FA 52",
+      "colorName": "Oksit Gümüş",
+      "label": "FA 52 Oksit Gümüş",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 171,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-oksit-gumus.png",
+      "colors": [
+        {
+          "id": "oksit-gumus",
+          "label": "Oksit Gümüş",
+          "hex": "#A39E94"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-oksit-gumus-preview.png"
+    },
+    {
+      "id": "FA 52 Beyaz",
+      "code": "FA 52",
+      "colorName": "Beyaz",
+      "label": "FA 52 Beyaz",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 134,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-beyaz.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#E8E4DC",
+          "stroke": "#ccc"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-beyaz-preview.png"
+    },
+    {
+      "id": "FA 52 Mavi Eskitme",
+      "code": "FA 52",
+      "colorName": "Mavi Eskitme",
+      "label": "FA 52 Mavi Eskitme",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 142,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-mavi-eskitme.png",
+      "colors": [
+        {
+          "id": "mavieskitme",
+          "label": "Mavi Eskitme",
+          "hex": "#5A6A78"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-mavi-eskitme-preview.png"
+    },
+    {
+      "id": "FA 52 Kahve Eskitme",
+      "code": "FA 52",
+      "colorName": "Kahve Eskitme",
+      "label": "FA 52 Kahve Eskitme",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 103,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-kahve-eskitme.png",
+      "colors": [
+        {
+          "id": "kahveeskitme",
+          "label": "Kahve Eskitme",
+          "hex": "#3D2A1F"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-kahve-eskitme-preview.png"
+    },
+    {
+      "id": "FA 52 Kahve",
+      "code": "FA 52",
+      "colorName": "Kahve",
+      "label": "FA 52 Kahve",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 150,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-kahve.png",
+      "colors": [
+        {
+          "id": "kahve",
+          "label": "Kahve",
+          "hex": "#482f20"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-kahve-preview.png"
+    },
+    {
+      "id": "FA 52 Şampanya",
+      "code": "FA 52",
+      "colorName": "Şampanya",
+      "label": "FA 52 Şampanya",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 105,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-sampanya.png",
+      "colors": [
+        {
+          "id": "sampanya",
+          "label": "Şampanya",
+          "hex": "#D4C4A8"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-sampanya-preview.png"
+    },
+    {
+      "id": "FA 52 Siyah",
+      "code": "FA 52",
+      "colorName": "Siyah",
+      "label": "FA 52 Siyah",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 92,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-siyah.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-siyah-preview.png"
+    },
+    {
+      "id": "FA 52 Kahve Altın",
+      "code": "FA 52",
+      "colorName": "Kahve Altın",
+      "label": "FA 52 Kahve Altın",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 115,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-kahve-altin.png",
+      "colors": [
+        {
+          "id": "kahvealtin",
+          "label": "Kahve Altın",
+          "hex": "#6B4A30"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-kahve-altin-preview.png"
+    },
+    {
+      "id": "FA 52 Gümüş Eskitme",
+      "code": "FA 52",
+      "colorName": "Gümüş Eskitme",
+      "label": "FA 52 Gümüş Eskitme",
+      "categories": [
+        "fa52"
+      ],
+      "thickness": 141,
+      "defaultMm": 52,
+      "radius": 0,
+      "image": "/frames/fa-52-gumus-eskitme.png",
+      "colors": [
+        {
+          "id": "gumuseskitme",
+          "label": "Gümüş Eskitme",
+          "hex": "#8A8580"
+        }
+      ],
+      "previewImage": "/frames/previews/fa-52-gumus-eskitme-preview.png"
     }
   ]
 }

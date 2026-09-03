@@ -1,7 +1,15 @@
 import { fetchSharedCatalog, putSharedCatalog } from "./sharedCatalogClient";
 import { mergeObjectMaps } from "./catalogSync";
+import framesCatalog from "../data/frames.json";
 
 const STORAGE_KEY = "cerceve-frame-overrides";
+
+const STALE_DEFAULT_MM_BY_CODE = {
+  "46 d": 30,
+  "46 ağaç kabuğu": 30,
+  "35 l": 34,
+  "47 l": 34,
+};
 
 const PRICE_KEYS = [
   "price",
@@ -35,8 +43,34 @@ function writeAll(data) {
   });
 }
 
+/** Eski kayıtlarda seri kalınlığı yanlış mm ile override edilmişse temizler. */
+export function migrateLegacySeriesDefaultMm(all = readAll()) {
+  const next = { ...all };
+  let changed = false;
+
+  for (const frame of framesCatalog.frames ?? []) {
+    if (!frame?.id || frame.id === "none") continue;
+    const codeKey = String(frame.code ?? "").trim().toLocaleLowerCase("tr-TR");
+    const staleMm = STALE_DEFAULT_MM_BY_CODE[codeKey];
+    if (staleMm === undefined) continue;
+    if ((frame.defaultMm ?? 0) <= staleMm) continue;
+
+    const patch = next[frame.id];
+    if (!patch || patch.defaultMm !== staleMm) continue;
+
+    const cleaned = { ...patch };
+    delete cleaned.defaultMm;
+    if (Object.keys(cleaned).length === 0) delete next[frame.id];
+    else next[frame.id] = cleaned;
+    changed = true;
+  }
+
+  if (changed) writeAll(next);
+  return next;
+}
+
 export function loadFrameOverrides() {
-  return readAll();
+  return migrateLegacySeriesDefaultMm();
 }
 
 export function rememberFrameOverrides(data) {
@@ -54,7 +88,7 @@ export async function hydrateFrameOverridesFromShared() {
   if (Object.keys(merged).some((k) => !sharedKeys.includes(k))) {
     writeAll(merged);
   }
-  return merged;
+  return migrateLegacySeriesDefaultMm();
 }
 
 /** undefined atlanır; null ilgili anahtarı siler */
