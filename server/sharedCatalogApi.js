@@ -1,5 +1,5 @@
 import { corsHeaders, dispatchCatalogRequest } from "./catalogCore.js";
-import { createBlobCatalogStore, createFsCatalogStore, hasBlobToken } from "./catalogStore.js";
+import { resolveCatalogStore } from "./catalogStore.js";
 
 const MAX_BODY = 12 * 1024 * 1024;
 
@@ -59,9 +59,7 @@ export function createSharedCatalogMiddleware(rootDir) {
   let storePromise = null;
   const getStore = () => {
     if (!storePromise) {
-      storePromise = Promise.resolve(
-        hasBlobToken() ? createBlobCatalogStore() : createFsCatalogStore(rootDir)
-      );
+      storePromise = Promise.resolve(resolveCatalogStore(rootDir));
     }
     return storePromise;
   };
@@ -87,6 +85,23 @@ export function createSharedCatalogMiddleware(rootDir) {
       return;
     }
 
+    if (req.method === "GET" && url === "/api/shared-catalog/file") {
+      const store = await getStore();
+      const name = new URL(req.url ?? "/", "http://localhost").searchParams.get("n") ?? "";
+      if (typeof store.serveImage === "function") {
+        const headers = corsHeaders();
+        for (const [key, value] of Object.entries(headers)) res.setHeader(key, value);
+        try {
+          await store.serveImage(name, res);
+        } catch (err) {
+          sendJson(res, 500, { error: err.message || "Görsel okunamadı." });
+        }
+        return;
+      }
+      sendJson(res, 404, { error: "Görsel yok." });
+      return;
+    }
+
     const kind = kindFromPath(url);
     if (!kind) {
       next();
@@ -95,6 +110,12 @@ export function createSharedCatalogMiddleware(rootDir) {
 
     try {
       const store = await getStore();
+      if (!store) {
+        sendJson(res, 503, {
+          error: "Paylaşılan katalog bağlı değil. CATALOG_GITHUB_TOKEN ekleyin.",
+        });
+        return;
+      }
       const body = req.method === "GET" ? {} : await readBody(req);
       const result = await dispatchCatalogRequest({
         method: req.method,

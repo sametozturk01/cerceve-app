@@ -19,6 +19,12 @@ export default defineConfig(({ mode }) => {
   if (env.BLOB_READ_WRITE_TOKEN) {
     process.env.BLOB_READ_WRITE_TOKEN = env.BLOB_READ_WRITE_TOKEN;
   }
+  if (env.CATALOG_GITHUB_TOKEN) {
+    process.env.CATALOG_GITHUB_TOKEN = env.CATALOG_GITHUB_TOKEN;
+  }
+  if (env.GITHUB_TOKEN) {
+    process.env.GITHUB_TOKEN = env.GITHUB_TOKEN;
+  }
 
   return {
     plugins: [react(), sharedCatalogPlugin()],

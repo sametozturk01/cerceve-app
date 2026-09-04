@@ -3,6 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { del, list, put } from "@vercel/blob";
 import { emptyCatalog, normalizeCatalog } from "./catalogCore.js";
+import { createGithubCatalogStore, hasGithubCatalogToken } from "./githubCatalogStore.js";
 
 export function createFsCatalogStore(rootDir) {
   const dir = path.join(rootDir, "data", "shared-catalog");
@@ -68,6 +69,13 @@ export function createFsCatalogStore(rootDir) {
 
 export function hasBlobToken() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+}
+
+export function resolveCatalogStore(rootDir) {
+  if (hasGithubCatalogToken()) return createGithubCatalogStore();
+  if (hasBlobToken()) return createBlobCatalogStore();
+  if (rootDir) return createFsCatalogStore(rootDir);
+  return null;
 }
 
 function metaPath(id) {

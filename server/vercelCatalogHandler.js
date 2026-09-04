@@ -1,5 +1,5 @@
 import { corsHeaders, dispatchCatalogRequest } from "./catalogCore.js";
-import { createBlobCatalogStore, hasBlobToken } from "./catalogStore.js";
+import { resolveCatalogStore } from "./catalogStore.js";
 
 export const vercelCatalogConfig = {
   maxDuration: 30,
@@ -27,16 +27,16 @@ export async function handleVercelCatalog(req, res, kind) {
     return;
   }
 
-  if (!hasBlobToken()) {
+  const store = resolveCatalogStore();
+  if (!store) {
     send(res, 503, {
       error:
-        "Vercel Blob bağlı değil. Vercel Dashboard → Storage → Create Blob Store → bu projeye bağlayın, sonra yeniden deploy edin.",
+        "Paylaşılan katalog bağlı değil. Vercel Environment Variables’a CATALOG_GITHUB_TOKEN ekleyin.",
     });
     return;
   }
 
   try {
-    const store = createBlobCatalogStore();
     const body = req.body && typeof req.body === "object" ? req.body : {};
     const result = await dispatchCatalogRequest({
       method: req.method,

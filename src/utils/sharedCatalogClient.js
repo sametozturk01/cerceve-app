@@ -26,9 +26,12 @@ async function fetchCatalog(path, options = {}) {
 
 async function readError(res, fallback) {
   if (res.status === 413) return "Fotoğraf çok büyük. Daha yakın kırpılmış bir fotoğraf deneyin.";
-  if (res.status === 500) return "Sunucu kaydı alamadı. Biraz sonra tekrar deneyin.";
   const err = await res.json().catch(() => ({}));
-  return err.error || fallback;
+  const msg = String(err.error || "");
+  if (/suspended/i.test(msg)) {
+    return "Vercel depolama durdurulmuş. GitHub katalog için CATALOG_GITHUB_TOKEN gerekir.";
+  }
+  return msg || fallback;
 }
 
 export async function fetchSharedCatalog() {
