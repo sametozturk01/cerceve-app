@@ -1,6 +1,35 @@
 {
-  "frames": [],
-  "categories": [],
+  "frames": [
+    {
+      "id": "custom:20 lik Siyah:mtkfx219",
+      "code": "F30 D91",
+      "colorName": "Siyah",
+      "label": "20 lik Siyah",
+      "categories": [
+        "f30d91"
+      ],
+      "thickness": 88,
+      "defaultMm": 30,
+      "radius": 0,
+      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-20-lik-siyah-mtkfx219-913ec3bf9b.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "custom": true,
+      "updatedAt": 1788374452811
+    }
+  ],
+  "categories": [
+    {
+      "id": "f30d91",
+      "label": "F30 D91",
+      "userAdded": true
+    }
+  ],
   "overrides": {
     "Yeni 20 Platin": {
       "code": "Yeni 20",
