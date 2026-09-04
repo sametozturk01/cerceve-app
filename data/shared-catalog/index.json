@@ -1,29 +1,6 @@
 {
   "frames": [
     {
-      "id": "custom:Paspartu e:mtn8peka",
-      "code": "Paspartu",
-      "colorName": "e",
-      "label": "Paspartu e",
-      "categories": [
-        "paspartu"
-      ],
-      "thickness": 32,
-      "defaultMm": 15,
-      "radius": 0,
-      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-paspartu-e-mtn8peka-922d7003e3.png",
-      "colors": [
-        {
-          "id": "e",
-          "label": "e",
-          "hex": "#888888"
-        }
-      ],
-      "custom": true,
-      "updatedAt": 1788543642106,
-      "accessory": "paspartu"
-    },
-    {
       "id": "custom:Kağıt krem:mtn8cb3o",
       "code": "Kağıt",
       "colorName": "krem",
@@ -234,6 +211,7 @@
     "custom:L profil Siyah:mtmua2nl",
     "custom:L profil Siyah:mtmua95j",
     "custom:L profil Siyah:mtmuaj9m",
-    "custom:L profil Siyah:mtmuawbh"
+    "custom:L profil Siyah:mtmuawbh",
+    "custom:Paspartu e:mtn8peka"
   ]
 }
