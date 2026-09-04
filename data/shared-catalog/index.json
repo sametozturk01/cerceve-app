@@ -1,29 +1,6 @@
 {
   "frames": [
     {
-      "id": "custom:Paspartu nnn:mtn9ygpk",
-      "code": "Paspartu",
-      "colorName": "nnn",
-      "label": "Paspartu nnn",
-      "categories": [
-        "paspartu"
-      ],
-      "thickness": 41,
-      "defaultMm": 28,
-      "radius": 0,
-      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-paspartu-nnn-mtn9ygpk-7e986dac1b.png",
-      "colors": [
-        {
-          "id": "nnn",
-          "label": "nnn",
-          "hex": "#888888"
-        }
-      ],
-      "custom": true,
-      "updatedAt": 1788545744408,
-      "accessory": "paspartu"
-    },
-    {
       "id": "custom:Paspartu sarı:mtn89y05",
       "code": "Paspartu",
       "colorName": "sarı",
@@ -214,6 +191,7 @@
     "custom:L profil Siyah:mtmuawbh",
     "custom:Paspartu e:mtn8peka",
     "custom:Kağıt krem:mtn8cb3o",
-    "custom:Paspartu jkj:mtn9sqno"
+    "custom:Paspartu jkj:mtn9sqno",
+    "custom:Paspartu nnn:mtn9ygpk"
   ]
 }
