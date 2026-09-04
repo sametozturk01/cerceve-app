@@ -1,6 +1,29 @@
 {
   "frames": [
     {
+      "id": "custom:Paspartu llll:mtna16lu",
+      "code": "Paspartu",
+      "colorName": "llll",
+      "label": "Paspartu llll",
+      "categories": [
+        "paspartu"
+      ],
+      "thickness": 39,
+      "defaultMm": 28,
+      "radius": 0,
+      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-paspartu-llll-mtna16lu-7b1a2f0d05.png",
+      "colors": [
+        {
+          "id": "llll",
+          "label": "llll",
+          "hex": "#888888"
+        }
+      ],
+      "custom": true,
+      "updatedAt": 1788545871282,
+      "accessory": "paspartu"
+    },
+    {
       "id": "custom:L profil Siyah:mtmv2cih",
       "code": "L profil",
       "colorName": "Siyah",
