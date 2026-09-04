@@ -32,7 +32,7 @@ import { mergeCustomFrames, mergeCategories, mergeObjectMaps, rememberDeletedCat
 import { BASE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "./data/frameFormOptions";
 import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
 import { BACKING_OPTIONS } from "./data/backingOptions";
-import { PASPARTU_OPTIONS, findPaspartuOption } from "./data/paspartuOptions";
+import { PASPARTU_OPTIONS, PASPARTU_VAR_ID, PASPARTU_PAPER_OPTIONS, PASPARTU_FRAMES, findPaspartuOption, findPaspartuPaper, isNestedPaspartuId } from "./data/paspartuOptions";
 
 function priceToDraft(value) {
   if (value === "" || value == null) return "";
@@ -645,6 +645,7 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
   innerThickness = 0,
   activeView,
   decorId,
+  decorHomeUrl = null,
   selectedSize,
   customThickness,
   fullscreen = false,
@@ -765,8 +766,12 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
       let decorSample = null;
       let decorImg = null;
       if (activeView === "dekor") {
-        decorSample = DECOR_SAMPLES.find((d) => d.id === decorId) ?? DECOR_SAMPLES[0];
-        decorImg = await loadImage(decorSample.url).catch(() => null);
+        if (decorHomeUrl && decorId === "evim") {
+          decorImg = await loadImage(decorHomeUrl).catch(() => null);
+        } else {
+          decorSample = DECOR_SAMPLES.find((d) => d.id === decorId) ?? DECOR_SAMPLES[0];
+          decorImg = await loadImage(decorSample.url).catch(() => null);
+        }
         if (cancelled) return;
       }
 
@@ -854,6 +859,7 @@ const PreviewCanvas = forwardRef(function PreviewCanvas({
     innerThickness,
     activeView,
     decorId,
+    decorHomeUrl,
     selectedSize.id,
     customThickness,
     fullscreen,
@@ -1003,6 +1009,7 @@ export default function FramePicker() {
   const [selectedSize,  setSelectedSize]  = useState(SIZE_OPTIONS[0]);
   const [activeView,    setActiveView]    = useState("tablo");
   const [selectedDecor, setSelectedDecor] = useState("koltuk");
+  const [customDecorUrl, setCustomDecorUrl] = useState(null);
   const [added,         setAdded]         = useState(false);
   const [cartItems,     setCartItems]     = useState([]);
   const addedTimerRef = useRef(null);
@@ -1167,9 +1174,10 @@ export default function FramePicker() {
   const [isCamCategoryOpen, setIsCamCategoryOpen] = useState(false);
   const [isPaspartuOpen, setIsPaspartuOpen] = useState(false);
   const [selectedPaspartuId, setSelectedPaspartuId] = useState(null);
-  const [nestedPickTarget, setNestedPickTarget] = useState("outer");
+  const [nestedPickTarget, setNestedPickTarget] = useState("paspartu");
   const [innerFrameId, setInnerFrameId] = useState(null);
   const [innerColorId, setInnerColorId] = useState(null);
+  const [paspartuPaperId, setPaspartuPaperId] = useState(null);
   const [isCamPriceEditOpen, setIsCamPriceEditOpen] = useState(false);
   const [camUnitDraft, setCamUnitDraft] = useState(() => camDraftFromFrame(null));
   const [camPriceSaving, setCamPriceSaving] = useState(false);
@@ -1188,17 +1196,19 @@ export default function FramePicker() {
     setSelectedPaspartuId(null);
     setInnerFrameId(null);
     setInnerColorId(null);
-    setNestedPickTarget("outer");
+    setPaspartuPaperId(null);
+    setNestedPickTarget("paspartu");
   };
 
   const selectedPaspartu = findPaspartuOption(selectedPaspartuId);
-  const isNestedPaspartu = selectedPaspartuId === "ic-ice";
-  const pickingInnerFrame = isNestedPaspartu && nestedPickTarget === "inner";
+  const selectedPaspartuPaper = findPaspartuPaper(paspartuPaperId);
+  const isNestedPaspartu = isNestedPaspartuId(selectedPaspartuId);
+  const pickingPaspartuFrame = isNestedPaspartu && nestedPickTarget === "paspartu";
 
   const innerFrame = useMemo(() => {
     if (!isNestedPaspartu || !innerFrameId) return null;
-    return allFrames.find((f) => f.id === innerFrameId) ?? null;
-  }, [allFrames, innerFrameId, isNestedPaspartu]);
+    return PASPARTU_FRAMES.find((f) => f.id === innerFrameId) ?? null;
+  }, [innerFrameId, isNestedPaspartu]);
 
   const innerColor = useMemo(() => {
     const colors = innerFrame?.colors ?? [];
@@ -1212,14 +1222,34 @@ export default function FramePicker() {
 
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const photoPickKindRef = useRef("artwork");
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setUploadedImage(ev.target.result);
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      if (photoPickKindRef.current === "room") {
+        setCustomDecorUrl(dataUrl);
+        setSelectedDecor("evim");
+        setActiveView("dekor");
+        return;
+      }
+      setUploadedImage(dataUrl);
+    };
     reader.readAsDataURL(file);
+  };
+
+  const openArtworkPicker = () => {
+    photoPickKindRef.current = "artwork";
+    setShowPhotoPicker(true);
+  };
+
+  const openRoomDecorPicker = () => {
+    photoPickKindRef.current = "room";
+    setShowPhotoPicker(true);
   };
 
   const openGalleryPicker = () => {
@@ -1233,12 +1263,6 @@ export default function FramePicker() {
   };
 
   const handleFrameSelect = (frame) => {
-    if (pickingInnerFrame) {
-      if (frame.id === "none") return;
-      setInnerFrameId(frame.id);
-      setInnerColorId(frame.colors?.[0]?.id ?? null);
-      return;
-    }
     setSelectedFrameId(frame.id);
     setSelectedColorId(frame.colors?.[0]?.id ?? null);
     setIsCamCategoryOpen(false);
@@ -1558,7 +1582,7 @@ export default function FramePicker() {
     ? getFramePrice(innerFrame, FRAME_PRICE, innerOpening.widthCm, innerOpening.heightCm)
     : 0;
   const innerFrameLabel = innerFrame
-    ? `İç çerçeve · ${getFrameDisplayLabel(innerFrame)}`
+    ? `Paspartu · ${getFrameDisplayLabel(innerFrame)}`
     : null;
   const totalPrice = baseTotalPrice + innerFramePrice;
 
@@ -1572,8 +1596,8 @@ export default function FramePicker() {
       showToast({ type: "error", message: "Özel ölçü için en ve boy girin." }, 3200);
       return;
     }
-    if (isNestedPaspartu && !innerFrame) {
-      showToast({ type: "error", message: "İç çerçeveyi seçin." }, 3200);
+    if (isNestedPaspartu && !innerFrame && !selectedPaspartuPaper) {
+      showToast({ type: "error", message: "Paspartu veya kağıt seçin." }, 3200);
       return;
     }
 
@@ -1592,6 +1616,8 @@ export default function FramePicker() {
       viewLabel: activeView === "dekor" ? "Dekor" : "Tablo",
       paspartuId: selectedPaspartuId,
       paspartuLabel: selectedPaspartu?.label ?? null,
+      paspartuPaperId: selectedPaspartuPaper?.id ?? null,
+      paspartuPaperLabel: selectedPaspartuPaper?.label ?? null,
       innerFrameId: innerFrame?.id ?? null,
       innerFrameLabel,
       innerFramePrice,
@@ -1633,6 +1659,7 @@ export default function FramePicker() {
     innerThickness: innerPreviewThickness,
     activeView,
     decorId: selectedDecor,
+    decorHomeUrl: customDecorUrl,
     selectedSize: activeSizeForCanvas,
     customThickness: activeThickness,
   };
@@ -1670,7 +1697,7 @@ export default function FramePicker() {
         <button
           className="fp-upload-btn"
           type="button"
-          onClick={() => setShowPhotoPicker(true)}
+          onClick={openArtworkPicker}
         >
           <span className="fp-upload-btn-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -1749,12 +1776,44 @@ export default function FramePicker() {
 
           {activeView === "dekor" && (
             <div className="fp-decor-panel">
+              <button
+                className="fp-upload-btn fp-decor-cta"
+                type="button"
+                onClick={openRoomDecorPicker}
+              >
+                <span className="fp-upload-btn-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M3 10.5L12 4l9 6.5V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1v-9.5z" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <span className="fp-upload-btn-text">
+                  <span className="fp-upload-btn-title">Evinizde dekorda görün</span>
+                  <span className="fp-upload-btn-sub">Kendi salon fotoğrafınızı yükleyin</span>
+                </span>
+                <span className="fp-upload-btn-arrow" aria-hidden="true">›</span>
+              </button>
+
               <p className="fp-decor-panel-label">Salon seçin</p>
               <HorizontalScrollStrip
                 className="fp-decor-hscroll"
                 trackClassName="fp-decor-row"
                 ariaLabel="Dekor mekanları"
               >
+                {customDecorUrl && (
+                  <button
+                    type="button"
+                    className={`fp-decor-chip${selectedDecor === "evim" ? " active" : ""}`}
+                    onClick={() => setSelectedDecor("evim")}
+                    title="Eviniz"
+                  >
+                    <span
+                      className="fp-decor-chip-thumb"
+                      style={{ backgroundImage: `url(${customDecorUrl})` }}
+                      aria-hidden="true"
+                    />
+                    <span className="fp-decor-chip-label">Eviniz</span>
+                  </button>
+                )}
                 {DECOR_SAMPLES.map((sample) => (
                   <button
                     key={sample.id}
@@ -1849,9 +1908,7 @@ export default function FramePicker() {
         </div>
 
         <div className="fp-section-label-row">
-          <p className="fp-section-label">
-            {pickingInnerFrame ? "İç çerçeve" : isNestedPaspartu ? "Dış çerçeve" : "Çerçeve Tipi"}
-          </p>
+          <p className="fp-section-label">Çerçeve Tipi</p>
           <span className="fp-section-meta">
             {searchQuery
               ? `${selectableFrameCount} sonuç`
@@ -1860,12 +1917,6 @@ export default function FramePicker() {
                 : "Seri seçin"}
           </span>
         </div>
-
-        {pickingInnerFrame && (
-          <p className="fp-frame-pick-hint">
-            Listeden iç çerçeveyi seçin; dış çerçevenin içinde paspartu gibi oturur.
-          </p>
-        )}
 
         {!frameCategory && !searchQuery ? (
           <p className="fp-frame-pick-hint">
@@ -1882,7 +1933,7 @@ export default function FramePicker() {
                 filteredFrames.map((f) => (
                   <div
                     key={f.id}
-                    className={`fp-frame-card${selectedFrame.id === f.id ? " active" : ""}${innerFrame?.id === f.id ? " fp-frame-card-paspartu" : ""}`}
+                    className={`fp-frame-card${selectedFrame.id === f.id ? " active" : ""}`}
                   >
                     {f.id !== "none" && (
                       <div className="fp-frame-card-tools">
@@ -1908,7 +1959,7 @@ export default function FramePicker() {
                     )}
                     <button
                       type="button"
-                      className={`fp-frame-btn${(pickingInnerFrame ? innerFrame?.id === f.id : selectedFrame.id === f.id) ? " active" : ""}`}
+                      className={`fp-frame-btn${selectedFrame.id === f.id ? " active" : ""}`}
                       onClick={() => handleFrameSelect(f)}
                     >
                       <FrameSwatch frame={f} />
@@ -1930,7 +1981,7 @@ export default function FramePicker() {
 
         {selectedFrame.colors?.length > 0 && (
           <>
-            <p className="fp-section-label">{isNestedPaspartu ? "Dış çerçeve rengi" : "Çerçeve Rengi"}</p>
+            <p className="fp-section-label">Çerçeve Rengi</p>
             <div className="fp-color-row">
               {selectedFrame.colors.map((c) => (
                 <button
@@ -1952,7 +2003,7 @@ export default function FramePicker() {
 
         {innerFrame?.colors?.length > 0 && (
           <>
-            <p className="fp-section-label">İç çerçeve rengi</p>
+            <p className="fp-section-label">Paspartu rengi</p>
             <div className="fp-color-row">
               {innerFrame.colors.map((c) => (
                 <button
@@ -2213,8 +2264,8 @@ export default function FramePicker() {
                   {isPaspartuOpen
                     ? selectedPaspartu
                       ? selectedPaspartu.label
-                      : "İç içe çerçeve veya bez tasarım seçin"
-                    : "Çerçeveleri iç içe veya bez tasarım ekleyin"}
+                      : "Paspartu var veya yok seçin"
+                    : "Paspartu var / yok"}
                 </span>
               </span>
               <span className="fp-custom-size-toggle-chevron" aria-hidden="true">
@@ -2233,8 +2284,8 @@ export default function FramePicker() {
 
                 <p className="fp-cam-category-hint">
                   {isNestedPaspartu
-                    ? "Dış ve iç çerçeveyi seçin; iç çerçeve paspartu gibi oturur."
-                    : "Paspartu için bir seçenek belirleyin."}
+                    ? "Paspartu seçin; kağıt rengini de buradan seçebilirsiniz."
+                    : "Paspartu var veya yok seçin."}
                 </p>
 
                 <div className="fp-glazing-grid fp-paspartu-grid" role="group" aria-label="Paspartu seçimi">
@@ -2245,21 +2296,15 @@ export default function FramePicker() {
                       className={`fp-size-btn fp-glazing-btn${selectedPaspartuId === opt.id ? " active" : ""}`}
                       aria-pressed={selectedPaspartuId === opt.id}
                       onClick={() => {
-                        if (selectedPaspartuId === opt.id) {
-                          setSelectedPaspartuId(null);
-                          setInnerFrameId(null);
-                          setInnerColorId(null);
-                          setNestedPickTarget("outer");
+                        setSelectedPaspartuId(opt.id);
+                        if (opt.id === PASPARTU_VAR_ID) {
+                          setNestedPickTarget("paspartu");
                           return;
                         }
-                        setSelectedPaspartuId(opt.id);
-                        if (opt.id === "ic-ice") {
-                          setNestedPickTarget("inner");
-                        } else {
-                          setInnerFrameId(null);
-                          setInnerColorId(null);
-                          setNestedPickTarget("outer");
-                        }
+                        setInnerFrameId(null);
+                        setInnerColorId(null);
+                        setPaspartuPaperId(null);
+                        setNestedPickTarget("paspartu");
                       }}
                     >
                       <span className="fp-glazing-btn-label">{opt.label}</span>
@@ -2269,26 +2314,70 @@ export default function FramePicker() {
                 </div>
 
                 {isNestedPaspartu && (
-                  <div className="fp-paspartu-slots" role="group" aria-label="Dış ve iç çerçeve">
-                    <button
-                      type="button"
-                      className={`fp-paspartu-slot${nestedPickTarget === "outer" ? " active" : ""}`}
-                      onClick={() => setNestedPickTarget("outer")}
-                    >
-                      <span className="fp-paspartu-slot-kicker">Dış çerçeve</span>
-                      <span className="fp-paspartu-slot-value">{getFrameDisplayLabel(selectedFrame)}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`fp-paspartu-slot${nestedPickTarget === "inner" ? " active" : ""}`}
-                      onClick={() => setNestedPickTarget("inner")}
-                    >
-                      <span className="fp-paspartu-slot-kicker">İç çerçeve</span>
-                      <span className="fp-paspartu-slot-value">
-                        {innerFrame ? getFrameDisplayLabel(innerFrame) : "Listeden seçin"}
-                      </span>
-                    </button>
-                  </div>
+                  <>
+                    <div className="fp-paspartu-slots" role="group" aria-label="Paspartu ve kağıt">
+                      <button
+                        type="button"
+                        className={`fp-paspartu-slot${nestedPickTarget === "paspartu" ? " active" : ""}`}
+                        onClick={() => setNestedPickTarget("paspartu")}
+                      >
+                        <span className="fp-paspartu-slot-kicker">Paspartu seç</span>
+                        <span className="fp-paspartu-slot-value">
+                          {innerFrame ? getFrameDisplayLabel(innerFrame) : "Listeden seçin"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`fp-paspartu-slot${nestedPickTarget === "paper" ? " active" : ""}`}
+                        onClick={() => setNestedPickTarget("paper")}
+                      >
+                        <span className="fp-paspartu-slot-kicker">Kağıt seçeneği</span>
+                        <span className="fp-paspartu-slot-value">
+                          {selectedPaspartuPaper ? selectedPaspartuPaper.label : "Kağıt seçin"}
+                        </span>
+                      </button>
+                    </div>
+                    {pickingPaspartuFrame && (
+                      PASPARTU_FRAMES.length > 0 ? (
+                        <div className="fp-paspartu-frame-list" role="list">
+                          {PASPARTU_FRAMES.map((f) => (
+                            <button
+                              key={f.id}
+                              type="button"
+                              className={`fp-frame-btn${innerFrame?.id === f.id ? " active" : ""}`}
+                              onClick={() => {
+                                setInnerFrameId(f.id);
+                                setInnerColorId(f.colors?.[0]?.id ?? null);
+                              }}
+                            >
+                              <FrameSwatch frame={f} />
+                              <span className="fp-frame-btn-label">{getFrameDisplayLabel(f)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="fp-cam-category-hint">
+                          Paspartu çerçeveleri bu listeye eklenecek.
+                        </p>
+                      )
+                    )}
+                    {nestedPickTarget === "paper" && (
+                      <div className="fp-glazing-grid fp-paspartu-grid" role="group" aria-label="Kağıt rengi">
+                        {PASPARTU_PAPER_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            className={`fp-size-btn fp-glazing-btn${paspartuPaperId === opt.id ? " active" : ""}`}
+                            aria-pressed={paspartuPaperId === opt.id}
+                            onClick={() => setPaspartuPaperId(opt.id)}
+                          >
+                            <span className="fp-glazing-btn-label">{opt.label}</span>
+                            <span className="fp-paspartu-paper-swatch" style={{ background: opt.hex }} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -2302,9 +2391,10 @@ export default function FramePicker() {
               {activeWidthCm > 0 && activeHeightCm > 0 && (
                 <p className="fp-checkout-size-note">
                   {activeWidthCm}×{activeHeightCm} cm · çerçeve çevre (m) × ₺/m
-                  {innerFrame ? " · iç çerçeve çevre (m) × ₺/m" : ""}
+                  {innerFrame ? " · paspartu çevre (m) × ₺/m" : ""}
                   {selectedBackingId ? " · cam alanı (m²) × ₺/m²" : ""}
-                  {selectedPaspartu && !innerFrame ? ` · ${selectedPaspartu.label}` : ""}
+                  {selectedPaspartuPaper ? ` · kağıt ${selectedPaspartuPaper.label}` : ""}
+                  {selectedPaspartu && !innerFrame && !selectedPaspartuPaper ? ` · ${selectedPaspartu.label}` : ""}
                 </p>
               )}
               <PriceLineList
@@ -2388,6 +2478,7 @@ export default function FramePicker() {
                       <span>
                         {item.sizeLabel} · {item.viewLabel}
                         {item.innerFrameLabel ? ` · ${item.innerFrameLabel}` : item.paspartuLabel ? ` · ${item.paspartuLabel}` : ""}
+                        {item.paspartuPaperLabel ? ` · Kağıt ${item.paspartuPaperLabel}` : ""}
                       </span>
                     </div>
                     <PriceLineList
