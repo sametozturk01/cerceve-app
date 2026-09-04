@@ -2,6 +2,7 @@ import { corsHeaders, dispatchCatalogRequest } from "./catalogCore.js";
 import { createBlobCatalogStore, hasBlobToken } from "./catalogStore.js";
 
 export const vercelCatalogConfig = {
+  maxDuration: 30,
   api: {
     bodyParser: {
       sizeLimit: "4.5mb",

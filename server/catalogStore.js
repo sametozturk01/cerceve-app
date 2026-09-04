@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { del, get, list, put } from "@vercel/blob";
+import { del, list, put } from "@vercel/blob";
 import { emptyCatalog, normalizeCatalog } from "./catalogCore.js";
 
 export function createFsCatalogStore(rootDir) {
@@ -112,18 +112,20 @@ export function createBlobCatalogStore() {
 
   return {
     async readCatalog() {
-      const result = await get(CATALOG_PATH, { access: "public", useCache: false });
-      if (!result || result.statusCode !== 200) {
+      const { blobs } = await list({ prefix: CATALOG_PATH, limit: 20 });
+      const url = blobs.find((b) => b.pathname === CATALOG_PATH)?.url ?? null;
+      if (!url) return mergeRecoveredFrames(emptyCatalog());
+      const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return mergeRecoveredFrames(emptyCatalog());
+      try {
+        const parsed = normalizeCatalog(await res.json());
+        if ((parsed.frames?.length ?? 0) > 0) return parsed;
+        return mergeRecoveredFrames(parsed);
+      } catch {
         return mergeRecoveredFrames(emptyCatalog());
       }
-      const text = await new Response(result.stream).text();
-      let parsed = emptyCatalog();
-      try {
-        parsed = normalizeCatalog(JSON.parse(text));
-      } catch {
-        parsed = emptyCatalog();
-      }
-      return mergeRecoveredFrames(parsed);
     },
 
     async writeCatalog(data) {

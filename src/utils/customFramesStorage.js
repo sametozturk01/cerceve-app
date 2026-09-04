@@ -216,8 +216,35 @@ export async function loadCustomFrames() {
   return local;
 }
 
+async function fitBlobForUpload(blob, maxBytes = 2800000) {
+  if (!blob || blob.size <= maxBytes) return blob;
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Görsel küçültülemedi."));
+      image.src = url;
+    });
+    const scale = Math.min(0.85, Math.max(0.4, Math.sqrt(maxBytes / blob.size)));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(64, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(64, Math.round(img.naturalHeight * scale));
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    const out = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (next) => (next ? resolve(next) : reject(new Error("PNG oluşturulamadı."))),
+        "image/png"
+      );
+    });
+    return out.size < blob.size ? out : blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export async function saveCustomFrame(frameMeta, imageBlob) {
-  const dataUrl = imageBlob ? await blobToDataUrl(imageBlob) : null;
+  const dataUrl = imageBlob ? await blobToDataUrl(await fitBlobForUpload(imageBlob)) : null;
   if (!dataUrl) {
     throw new Error("Görsel kaydedilemedi.");
   }
