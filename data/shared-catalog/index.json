@@ -1,29 +1,6 @@
 {
   "frames": [
     {
-      "id": "custom:Kağıt jj:mtnabqpi",
-      "code": "Kağıt",
-      "colorName": "jj",
-      "label": "Kağıt jj",
-      "categories": [
-        "kagit"
-      ],
-      "thickness": 36,
-      "defaultMm": 5,
-      "radius": 0,
-      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-ka-t-jj-mtnabqpi-2bfe58b41c.png",
-      "colors": [
-        {
-          "id": "jj",
-          "label": "jj",
-          "hex": "#888888"
-        }
-      ],
-      "custom": true,
-      "updatedAt": 1788546363895,
-      "accessory": "paper"
-    },
-    {
       "id": "custom:Paspartu llll:mtna16lu",
       "code": "Paspartu",
       "colorName": "llll",
@@ -218,6 +195,7 @@
     "custom:Paspartu nnn:mtn9ygpk",
     "custom:Paspartu sarı:mtn89y05",
     "custom:Paspartu öökö:mtna04t3",
-    "custom:Kağıt beyaz:mtna4kxb"
+    "custom:Kağıt beyaz:mtna4kxb",
+    "custom:Kağıt jj:mtnabqpi"
   ]
 }
