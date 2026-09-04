@@ -1,0 +1,57 @@
+{
+  "frames": [],
+  "categories": [],
+  "overrides": {
+    "Yeni 20 Platin": {
+      "code": "Yeni 20",
+      "colorName": "Platin",
+      "label": "Yeni 20 Platin",
+      "categories": [
+        "yeni20",
+        "ahsap"
+      ],
+      "defaultMm": 20,
+      "price": 50,
+      "pleksiPrice": 0,
+      "camPrice": 0
+    },
+    "Yeni 20 Siyah": {
+      "code": "Yeni 20",
+      "colorName": "Siyah",
+      "label": "Yeni 20 Siyah",
+      "categories": [
+        "yeni20"
+      ],
+      "defaultMm": 20,
+      "price": 50,
+      "camPrice": 50,
+      "pleksiPrice": 0
+    },
+    "Yeni 20 Beyaz": {
+      "code": "Yeni 20",
+      "colorName": "Beyaz",
+      "label": "Yeni 20 Beyaz",
+      "categories": [
+        "yeni20",
+        "ahsap"
+      ],
+      "defaultMm": 20,
+      "price": 25
+    },
+    "20 lik Beyaz": {
+      "code": "20 lik",
+      "colorName": "Beyaz",
+      "label": "20 lik Beyaz",
+      "categories": [
+        "20lik"
+      ],
+      "defaultMm": 20,
+      "price": 0
+    }
+  },
+  "seriesLabels": {},
+  "hiddenSeriesIds": [],
+  "hiddenFrameIds": [],
+  "deletedCategoryIds": [],
+  "deletedFrameIds": []
+}
