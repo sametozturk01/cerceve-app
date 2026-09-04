@@ -27,7 +27,7 @@ import { formatTurkishPrice, getFramePrice, innerOpeningCm, linePriceForSize } f
 import { getFrameDisplayLabel } from "./utils/frameDisplay";
 import { loadCustomCategories, addCustomCategory, deleteCustomCategory, renameCustomCategory, loadSeriesLabelOverrides, saveSeriesLabelOverride, hydrateCustomCategoriesFromShared, hydrateSeriesLabelsFromShared, isUserSeries, rememberCategories, rememberSeriesLabels, mergeVisibleCategories, stripCatalogDuplicateCategories, pruneCatalogDuplicateCategories, sanitizeSeriesLabelOverrides } from "./utils/categoriesStorage";
 import { loadHiddenSeriesIds, hideSeriesCategory, hydrateHiddenSeriesFromShared, rememberHiddenSeriesIds, restoreCatalogSeriesOnce } from "./utils/hiddenSeriesStorage";
-import { fetchSharedCatalog, putSharedCatalog } from "./utils/sharedCatalogClient";
+import { fetchSharedCatalog } from "./utils/sharedCatalogClient";
 import { mergeCustomFrames, mergeCategories, mergeObjectMaps, rememberDeletedCategoryIds, rememberDeletedFrameIds } from "./utils/catalogSync";
 import { BASE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "./data/frameFormOptions";
 import { SIZE_OPTIONS, parseSizeId } from "./data/sizes";
@@ -1092,9 +1092,6 @@ export default function FramePicker() {
           mergeObjectMaps(prev, shared.seriesLabels),
           FRAME_CATEGORIES
         );
-        if (JSON.stringify(cleaned) !== JSON.stringify(shared.seriesLabels ?? {})) {
-          putSharedCatalog({ seriesLabels: cleaned }).catch(() => {});
-        }
         return rememberSeriesLabels(cleaned);
       });
       setFrameOverrides((prev) => rememberFrameOverrides(mergeObjectMaps(prev, shared.overrides)));

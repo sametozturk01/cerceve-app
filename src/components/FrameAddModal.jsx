@@ -171,6 +171,7 @@ export default function FrameAddModal({
 
         <p className="fp-modal-desc">
           Çerçeve fotoğrafını yükleyin (JPG/PNG). Arka plan otomatik silinir, kenarlar hizalanır.
+          Kayıt sunucuya yazılır; siz ve diğer cihazlar aynı listede görür.
           Açık renkli düz arka plan (beyaz/karton) en iyi sonucu verir.
           <strong> Önemli:</strong> Fotoğrafı çerçeveye yakın kırpın; cetvel, ölçü yazısı (“20 cm”) veya cetvel görünmesin.
         </p>

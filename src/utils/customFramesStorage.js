@@ -218,26 +218,29 @@ export async function loadCustomFrames() {
 
 export async function saveCustomFrame(frameMeta, imageBlob) {
   const dataUrl = imageBlob ? await blobToDataUrl(imageBlob) : null;
-  if (dataUrl) {
+  if (!dataUrl) {
+    throw new Error("Görsel kaydedilemedi.");
+  }
+  try {
+    const saved = await postSharedFrame({ ...frameMeta, custom: true }, dataUrl);
     try {
-      const saved = await postSharedFrame({ ...frameMeta, custom: true }, dataUrl);
-      try {
-        await deleteFromIdb(frameMeta.id);
-      } catch {
-        /* yerel kopya yoksa sorun değil */
-      }
-      return saved;
-    } catch (err) {
-      console.warn("Paylaşılan kayıta yazılamadı, bu cihazda tutuluyor.", err);
+      await deleteFromIdb(frameMeta.id);
+    } catch {
+      /* yerel kopya yoksa sorun değil */
     }
-  }
-
-  const local = { ...frameMeta, custom: true };
-  if (imageBlob) {
+    return saved;
+  } catch (err) {
+    const local = { ...frameMeta, custom: true };
     local.image = URL.createObjectURL(imageBlob);
-    await saveToIdb({ ...local, image: local.image }, imageBlob);
+    try {
+      await saveToIdb({ ...local, image: local.image }, imageBlob);
+    } catch {
+      /* asıl hata paylaşım hatası */
+    }
+    throw new Error(
+      err.message || "Çerçeve paylaşılamadı. İnterneti kontrol edip tekrar kaydedin."
+    );
   }
-  return local;
 }
 
 export function mergeFrameMeta(

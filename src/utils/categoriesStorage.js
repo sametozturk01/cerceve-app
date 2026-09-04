@@ -252,10 +252,5 @@ export async function hydrateSeriesLabelsFromShared(catalogCats = []) {
     catalogCats
   );
   rememberSeriesLabels(merged);
-  const sharedLabels = shared?.seriesLabels ?? {};
-  const changed = JSON.stringify(merged) !== JSON.stringify(sharedLabels);
-  if (changed) {
-    putSharedCatalog({ seriesLabels: merged }).catch(() => {});
-  }
   return merged;
 }

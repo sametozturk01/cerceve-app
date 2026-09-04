@@ -102,7 +102,12 @@ export async function dispatchCatalogRequest({ method, kind, body, store }) {
 
   if (kind === "root" && method === "PUT") {
     const json = await withCatalogLock(async () => {
-      const current = await store.readCatalog();
+      let current = await store.readCatalog();
+      if ((current.frames?.length ?? 0) === 0 && !Array.isArray(body.frames)) {
+        await new Promise((r) => setTimeout(r, 250));
+        const retry = await store.readCatalog();
+        if ((retry.frames?.length ?? 0) > 0) current = retry;
+      }
       if (Array.isArray(body.categories)) {
         const byId = new Map((current.categories ?? []).map((c) => [c.id, c]));
         for (const cat of body.categories) {
@@ -157,10 +162,11 @@ export async function dispatchCatalogRequest({ method, kind, body, store }) {
       const entry = stripFrame(frame, imageUrl);
       data.frames = [entry, ...data.frames.filter((f) => f.id !== entry.id)];
       upsertCategoriesFromFrame(data, entry);
+      if (store.putFrameMeta) await store.putFrameMeta(entry);
       await store.writeCatalog(data);
       return entry;
     });
-    return { status: 200, json: { frame: saved, catalog: await store.readCatalog() } };
+    return { status: 200, json: { frame: saved } };
   }
 
   if (kind === "frames" && method === "PATCH") {
@@ -184,6 +190,7 @@ export async function dispatchCatalogRequest({ method, kind, body, store }) {
       delete merged.imageBlob;
       data.frames[idx] = merged;
       upsertCategoriesFromFrame(data, merged);
+      if (store.putFrameMeta) await store.putFrameMeta(merged);
       await store.writeCatalog(data);
       return merged;
     });
@@ -206,6 +213,7 @@ export async function dispatchCatalogRequest({ method, kind, body, store }) {
           /* görsel yoksa katalog yine güncellenir */
         }
       }
+      if (store.deleteFrameMeta) await store.deleteFrameMeta(id);
       await store.writeCatalog(data);
       return data;
     });

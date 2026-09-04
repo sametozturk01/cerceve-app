@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { del, list, put } from "@vercel/blob";
+import crypto from "node:crypto";
+import { del, get, list, put } from "@vercel/blob";
 import { emptyCatalog, normalizeCatalog } from "./catalogCore.js";
 
 export function createFsCatalogStore(rootDir) {
@@ -69,35 +70,97 @@ export function hasBlobToken() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
+function metaPath(id) {
+  const hash = crypto.createHash("sha1").update(String(id)).digest("hex").slice(0, 16);
+  return `cerceve/frame-meta/${hash}.json`;
+}
+
 export function createBlobCatalogStore() {
   const CATALOG_PATH = "cerceve/shared-catalog.json";
 
-  async function catalogUrl() {
-    const { blobs } = await list({ prefix: CATALOG_PATH, limit: 20 });
-    return blobs.find((b) => b.pathname === CATALOG_PATH)?.url ?? null;
+  async function listFrameMeta() {
+    const frames = [];
+    let cursor;
+    do {
+      const result = await list({ prefix: "cerceve/frame-meta/", limit: 200, cursor });
+      for (const blob of result.blobs ?? []) {
+        if (!blob.pathname.endsWith(".json")) continue;
+        try {
+          const res = await fetch(blob.url, { cache: "no-store" });
+          if (!res.ok) continue;
+          const entry = await res.json();
+          if (entry?.id) frames.push(entry);
+        } catch {
+          /* tek kayıt bozuksa diğerlerini yine yükle */
+        }
+      }
+      cursor = result.hasMore ? result.cursor : undefined;
+    } while (cursor);
+    return frames;
+  }
+
+  async function mergeRecoveredFrames(catalog) {
+    if ((catalog.frames?.length ?? 0) > 0) return catalog;
+    const recovered = await listFrameMeta();
+    const dropped = new Set(catalog.deletedFrameIds ?? []);
+    const frames = recovered.filter((frame) => frame?.id && !dropped.has(frame.id));
+    if (!frames.length) return catalog;
+    const byId = new Map();
+    for (const frame of frames) byId.set(frame.id, frame);
+    return { ...catalog, frames: [...byId.values()] };
   }
 
   return {
     async readCatalog() {
-      const url = await catalogUrl();
-      if (!url) return emptyCatalog();
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) return emptyCatalog();
-      try {
-        return normalizeCatalog(await res.json());
-      } catch {
-        return emptyCatalog();
+      const result = await get(CATALOG_PATH, { access: "public", useCache: false });
+      if (!result || result.statusCode !== 200) {
+        return mergeRecoveredFrames(emptyCatalog());
       }
+      const text = await new Response(result.stream).text();
+      let parsed = emptyCatalog();
+      try {
+        parsed = normalizeCatalog(JSON.parse(text));
+      } catch {
+        parsed = emptyCatalog();
+      }
+      return mergeRecoveredFrames(parsed);
     },
 
     async writeCatalog(data) {
-      await put(CATALOG_PATH, `${JSON.stringify(data, null, 2)}\n`, {
+      const incoming = normalizeCatalog(data);
+      if ((incoming.frames?.length ?? 0) === 0) {
+        const recovered = await listFrameMeta();
+        const dropped = new Set(incoming.deletedFrameIds ?? []);
+        const frames = recovered.filter((frame) => frame?.id && !dropped.has(frame.id));
+        if (frames.length) incoming.frames = frames;
+      }
+      await put(CATALOG_PATH, `${JSON.stringify(incoming, null, 2)}\n`, {
         access: "public",
         addRandomSuffix: false,
         allowOverwrite: true,
         cacheControlMaxAge: 0,
         contentType: "application/json; charset=utf-8",
       });
+    },
+
+    async putFrameMeta(frame) {
+      if (!frame?.id) return;
+      await put(metaPath(frame.id), `${JSON.stringify(frame)}\n`, {
+        access: "public",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        cacheControlMaxAge: 0,
+        contentType: "application/json; charset=utf-8",
+      });
+    },
+
+    async deleteFrameMeta(id) {
+      if (!id) return;
+      try {
+        await del(metaPath(id));
+      } catch {
+        /* yedek yoksa silme yine devam eder */
+      }
     },
 
     async putImage(fileName, bytes) {
