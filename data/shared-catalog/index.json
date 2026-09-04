@@ -103,12 +103,14 @@
       "colorName": "Siyah",
       "label": "Yeni 20 Siyah",
       "categories": [
-        "yeni20"
+        "yeni20",
+        "metal"
       ],
       "defaultMm": 20,
-      "price": 50,
-      "camPrice": 50,
-      "pleksiPrice": 0
+      "price": 200,
+      "pleksiPrice": 1000,
+      "camPrice": 1200,
+      "motifCamPrice": 1400
     },
     "Yeni 20 Beyaz": {
       "code": "Yeni 20",
@@ -130,6 +132,14 @@
       ],
       "defaultMm": 20,
       "price": 0
+    },
+    "35 L Düz Altın": {
+      "code": "34 L",
+      "colorName": "Düz Altın",
+      "label": "34 L Düz Altın",
+      "categories": [
+        "34l"
+      ]
     }
   },
   "seriesLabels": {},
