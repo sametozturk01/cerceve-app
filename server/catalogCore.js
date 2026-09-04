@@ -66,7 +66,7 @@ export function upsertCategoriesFromFrame(data, frame) {
   if (!Array.isArray(data.categories)) data.categories = [];
   const deleted = new Set(data.deletedCategoryIds ?? []);
   for (const id of cats) {
-    if (!id || id === "custom" || id === "all" || deleted.has(id)) continue;
+    if (!id || id === "custom" || id === "all" || id === "paspartu" || id === "kagit" || deleted.has(id)) continue;
     if (data.categories.some((c) => c.id === id)) continue;
     data.categories.push({
       id,

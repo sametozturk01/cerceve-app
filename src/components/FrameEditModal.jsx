@@ -5,6 +5,14 @@ import { mergeFrameMeta, updateCustomFrame } from "../utils/customFramesStorage"
 import { saveFrameOverride, overridePatchFromSavedFrame } from "../utils/frameOverridesStorage";
 import { getFrameDisplayLabel } from "../utils/frameDisplay";
 import SeriesCreateField from "./SeriesCreateField";
+import {
+  isAccessoryFrame,
+  isPaspartuAccessoryFrame,
+  PASPARTU_ACCESSORY,
+  PAPER_ACCESSORY,
+  PASPARTU_CATEGORY_ID,
+  PAPER_CATEGORY_ID,
+} from "../data/paspartuOptions";
 
 function parsePriceString(value) {
   if (value === "" || value === null || value === undefined) return "";
@@ -54,9 +62,22 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
 
   if (!open || !frame) return null;
 
+  const accessoryKind = isPaspartuAccessoryFrame(frame)
+    ? "paspartu"
+    : isAccessoryFrame(frame)
+      ? "paper"
+      : null;
   const hasSeries = Boolean(code.trim() || frame.code);
   const displayLabel = getFrameDisplayLabel({ ...frame, label: label.trim() || frame.label });
   const previewPrice = price.trim() === "" ? 0 : parsePriceInput(price);
+  const editTitle = accessoryKind === "paspartu"
+    ? "Paspartu Düzenle"
+    : accessoryKind === "paper"
+      ? "Kağıt Düzenle"
+      : "Çerçeve Düzenle";
+  const editSubtitle = accessoryKind
+    ? "Ad ve birim fiyatını güncelleyin"
+    : "Ad, kategori ve çerçeve birim fiyatını (₺/m) güncelleyin";
 
   const toggleCategory = (id) => {
     setSelectedCats((prev) =>
@@ -69,16 +90,20 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
       setError("İsim veya renk adı girin.");
       return;
     }
-    if (selectedCats.length === 0) {
+    if (!accessoryKind && selectedCats.length === 0) {
       setError("En az bir kategori seçin.");
       return;
     }
 
     const priceValue = price.trim() === "" ? null : parsePriceInput(price);
 
-    const codeTrim = code.trim();
-    let categories = [...selectedCats];
-    if (codeTrim) {
+    const codeTrim = accessoryKind
+      ? (accessoryKind === "paspartu" ? "Paspartu" : "Kağıt")
+      : code.trim();
+    let categories = accessoryKind
+      ? [accessoryKind === "paspartu" ? PASPARTU_CATEGORY_ID : PAPER_CATEGORY_ID]
+      : [...selectedCats];
+    if (!accessoryKind && codeTrim) {
       const seriesCat = effectiveCategoryOptions.find((c) => c.label === codeTrim);
       if (seriesCat && !categories.includes(seriesCat.id)) {
         categories.push(seriesCat.id);
@@ -94,6 +119,9 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
       price: priceValue,
       pricePerCm: null,
     };
+    if (accessoryKind) {
+      updates.accessory = accessoryKind === "paspartu" ? PASPARTU_ACCESSORY : PAPER_ACCESSORY;
+    }
 
     setSaving(true);
     setError("");
@@ -130,8 +158,8 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
               </svg>
             </span>
             <div>
-              <h2>Çerçeve Düzenle</h2>
-              <p>Ad, kategori ve çerçeve birim fiyatını (₺/m) güncelleyin</p>
+              <h2>{editTitle}</h2>
+              <p>{editSubtitle}</p>
             </div>
           </div>
           <button type="button" className="fp-modal-close" onClick={onClose} aria-label="Kapat">
@@ -164,41 +192,43 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
           <section className="fp-modal-edit-section">
             <h3 className="fp-modal-edit-section-title">Genel Bilgiler</h3>
             <div className="fp-modal-form">
-              <div className="fp-modal-field">
-                <label>Seri</label>
-                <select
-                  value={code}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setCode(next);
-                    const cat = effectiveCategoryOptions.find((c) => c.label === next);
-                    if (cat) setSelectedCats([cat.id]);
-                    if (next) setDefaultMm(defaultMmFromSeriesLabel(next));
-                  }}
-                >
-                  {(code && !effectiveSeriesOptions.includes(code)
-                    ? [...effectiveSeriesOptions, code]
-                    : effectiveSeriesOptions
-                  ).map((s) => (
-                    <option key={s || "none"} value={s}>
-                      {s || "— Seri yok —"}
-                    </option>
-                  ))}
-                </select>
-                {onAddSeries && (
-                  <SeriesCreateField
-                    onAdd={(name) => {
-                      const entry = onAddSeries(name);
-                      if (!entry) return;
-                      setCode(entry.label);
-                      setSelectedCats([entry.id]);
-                      setDefaultMm(defaultMmFromSeriesLabel(entry.label));
+              {!accessoryKind && (
+                <div className="fp-modal-field">
+                  <label>Seri</label>
+                  <select
+                    value={code}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setCode(next);
+                      const cat = effectiveCategoryOptions.find((c) => c.label === next);
+                      if (cat) setSelectedCats([cat.id]);
+                      if (next) setDefaultMm(defaultMmFromSeriesLabel(next));
                     }}
-                  />
-                )}
-              </div>
+                  >
+                    {(code && !effectiveSeriesOptions.includes(code)
+                      ? [...effectiveSeriesOptions, code]
+                      : effectiveSeriesOptions
+                    ).map((s) => (
+                      <option key={s || "none"} value={s}>
+                        {s || "— Seri yok —"}
+                      </option>
+                    ))}
+                  </select>
+                  {onAddSeries && (
+                    <SeriesCreateField
+                      onAdd={(name) => {
+                        const entry = onAddSeries(name);
+                        if (!entry) return;
+                        setCode(entry.label);
+                        setSelectedCats([entry.id]);
+                        setDefaultMm(defaultMmFromSeriesLabel(entry.label));
+                      }}
+                    />
+                  )}
+                </div>
+              )}
 
-              {hasSeries && (
+              {(hasSeries || accessoryKind) && (
                 <div className="fp-modal-field">
                   <label>Renk adı</label>
                   <input
@@ -253,21 +283,23 @@ export default function FrameEditModal({ open, frame, onClose, onSaved, category
             </div>
           </section>
 
-          <section className="fp-modal-edit-section">
-            <h3 className="fp-modal-edit-section-title">Kategoriler</h3>
-            <div className="fp-modal-edit-categories">
-              {effectiveCategoryOptions.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  className={`fp-category-chip${selectedCats.includes(cat.id) ? " active" : ""}`}
-                  onClick={() => toggleCategory(cat.id)}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </section>
+          {!accessoryKind && (
+            <section className="fp-modal-edit-section">
+              <h3 className="fp-modal-edit-section-title">Kategoriler</h3>
+              <div className="fp-modal-edit-categories">
+                {effectiveCategoryOptions.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={`fp-category-chip${selectedCats.includes(cat.id) ? " active" : ""}`}
+                    onClick={() => toggleCategory(cat.id)}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
 
         {error && <p className="fp-modal-error">{error}</p>}

@@ -2316,6 +2316,29 @@
         }
       ],
       "previewImage": "/frames/previews/fa-52-gumus-eskitme-preview.png"
+    },
+    {
+      "id": "Kağıt Süslemeli Krem",
+      "code": "Kağıt",
+      "colorName": "Süslemeli Krem",
+      "label": "Kağıt Süslemeli Krem",
+      "categories": [
+        "kagit"
+      ],
+      "accessory": "paper",
+      "thickness": 106,
+      "defaultMm": 45,
+      "radius": 0,
+      "image": "/frames/kagit-suslemeli-krem.png",
+      "colors": [
+        {
+          "id": "suslemelikrem",
+          "label": "Süslemeli Krem",
+          "hex": "#ECE8DF",
+          "stroke": "#d4cfc4"
+        }
+      ],
+      "previewImage": "/frames/previews/kagit-suslemeli-krem-preview.png"
     }
   ]
 }

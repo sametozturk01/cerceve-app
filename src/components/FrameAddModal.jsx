@@ -3,6 +3,12 @@ import { createPortal } from "react-dom";
 import { processFrameImage } from "../utils/frameProcessor";
 import { EDITABLE_CATEGORY_OPTIONS, buildSeriesOptions, defaultMmFromSeriesLabel } from "../data/frameFormOptions";
 import { buildFrameEntry, saveCustomFrame } from "../utils/customFramesStorage";
+import {
+  PASPARTU_ACCESSORY,
+  PAPER_ACCESSORY,
+  PASPARTU_CATEGORY_ID,
+  PAPER_CATEGORY_ID,
+} from "../data/paspartuOptions";
 import SeriesCreateField from "./SeriesCreateField";
 
 // fallback; overridden by prop when passed from parent
@@ -16,10 +22,32 @@ const STEPS = {
   error: "error",
 };
 
+const PURPOSE_COPY = {
+  frame: {
+    title: "Çerçeve Ekle",
+    desc: "Çerçeve fotoğrafını yükleyin (JPG/PNG). Arka plan otomatik silinir, kenarlar hizalanır. Kayıt sunucuya yazılır; siz ve diğer cihazlar aynı listede görür. Açık renkli düz arka plan (beyaz/karton) en iyi sonucu verir.",
+    upload: "Çerçeve fotoğrafı seç",
+    hint: "JPG/PNG · karton veya düz arka plan · çerçeve ortada",
+  },
+  paspartu: {
+    title: "Paspartu Ekle",
+    desc: "Paspartu çerçevesi fotoğrafını yükleyin (JPG/PNG). Arka plan otomatik silinir, kenarlar hizalanır. Kayıt sunucuya yazılır; paspartu listesinde tüm cihazlarda görünür. Açık renkli düz arka plan en iyi sonucu verir.",
+    upload: "Paspartu fotoğrafı seç",
+    hint: "JPG/PNG · karton veya düz arka plan · çerçeve ortada",
+  },
+  paper: {
+    title: "Kağıt Ekle",
+    desc: "Kağıt fotoğrafını yükleyin (JPG/PNG). Aynı çerçeve sistemiyle işlenir ve kağıt seçeneklerine eklenir. Kayıt sunucuya yazılır; tüm cihazlarda görünür. Açık, düz arka plan en iyi sonucu verir.",
+    upload: "Kağıt fotoğrafı seç",
+    hint: "JPG/PNG · düz arka plan · kağıt ortada",
+  },
+};
+
 export default function FrameAddModal({
   open,
   onClose,
   onSaved,
+  purpose = "frame",
   categoryOptions,
   seriesOptions,
   defaultCode = "20 lik",
@@ -44,12 +72,33 @@ export default function FrameAddModal({
 
   const [progressText, setProgressText] = useState("");
 
+  const isAccessory = purpose === "paspartu" || purpose === "paper";
+  const copy = PURPOSE_COPY[purpose] ?? PURPOSE_COPY.frame;
+
   const applySeries = (seriesLabel, options = CATEGORY_OPTIONS) => {
     const trimmed = (seriesLabel ?? "").trim();
     setCode(trimmed);
     const cat = options.find((c) => c.label === trimmed);
     setSelectedCats(cat ? [cat.id] : []);
     if (trimmed) setDefaultMm(defaultMmFromSeriesLabel(trimmed));
+  };
+
+  const initForm = () => {
+    if (purpose === "paspartu") {
+      setCode("Paspartu");
+      setSelectedCats([PASPARTU_CATEGORY_ID]);
+      setDefaultMm(28);
+      return;
+    }
+    if (purpose === "paper") {
+      setCode("Kağıt");
+      setSelectedCats([PAPER_CATEGORY_ID]);
+      setDefaultMm(5);
+      return;
+    }
+    applySeries(defaultCode);
+    if (defaultCategoryId) setSelectedCats([defaultCategoryId]);
+    setDefaultMm(defaultThicknessMm);
   };
 
   useEffect(() => {
@@ -59,10 +108,8 @@ export default function FrameAddModal({
     }
     if (sessionInitRef.current) return;
     sessionInitRef.current = true;
-    applySeries(defaultCode);
-    if (defaultCategoryId) setSelectedCats([defaultCategoryId]);
-    setDefaultMm(defaultThicknessMm);
-  }, [open, defaultCode, defaultCategoryId, defaultThicknessMm]);
+    initForm();
+  }, [open, purpose, defaultCode, defaultCategoryId, defaultThicknessMm]);
 
   if (!open) return null;
 
@@ -74,8 +121,7 @@ export default function FrameAddModal({
     setProgressText("");
     setColorName("");
     setLabel("");
-    applySeries(defaultCode);
-    setDefaultMm(defaultThicknessMm);
+    initForm();
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -119,7 +165,7 @@ export default function FrameAddModal({
       setError("Renk adı veya etiket girin.");
       return;
     }
-    if (!code.trim()) {
+    if (!isAccessory && !code.trim()) {
       setError("Bir seri seçin veya yeni seri ekleyin.");
       return;
     }
@@ -128,9 +174,13 @@ export default function FrameAddModal({
     setError("");
 
     try {
-      const codeTrim = code.trim() || null;
-      let categories = [...selectedCats];
-      if (codeTrim) {
+      const codeTrim = isAccessory
+        ? (purpose === "paspartu" ? "Paspartu" : "Kağıt")
+        : (code.trim() || null);
+      let categories = isAccessory
+        ? [purpose === "paspartu" ? PASPARTU_CATEGORY_ID : PAPER_CATEGORY_ID]
+        : [...selectedCats];
+      if (!isAccessory && codeTrim) {
         const seriesCat = CATEGORY_OPTIONS.find((c) => c.label === codeTrim);
         if (seriesCat && !categories.includes(seriesCat.id)) {
           categories.push(seriesCat.id);
@@ -146,6 +196,8 @@ export default function FrameAddModal({
         defaultMm,
         imageUrl: "",
       });
+      if (purpose === "paspartu") entry.accessory = PASPARTU_ACCESSORY;
+      if (purpose === "paper") entry.accessory = PAPER_ACCESSORY;
 
       const saved = await saveCustomFrame(entry, processed.blob);
       onSaved(saved);
@@ -163,17 +215,15 @@ export default function FrameAddModal({
     <div className="fp-modal-backdrop" onClick={handleClose}>
       <div className="fp-modal" onClick={(e) => e.stopPropagation()}>
         <div className="fp-modal-header">
-          <h2>Çerçeve Ekle</h2>
+          <h2>{copy.title}</h2>
           <button type="button" className="fp-modal-close" onClick={handleClose} aria-label="Kapat">
             ×
           </button>
         </div>
 
         <p className="fp-modal-desc">
-          Çerçeve fotoğrafını yükleyin (JPG/PNG). Arka plan otomatik silinir, kenarlar hizalanır.
-          Kayıt sunucuya yazılır; siz ve diğer cihazlar aynı listede görür.
-          Açık renkli düz arka plan (beyaz/karton) en iyi sonucu verir.
-          <strong> Önemli:</strong> Fotoğrafı çerçeveye yakın kırpın; cetvel, ölçü yazısı (“20 cm”) veya cetvel görünmesin.
+          {copy.desc}
+          <strong> Önemli:</strong> Fotoğrafı yakın kırpın; cetvel, ölçü yazısı (“20 cm”) veya cetvel görünmesin.
         </p>
 
         {step === STEPS.idle && (
@@ -183,8 +233,8 @@ export default function FrameAddModal({
             onClick={() => fileRef.current?.click()}
           >
             <span className="fp-modal-upload-icon">+</span>
-            <span>Çerçeve fotoğrafı seç</span>
-            <span className="fp-modal-upload-hint">JPG/PNG · karton veya düz arka plan · çerçeve ortada</span>
+            <span>{copy.upload}</span>
+            <span className="fp-modal-upload-hint">{copy.hint}</span>
           </button>
         )}
 
@@ -213,41 +263,43 @@ export default function FrameAddModal({
 
         {step === STEPS.ready && (
           <div className="fp-modal-form">
-            <div className="fp-modal-field">
-              <label>Seri</label>
-              <div className="fp-category-row fp-modal-series-row">
-                {(code && !effectiveSeriesOptions.includes(code)
-                  ? [...effectiveSeriesOptions.filter(Boolean), code]
-                  : effectiveSeriesOptions.filter(Boolean)
-                ).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={`fp-category-chip${code === s ? " active" : ""}`}
-                    onClick={() => applySeries(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
+            {!isAccessory && (
+              <div className="fp-modal-field">
+                <label>Seri</label>
+                <div className="fp-category-row fp-modal-series-row">
+                  {(code && !effectiveSeriesOptions.includes(code)
+                    ? [...effectiveSeriesOptions.filter(Boolean), code]
+                    : effectiveSeriesOptions.filter(Boolean)
+                  ).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={`fp-category-chip${code === s ? " active" : ""}`}
+                      onClick={() => applySeries(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                {onAddSeries && (
+                  <SeriesCreateField
+                    onAdd={(name) => {
+                      const entry = onAddSeries(name);
+                      if (!entry) return;
+                      setCode(entry.label);
+                      setSelectedCats([entry.id]);
+                      setDefaultMm(defaultMmFromSeriesLabel(entry.label));
+                    }}
+                  />
+                )}
               </div>
-              {onAddSeries && (
-                <SeriesCreateField
-                  onAdd={(name) => {
-                    const entry = onAddSeries(name);
-                    if (!entry) return;
-                    setCode(entry.label);
-                    setSelectedCats([entry.id]);
-                    setDefaultMm(defaultMmFromSeriesLabel(entry.label));
-                  }}
-                />
-              )}
-            </div>
+            )}
 
             <div className="fp-modal-field">
               <label>Renk adı</label>
               <input
                 type="text"
-                placeholder="ör. gümüş, ceviz, siyah"
+                placeholder={isAccessory ? "ör. krem, fildişi, siyah" : "ör. gümüş, ceviz, siyah"}
                 value={colorName}
                 onChange={(e) => setColorName(e.target.value)}
               />
@@ -270,25 +322,27 @@ export default function FrameAddModal({
                 min={5}
                 max={80}
                 value={defaultMm}
-                onChange={(e) => setDefaultMm(Number(e.target.value) || 20)}
+                onChange={(e) => setDefaultMm(Number(e.target.value) || (isAccessory ? 10 : 20))}
               />
             </div>
 
-            <div className="fp-modal-field">
-              <label>Kategoriler</label>
-              <div className="fp-category-row">
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    className={`fp-category-chip${selectedCats.includes(cat.id) ? " active" : ""}`}
-                    onClick={() => toggleCategory(cat.id)}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+            {!isAccessory && (
+              <div className="fp-modal-field">
+                <label>Kategoriler</label>
+                <div className="fp-category-row">
+                  {CATEGORY_OPTIONS.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      className={`fp-category-chip${selectedCats.includes(cat.id) ? " active" : ""}`}
+                      onClick={() => toggleCategory(cat.id)}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <p className="fp-modal-meta">
               Kenar kalınlığı: <strong>{processed?.thickness}px</strong> (otomatik ölçüldü)

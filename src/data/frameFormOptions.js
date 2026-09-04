@@ -1,3 +1,5 @@
+import { isAccessoryFrame } from "./paspartuOptions";
+
 export const SERIES_OPTIONS = ["20 lik", "22 lik", "29 D", "29 KR Düz", "28 KR Boncuklu", "34 L", "35 L", "35 lik", "47 L", "FA 41", "FA 52", "F30 D91", "F30 Düz", "30 luk Ağaç Kabuğu", "46 d", "46 Ağaç Kabuğu", ""];
 
 export const BASE_CATEGORY_OPTIONS = [
@@ -45,7 +47,7 @@ export function buildSeriesOptions(userCategories = [], frames = []) {
   SERIES_OPTIONS.filter(Boolean).forEach(add);
   userCategories.forEach((c) => add(c.label));
   frames.forEach((f) => {
-    if (f?.id === "none") return;
+    if (f?.id === "none" || isAccessoryFrame(f)) return;
     add(f.code);
   });
 

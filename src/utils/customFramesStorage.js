@@ -256,17 +256,15 @@ export async function saveCustomFrame(frameMeta, imageBlob) {
       /* yerel kopya yoksa sorun değil */
     }
     return saved;
-  } catch (err) {
+  } catch {
     const local = { ...frameMeta, custom: true };
     local.image = URL.createObjectURL(imageBlob);
     try {
       await saveToIdb({ ...local, image: local.image }, imageBlob);
     } catch {
-      /* asıl hata paylaşım hatası */
+      /* oturum boyunca blob URL yeterli */
     }
-    throw new Error(
-      err.message || "Çerçeve paylaşılamadı. İnterneti kontrol edip tekrar kaydedin."
-    );
+    return local;
   }
 }
 
@@ -286,6 +284,7 @@ export function mergeFrameMeta(
     camPricePerCm,
     motifCamPrice,
     motifCamPricePerCm,
+    accessory,
   }
 ) {
   const cats = [...(categories ?? base.categories ?? [])];
@@ -302,6 +301,8 @@ export function mergeFrameMeta(
     defaultMm: defaultMm ?? base.defaultMm,
     updatedAt: Date.now(),
   };
+
+  if (accessory) next.accessory = accessory;
 
   if (seriesCode) next.code = seriesCode;
   else delete next.code;
