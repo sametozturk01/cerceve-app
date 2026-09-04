@@ -1,6 +1,28 @@
 {
   "frames": [
     {
+      "id": "custom:20 lik Siyah:mtmuek4c",
+      "code": "20 lik",
+      "colorName": "Siyah",
+      "label": "20 lik Siyah",
+      "categories": [
+        "20lik"
+      ],
+      "thickness": 105,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-20-lik-siyah-mtmuek4c-07978b563a.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "custom": true,
+      "updatedAt": 1788519621469
+    },
+    {
       "id": "custom:20 lik Siyah:mtkfx219",
       "code": "F30 D91",
       "colorName": "Siyah",
@@ -27,6 +49,11 @@
     {
       "id": "f30d91",
       "label": "F30 D91",
+      "userAdded": true
+    },
+    {
+      "id": "20lik",
+      "label": "20 lik",
       "userAdded": true
     }
   ],
