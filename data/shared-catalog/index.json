@@ -1,29 +1,6 @@
 {
   "frames": [
     {
-      "id": "custom:Kağıt krem:mtn8cb3o",
-      "code": "Kağıt",
-      "colorName": "krem",
-      "label": "Kağıt krem",
-      "categories": [
-        "kagit"
-      ],
-      "thickness": 44,
-      "defaultMm": 5,
-      "radius": 0,
-      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-ka-t-krem-mtn8cb3o-3e32244e2c.png",
-      "colors": [
-        {
-          "id": "krem",
-          "label": "krem",
-          "hex": "#888888"
-        }
-      ],
-      "custom": true,
-      "updatedAt": 1788543031092,
-      "accessory": "paper"
-    },
-    {
       "id": "custom:Paspartu sarı:mtn89y05",
       "code": "Paspartu",
       "colorName": "sarı",
@@ -212,6 +189,7 @@
     "custom:L profil Siyah:mtmua95j",
     "custom:L profil Siyah:mtmuaj9m",
     "custom:L profil Siyah:mtmuawbh",
-    "custom:Paspartu e:mtn8peka"
+    "custom:Paspartu e:mtn8peka",
+    "custom:Kağıt krem:mtn8cb3o"
   ]
 }
