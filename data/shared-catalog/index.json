@@ -1,6 +1,28 @@
 {
   "frames": [
     {
+      "id": "custom:L profil Siyah:mtmua2nl",
+      "code": "L profil",
+      "colorName": "Siyah",
+      "label": "L profil Siyah",
+      "categories": [
+        "lprofil"
+      ],
+      "thickness": 105,
+      "defaultMm": 20,
+      "radius": 0,
+      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-l-profil-siyah-mtmua2nl-35d9ef3ae7.png",
+      "colors": [
+        {
+          "id": "siyah",
+          "label": "Siyah",
+          "hex": "#1a1a1a"
+        }
+      ],
+      "custom": true,
+      "updatedAt": 1788519412209
+    },
+    {
       "id": "custom:L profil Siyah:mtmu9ue1",
       "code": "L profil",
       "colorName": "Siyah",
