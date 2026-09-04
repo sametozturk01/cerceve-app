@@ -133,28 +133,6 @@
       "updatedAt": 1788519401497
     },
     {
-      "id": "custom:L profil Siyah:mtmtwfwb",
-      "code": "L profil",
-      "colorName": "Siyah",
-      "label": "L profil Siyah",
-      "categories": [
-        "lprofil"
-      ],
-      "thickness": 105,
-      "defaultMm": 20,
-      "radius": 0,
-      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-l-profil-siyah-mtmtwfwb-1a91db9c0c.png",
-      "colors": [
-        {
-          "id": "siyah",
-          "label": "Siyah",
-          "hex": "#1a1a1a"
-        }
-      ],
-      "custom": true,
-      "updatedAt": 1788518776187
-    },
-    {
       "id": "custom:20 lik Siyah:mtmuek4c",
       "code": "20 lik",
       "colorName": "Siyah",
@@ -271,5 +249,7 @@
     "ANTRASİT GRİ"
   ],
   "deletedCategoryIds": [],
-  "deletedFrameIds": []
+  "deletedFrameIds": [
+    "custom:L profil Siyah:mtmtwfwb"
+  ]
 }
