@@ -1,6 +1,30 @@
 {
   "frames": [
     {
+      "id": "custom:Kağıt beyaz:mtna4kxb",
+      "code": "Kağıt",
+      "colorName": "beyaz",
+      "label": "Kağıt beyaz",
+      "categories": [
+        "kagit"
+      ],
+      "thickness": 36,
+      "defaultMm": 5,
+      "radius": 0,
+      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-ka-t-beyaz-mtna4kxb-104d76687a.png",
+      "colors": [
+        {
+          "id": "beyaz",
+          "label": "Beyaz",
+          "hex": "#f0f0f0",
+          "stroke": "#ccc"
+        }
+      ],
+      "custom": true,
+      "updatedAt": 1788546029807,
+      "accessory": "paper"
+    },
+    {
       "id": "custom:Paspartu llll:mtna16lu",
       "code": "Paspartu",
       "colorName": "llll",
