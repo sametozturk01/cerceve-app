@@ -226,7 +226,8 @@
         "20lik"
       ],
       "defaultMm": 20,
-      "price": 200
+      "price": 200,
+      "pleksiPrice": 2000
     }
   },
   "seriesLabels": {},
