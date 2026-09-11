@@ -217,6 +217,16 @@
         "paspartu"
       ],
       "defaultMm": 20
+    },
+    "20 lik Altın": {
+      "code": "20 lik",
+      "colorName": "Altın",
+      "label": "20 lik Altın",
+      "categories": [
+        "20lik"
+      ],
+      "defaultMm": 20,
+      "price": 200
     }
   },
   "seriesLabels": {},
