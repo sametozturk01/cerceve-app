@@ -529,6 +529,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "35 L Beyaz": {
+      "code": "35 L",
+      "colorName": "Beyaz",
+      "label": "35 L Beyaz",
+      "categories": [
+        "35l"
+      ],
+      "defaultMm": 35,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
