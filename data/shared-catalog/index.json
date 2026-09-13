@@ -517,6 +517,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "35 L Oksit Altın": {
+      "code": "35 L",
+      "colorName": "Oksit Altın",
+      "label": "35 L Oksit Altın",
+      "categories": [
+        "35l"
+      ],
+      "defaultMm": 35,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
