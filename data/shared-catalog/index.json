@@ -853,6 +853,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "35 lik Siyah": {
+      "code": "35 lik",
+      "colorName": "Siyah",
+      "label": "35 lik Siyah",
+      "categories": [
+        "35lik"
+      ],
+      "defaultMm": 35,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
