@@ -1309,6 +1309,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "FA 52 Şampanya": {
+      "code": "FA 52",
+      "colorName": "Şampanya",
+      "label": "FA 52 Şampanya",
+      "categories": [
+        "fa52"
+      ],
+      "defaultMm": 52,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
