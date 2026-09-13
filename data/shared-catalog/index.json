@@ -1093,6 +1093,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 d Beyaz": {
+      "code": "46 d",
+      "colorName": "Beyaz",
+      "label": "46 d Beyaz",
+      "categories": [
+        "46d"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
