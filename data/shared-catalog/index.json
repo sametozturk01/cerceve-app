@@ -249,6 +249,16 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "22 lik Beyaz": {
+      "code": "22 lik",
+      "colorName": "Beyaz",
+      "label": "22 lik Beyaz",
+      "categories": [
+        "22lik"
+      ],
+      "defaultMm": 22,
+      "pleksiPrice": 2000
     }
   },
   "seriesLabels": {},
