@@ -321,6 +321,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "29 D Platin": {
+      "code": "29 D",
+      "colorName": "Platin",
+      "label": "29 D Platin",
+      "categories": [
+        "29d"
+      ],
+      "defaultMm": 29,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
