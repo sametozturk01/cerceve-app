@@ -1165,6 +1165,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 Ağaç Kabuğu Ceviz": {
+      "code": "46 Ağaç Kabuğu",
+      "colorName": "Ceviz",
+      "label": "46 Ağaç Kabuğu Ceviz",
+      "categories": [
+        "46-agac-kabugu"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
