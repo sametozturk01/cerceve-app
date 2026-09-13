@@ -1009,6 +1009,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "30 luk Ağaç Kabuğu Ceviz": {
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Ceviz",
+      "label": "30 luk Ağaç Kabuğu Ceviz",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "defaultMm": 30,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
