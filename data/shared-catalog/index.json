@@ -1153,6 +1153,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 Ağaç Kabuğu Platin": {
+      "code": "46 Ağaç Kabuğu",
+      "colorName": "Platin",
+      "label": "46 Ağaç Kabuğu Platin",
+      "categories": [
+        "46-agac-kabugu"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
