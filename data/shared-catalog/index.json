@@ -142,7 +142,7 @@
       "defaultMm": 20,
       "price": 200,
       "pleksiPrice": 1900,
-      "camPrice": 1200,
+      "camPrice": 1300,
       "motifCamPrice": 1500
     },
     "35 L Düz Altın": {
@@ -205,7 +205,9 @@
       ],
       "defaultMm": 20,
       "price": 200,
-      "pleksiPrice": 2000
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     },
     "20 lik Platin": {
       "code": "20 lik",
@@ -229,6 +231,19 @@
       ],
       "defaultMm": 20,
       "price": 200,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
+    },
+    "29 D Siyah": {
+      "code": "29 D",
+      "colorName": "Siyah",
+      "label": "29 D Siyah",
+      "categories": [
+        "29d"
+      ],
+      "defaultMm": 29,
+      "price": 250,
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
