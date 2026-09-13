@@ -505,6 +505,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "35 L Bej": {
+      "code": "35 L",
+      "colorName": "Bej",
+      "label": "35 L Bej",
+      "categories": [
+        "35l"
+      ],
+      "defaultMm": 35,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
