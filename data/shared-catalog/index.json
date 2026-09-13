@@ -46,28 +46,6 @@
       "updatedAt": 1788520731353
     },
     {
-      "id": "custom:20 lik Siyah:mtmuek4c",
-      "code": "20 lik",
-      "colorName": "Siyah",
-      "label": "20 lik Siyah",
-      "categories": [
-        "20lik"
-      ],
-      "thickness": 105,
-      "defaultMm": 20,
-      "radius": 0,
-      "image": "https://cerceve-app.vercel.app/api/shared-catalog/file?n=custom-20-lik-siyah-mtmuek4c-07978b563a.png",
-      "colors": [
-        {
-          "id": "siyah",
-          "label": "Siyah",
-          "hex": "#1a1a1a"
-        }
-      ],
-      "custom": true,
-      "updatedAt": 1788519621469
-    },
-    {
       "id": "custom:20 lik Siyah:mtkfx219",
       "code": "F30 D91",
       "colorName": "Siyah",
@@ -251,6 +229,7 @@
     "custom:Paspartu sarı:mtn89y05",
     "custom:Paspartu öökö:mtna04t3",
     "custom:Kağıt beyaz:mtna4kxb",
-    "custom:Kağıt jj:mtnabqpi"
+    "custom:Kağıt jj:mtnabqpi",
+    "custom:20 lik Siyah:mtmuek4c"
   ]
 }
