@@ -1177,6 +1177,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 Ağaç Kabuğu Siyah": {
+      "code": "46 Ağaç Kabuğu",
+      "colorName": "Siyah",
+      "label": "46 Ağaç Kabuğu Siyah",
+      "categories": [
+        "46-agac-kabugu"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
