@@ -216,7 +216,8 @@
       ],
       "defaultMm": 20,
       "price": 200,
-      "motifCamPrice": 1500
+      "motifCamPrice": 1500,
+      "camPrice": 1300
     },
     "20 lik Ceviz": {
       "code": "20 lik",
