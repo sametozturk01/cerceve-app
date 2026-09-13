@@ -1261,6 +1261,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "FA 52 Beyaz": {
+      "code": "FA 52",
+      "colorName": "Beyaz",
+      "label": "FA 52 Beyaz",
+      "categories": [
+        "fa52"
+      ],
+      "defaultMm": 52,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
