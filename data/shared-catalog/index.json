@@ -453,6 +453,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "34 L Şampanya": {
+      "code": "34 L",
+      "colorName": "Şampanya",
+      "label": "34 L Şampanya",
+      "categories": [
+        "34l"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
