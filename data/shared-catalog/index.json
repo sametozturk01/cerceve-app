@@ -661,6 +661,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "47 L Oksit Gümüş": {
+      "code": "47 L",
+      "colorName": "Oksit Gümüş",
+      "label": "47 L Oksit Gümüş",
+      "categories": [
+        "47l"
+      ],
+      "defaultMm": 47,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
