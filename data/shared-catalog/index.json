@@ -148,10 +148,12 @@
     "35 L Düz Altın": {
       "code": "34 L",
       "colorName": "Düz Altın",
-      "label": "35 L Düz Altın",
+      "label": "34 L Düz Altın",
       "categories": [
         "34l"
-      ]
+      ],
+      "defaultMm": 35,
+      "camPrice": 1300
     },
     "ANTRASİT GRİ": {
       "code": null,
