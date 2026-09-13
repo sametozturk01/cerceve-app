@@ -637,6 +637,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "47 L Siyah": {
+      "code": "47 L",
+      "colorName": "Siyah",
+      "label": "47 L Siyah",
+      "categories": [
+        "47l"
+      ],
+      "defaultMm": 47,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
