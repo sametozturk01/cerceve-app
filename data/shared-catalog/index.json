@@ -1117,6 +1117,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 d Altın": {
+      "code": "46 d",
+      "colorName": "Altın",
+      "label": "46 d Altın",
+      "categories": [
+        "46d"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
