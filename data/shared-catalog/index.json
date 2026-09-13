@@ -369,6 +369,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "28 KR Boncuklu Ceviz": {
+      "code": "28 KR Boncuklu",
+      "colorName": "Ceviz",
+      "label": "28 KR Boncuklu Ceviz",
+      "categories": [
+        "28krboncuklu"
+      ],
+      "defaultMm": 28,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
