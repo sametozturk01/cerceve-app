@@ -685,6 +685,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "47 L Ceviz": {
+      "code": "47 L",
+      "colorName": "Ceviz",
+      "label": "47 L Ceviz",
+      "categories": [
+        "47l"
+      ],
+      "defaultMm": 47,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
