@@ -613,6 +613,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "35 L Oksit Gümüş": {
+      "code": "35 L",
+      "colorName": "Oksit Gümüş",
+      "label": "35 L Oksit Gümüş",
+      "categories": [
+        "35l"
+      ],
+      "defaultMm": 35,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
