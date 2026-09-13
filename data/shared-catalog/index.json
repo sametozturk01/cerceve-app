@@ -1081,6 +1081,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "30 luk Ağaç Kabuğu Bej": {
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Bej",
+      "label": "30 luk Ağaç Kabuğu Bej",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "defaultMm": 30,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
