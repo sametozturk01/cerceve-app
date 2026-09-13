@@ -1201,6 +1201,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 2000
+    },
+    "FA 52 Yeşil Eskitme": {
+      "code": "FA 52",
+      "colorName": "Yeşil Eskitme",
+      "label": "FA 52 Yeşil Eskitme",
+      "categories": [
+        "fa52"
+      ],
+      "defaultMm": 52,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
