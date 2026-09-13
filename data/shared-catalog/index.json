@@ -709,6 +709,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "FA 41 Beyaz": {
+      "code": "FA 41",
+      "colorName": "Beyaz",
+      "label": "FA 41 Beyaz",
+      "categories": [
+        "fa41"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
