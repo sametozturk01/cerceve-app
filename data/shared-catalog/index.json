@@ -297,6 +297,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "22 lik Lacivert": {
+      "code": "22 lik",
+      "colorName": "Lacivert",
+      "label": "22 lik Lacivert",
+      "categories": [
+        "22lik"
+      ],
+      "defaultMm": 22,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
