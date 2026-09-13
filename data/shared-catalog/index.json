@@ -216,6 +216,16 @@
       ],
       "defaultMm": 20,
       "price": 200
+    },
+    "20 lik Ceviz": {
+      "code": "20 lik",
+      "colorName": "Ceviz",
+      "label": "20 lik Ceviz",
+      "categories": [
+        "20lik"
+      ],
+      "defaultMm": 20,
+      "price": 200
     }
   },
   "seriesLabels": {},
