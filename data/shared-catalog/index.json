@@ -805,6 +805,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "FA 41 Oksit Gümüş": {
+      "code": "FA 41",
+      "colorName": "Oksit Gümüş",
+      "label": "FA 41 Oksit Gümüş",
+      "categories": [
+        "fa41"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
