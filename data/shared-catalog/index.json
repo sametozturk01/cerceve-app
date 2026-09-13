@@ -333,6 +333,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "29 KR Düz Ceviz": {
+      "code": "29 KR Düz",
+      "colorName": "Ceviz",
+      "label": "29 KR Düz Ceviz",
+      "categories": [
+        "29krduz"
+      ],
+      "defaultMm": 29,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
