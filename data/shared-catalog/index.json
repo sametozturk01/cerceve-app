@@ -937,6 +937,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "F30 D91 Sarı": {
+      "code": "F30 D91",
+      "colorName": "Sarı",
+      "label": "F30 D91 Sarı",
+      "categories": [
+        "f30d91"
+      ],
+      "defaultMm": 30,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
