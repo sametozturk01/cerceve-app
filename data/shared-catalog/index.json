@@ -721,6 +721,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "FA 41 Siyah": {
+      "code": "FA 41",
+      "colorName": "Siyah",
+      "label": "FA 41 Siyah",
+      "categories": [
+        "fa41"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
