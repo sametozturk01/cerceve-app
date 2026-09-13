@@ -889,6 +889,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "F30 D91 Beyaz": {
+      "code": "F30 D91",
+      "colorName": "Beyaz",
+      "label": "F30 D91 Beyaz",
+      "categories": [
+        "f30d91"
+      ],
+      "defaultMm": 30,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
