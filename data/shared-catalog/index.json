@@ -757,6 +757,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "FA 41 Eskitme Altın": {
+      "code": "FA 41",
+      "colorName": "Eskitme Altın",
+      "label": "FA 41 Eskitme Altın",
+      "categories": [
+        "fa41"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
