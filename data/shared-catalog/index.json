@@ -285,6 +285,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "22 lik Mavi": {
+      "code": "22 lik",
+      "colorName": "Mavi",
+      "label": "22 lik Mavi",
+      "categories": [
+        "22lik"
+      ],
+      "defaultMm": 22,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
