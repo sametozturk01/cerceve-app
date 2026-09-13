@@ -1189,6 +1189,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 Ağaç Kabuğu Altın": {
+      "code": "46 Ağaç Kabuğu",
+      "colorName": "Altın",
+      "label": "46 Ağaç Kabuğu Altın",
+      "categories": [
+        "46-agac-kabugu"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 2000
     }
   },
   "seriesLabels": {},
