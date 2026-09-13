@@ -673,6 +673,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "47 L Altın": {
+      "code": "47 L",
+      "colorName": "Altın",
+      "label": "47 L Altın",
+      "categories": [
+        "47l"
+      ],
+      "defaultMm": 47,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
