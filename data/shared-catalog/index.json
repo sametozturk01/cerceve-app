@@ -258,7 +258,8 @@
         "22lik"
       ],
       "defaultMm": 22,
-      "pleksiPrice": 2000
+      "pleksiPrice": 2000,
+      "camPrice": 1300
     }
   },
   "seriesLabels": {},
