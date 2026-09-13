@@ -997,6 +997,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "F30 Düz Altın": {
+      "code": "F30 Düz",
+      "colorName": "Altın",
+      "label": "F30 Düz Altın",
+      "categories": [
+        "f30duz"
+      ],
+      "defaultMm": 30,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
