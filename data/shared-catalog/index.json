@@ -1069,6 +1069,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "30 luk Ağaç Kabuğu Mavi": {
+      "code": "30 luk Ağaç Kabuğu",
+      "colorName": "Mavi",
+      "label": "30 luk Ağaç Kabuğu Mavi",
+      "categories": [
+        "30luk-agac-kabugu"
+      ],
+      "defaultMm": 30,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
