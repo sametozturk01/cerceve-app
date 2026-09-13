@@ -925,6 +925,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "F30 D91 Turuncu": {
+      "code": "F30 D91",
+      "colorName": "Turuncu",
+      "label": "F30 D91 Turuncu",
+      "categories": [
+        "f30d91"
+      ],
+      "defaultMm": 30,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
