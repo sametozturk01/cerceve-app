@@ -769,6 +769,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "FA 41 Ceviz": {
+      "code": "FA 41",
+      "colorName": "Ceviz",
+      "label": "FA 41 Ceviz",
+      "categories": [
+        "fa41"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
