@@ -1141,6 +1141,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 d Ceviz": {
+      "code": "46 d",
+      "colorName": "Ceviz",
+      "label": "46 d Ceviz",
+      "categories": [
+        "46d"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
