@@ -1105,6 +1105,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 d Siyah": {
+      "code": "46 d",
+      "colorName": "Siyah",
+      "label": "46 d Siyah",
+      "categories": [
+        "46d"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
