@@ -1129,6 +1129,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "46 d Şampanya": {
+      "code": "46 d",
+      "colorName": "Şampanya",
+      "label": "46 d Şampanya",
+      "categories": [
+        "46d"
+      ],
+      "defaultMm": 46,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
