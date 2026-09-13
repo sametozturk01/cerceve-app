@@ -357,6 +357,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "29 KR Düz Gümüş": {
+      "code": "29 KR Düz",
+      "colorName": "Gümüş",
+      "label": "29 KR Düz Gümüş",
+      "categories": [
+        "29krduz"
+      ],
+      "defaultMm": 29,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
