@@ -553,6 +553,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "35 L Gri": {
+      "code": "35 L",
+      "colorName": "Gri",
+      "label": "35 L Gri",
+      "categories": [
+        "35l"
+      ],
+      "defaultMm": 35,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 2000
     }
   },
   "seriesLabels": {},
