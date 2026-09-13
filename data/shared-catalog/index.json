@@ -541,6 +541,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "35 L Antik Bronz": {
+      "code": "35 L",
+      "colorName": "Antik Bronz",
+      "label": "35 L Antik Bronz",
+      "categories": [
+        "35l"
+      ],
+      "defaultMm": 35,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
