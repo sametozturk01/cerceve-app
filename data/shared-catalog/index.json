@@ -393,6 +393,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "28 KR Boncuklu Gümüş": {
+      "code": "28 KR Boncuklu",
+      "colorName": "Gümüş",
+      "label": "28 KR Boncuklu Gümüş",
+      "categories": [
+        "28krboncuklu"
+      ],
+      "defaultMm": 28,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
