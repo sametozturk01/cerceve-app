@@ -309,6 +309,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "29 D Altın": {
+      "code": "29 D",
+      "colorName": "Altın",
+      "label": "29 D Altın",
+      "categories": [
+        "29d"
+      ],
+      "defaultMm": 29,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
