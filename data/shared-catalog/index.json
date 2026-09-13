@@ -206,6 +206,16 @@
       "defaultMm": 20,
       "price": 200,
       "pleksiPrice": 2000
+    },
+    "20 lik Platin": {
+      "code": "20 lik",
+      "colorName": "Platin",
+      "label": "20 lik Platin",
+      "categories": [
+        "20lik"
+      ],
+      "defaultMm": 20,
+      "price": 200
     }
   },
   "seriesLabels": {},
