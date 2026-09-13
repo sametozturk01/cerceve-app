@@ -381,6 +381,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "28 KR Boncuklu Altın": {
+      "code": "28 KR Boncuklu",
+      "colorName": "Altın",
+      "label": "28 KR Boncuklu Altın",
+      "categories": [
+        "28krboncuklu"
+      ],
+      "defaultMm": 28,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
