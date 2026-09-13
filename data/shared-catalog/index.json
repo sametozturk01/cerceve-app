@@ -441,6 +441,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "34 L Eskitme Altın": {
+      "code": "34 L",
+      "colorName": "Eskitme Altın",
+      "label": "34 L Eskitme Altın",
+      "categories": [
+        "34l"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
