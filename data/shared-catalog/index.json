@@ -697,6 +697,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "47 L Beyaz": {
+      "code": "47 L",
+      "colorName": "Beyaz",
+      "label": "47 L Beyaz",
+      "categories": [
+        "47l"
+      ],
+      "defaultMm": 47,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
