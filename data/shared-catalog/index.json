@@ -227,7 +227,8 @@
       "defaultMm": 20,
       "price": 200,
       "pleksiPrice": 2000,
-      "camPrice": 1300
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
