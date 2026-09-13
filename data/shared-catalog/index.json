@@ -405,6 +405,18 @@
       "pleksiPrice": 2000,
       "camPrice": 1300,
       "motifCamPrice": 1500
+    },
+    "34 L Beyaz": {
+      "code": "34 L",
+      "colorName": "Beyaz",
+      "label": "34 L Beyaz",
+      "categories": [
+        "34l"
+      ],
+      "defaultMm": 34,
+      "pleksiPrice": 2000,
+      "camPrice": 1300,
+      "motifCamPrice": 1500
     }
   },
   "seriesLabels": {},
