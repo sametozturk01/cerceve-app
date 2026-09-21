@@ -258,7 +258,8 @@
       "defaultMm": 22,
       "pleksiPrice": 2000,
       "camPrice": 1300,
-      "motifCamPrice": 1500
+      "motifCamPrice": 1500,
+      "price": 200
     },
     "22 lik Altın": {
       "code": "22 lik",
