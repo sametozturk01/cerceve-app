@@ -114,12 +114,14 @@
       "colorName": "Siyah",
       "label": "Yeni 20 Siyah",
       "categories": [
-        "yeni20"
+        "yeni20",
+        "metal"
       ],
       "defaultMm": 20,
-      "price": 50,
-      "camPrice": 50,
-      "pleksiPrice": 0
+      "price": 200,
+      "pleksiPrice": 1000,
+      "camPrice": 1200,
+      "motifCamPrice": 1400
     },
     "Yeni 20 Beyaz": {
       "code": "Yeni 20",
@@ -140,10 +142,8 @@
         "20lik"
       ],
       "defaultMm": 20,
-      "price": 200,
-      "pleksiPrice": 2000,
-      "camPrice": 1300,
-      "motifCamPrice": 1500
+      "price": 0,
+      "pleksiPrice": 2000
     },
     "35 L Düz Altın": {
       "code": "34 L",
@@ -151,11 +151,7 @@
       "label": "34 L Düz Altın",
       "categories": [
         "34l"
-      ],
-      "defaultMm": 35,
-      "camPrice": 1300,
-      "pleksiPrice": 2000,
-      "motifCamPrice": 1500
+      ]
     },
     "ANTRASİT GRİ": {
       "code": null,
@@ -176,7 +172,7 @@
       ],
       "defaultMm": 30,
       "pleksiPrice": 2200,
-      "camPrice": 1300,
+      "camPrice": 1200,
       "motifCamPrice": 1500,
       "price": 280
     },
@@ -189,9 +185,7 @@
       ],
       "defaultMm": 20,
       "price": 200,
-      "pleksiPrice": 2000,
-      "camPrice": 1300,
-      "motifCamPrice": 1500
+      "pleksiPrice": 2000
     },
     "29 D Ceviz": {
       "code": "PASPARTU",
